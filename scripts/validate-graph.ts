@@ -1,5 +1,9 @@
-import type { FdeCase } from '../src/domain/cases/types';
-import { isChoiceNode } from '../src/domain/scoring/evaluation-utils';
+import type {
+  CaseNode,
+  FdeCase,
+  NodeSubmission,
+} from '../src/domain/cases/types';
+import { evaluateNode } from '../src/domain/scoring/evaluate-node';
 
 import { parseCliArgs } from './cli';
 import {
@@ -22,33 +26,78 @@ export interface ContentIssue {
 
 type GraphCase = Pick<FdeCase, 'id' | 'nodes' | 'startNodeId'>;
 
-const DEFAULT_RESULT_BRANCH_KEYS = ['correct', 'incorrect'] as const;
-
-function evaluatorResultBranchKeys(
-  node: FdeCase['nodes'][number],
-): Set<string> {
-  const resultKeys = new Set<string>(DEFAULT_RESULT_BRANCH_KEYS);
-  const supportsDecisionEffects =
-    isChoiceNode(node) ||
-    node.type === 'multiple-choice' ||
-    node.type === 'evidence-conclusion';
-
-  if (
-    supportsDecisionEffects &&
-    (node.scoring.criticalErrorOptionIds?.length ?? 0) > 0
-  ) {
-    resultKeys.add('critical');
+function representativeSubmissions(node: CaseNode): NodeSubmission[] {
+  switch (node.type) {
+    case 'multiple-choice':
+      return [
+        ...node.options.map(({ id }) => ({
+          type: 'choice' as const,
+          selectedOptionIds: [id],
+        })),
+        {
+          type: 'choice',
+          selectedOptionIds: node.answer.correctOptionIds,
+        },
+      ];
+    case 'ordering': {
+      const canonicalOrder = node.answer.orderedOptionIds;
+      const submissions: NodeSubmission[] = [
+        { type: 'ordering', orderedOptionIds: canonicalOrder },
+      ];
+      if (canonicalOrder.length > 1) {
+        const alternateOrder = [...canonicalOrder];
+        [alternateOrder[0], alternateOrder[1]] = [
+          alternateOrder[1],
+          alternateOrder[0],
+        ];
+        submissions.push({
+          type: 'ordering',
+          orderedOptionIds: alternateOrder,
+        });
+      }
+      return submissions;
+    }
+    case 'matching': {
+      const canonicalPairs = node.answer.pairs;
+      const submissions: NodeSubmission[] = [
+        { type: 'matching', pairs: canonicalPairs },
+      ];
+      const entries = Object.entries(canonicalPairs);
+      if (entries.length > 1) {
+        submissions.push({
+          type: 'matching',
+          pairs: Object.fromEntries(entries.slice(0, -1)),
+        });
+      }
+      return submissions;
+    }
+    case 'evidence-conclusion': {
+      const evidenceSets = [
+        node.answer.evidenceIds,
+        ...node.evidence.map(({ id }) => [id]),
+      ];
+      return node.options.flatMap(({ id: conclusionId }) =>
+        evidenceSets.map((evidenceIds) => ({
+          type: 'evidence-conclusion' as const,
+          conclusionId,
+          evidenceIds,
+        })),
+      );
+    }
+    default:
+      return node.options.map(({ id }) => ({
+        type: 'choice',
+        selectedOptionIds: [id],
+      }));
   }
-  if (isChoiceNode(node)) {
-    const criticalOptionIds = new Set(
-      node.scoring.criticalErrorOptionIds ?? [],
-    );
-    node.options.forEach(({ id }) => {
-      if (!criticalOptionIds.has(id)) resultKeys.add(`option:${id}`);
-    });
-  }
+}
 
-  return resultKeys;
+function evaluatorResultBranchKeys(node: CaseNode): Set<string> {
+  return new Set(
+    representativeSubmissions(node).map(
+      (submission) => evaluateNode(node, submission).branchKey,
+    ),
+  );
 }
 
 function compareIssues(left: ContentIssue, right: ContentIssue): number {
@@ -121,6 +170,7 @@ export function validateCaseGraph(
     candidate.nodes.map((node, index) => [node.id, index]),
   );
   const edges = new Map<string, string[]>();
+  const executableTerminalNodeIds = new Set<string>();
 
   candidate.nodes.forEach((node, nodeIndex) => {
     const targets: string[] = [];
@@ -151,7 +201,6 @@ export function validateCaseGraph(
       }
       if (branch.key.trim() !== '') branchKeys.add(branch.key);
       if (branch.nextNodeId === null) return;
-      targets.push(branch.nextNodeId);
       if (!nodesById.has(branch.nextNodeId)) {
         issues.push({
           file,
@@ -163,7 +212,7 @@ export function validateCaseGraph(
     });
 
     const resultBranchKeys = evaluatorResultBranchKeys(node);
-    DEFAULT_RESULT_BRANCH_KEYS.forEach((resultKey) => {
+    resultBranchKeys.forEach((resultKey) => {
       if (branchKeys.has(resultKey)) return;
       issues.push({
         file,
@@ -172,14 +221,6 @@ export function validateCaseGraph(
         message: `Node ${node.id} is missing evaluator result branch ${resultKey}.`,
       });
     });
-    if (resultBranchKeys.has('critical') && !branchKeys.has('critical')) {
-      issues.push({
-        file,
-        path: ['nodes', nodeIndex, 'branches'],
-        code: 'missing_result_branch',
-        message: `Node ${node.id} is missing evaluator result branch critical.`,
-      });
-    }
     node.branches.forEach((branch, branchIndex) => {
       if (branch.key.trim() === '' || resultBranchKeys.has(branch.key)) return;
       issues.push({
@@ -188,6 +229,15 @@ export function validateCaseGraph(
         code: 'unsupported_branch_key',
         message: `Evaluator for node ${node.id} cannot produce branch key ${branch.key}.`,
       });
+    });
+
+    node.branches.forEach((branch) => {
+      if (!resultBranchKeys.has(branch.key)) return;
+      if (branch.nextNodeId === null) {
+        executableTerminalNodeIds.add(node.id);
+      } else {
+        targets.push(branch.nextNodeId);
+      }
     });
 
     if (node.type === 'ordering' || node.type === 'matching') {
@@ -243,8 +293,7 @@ export function validateCaseGraph(
   const terminalNodes = candidate.nodes
     .filter(
       (node) =>
-        reachable.has(node.id) &&
-        node.branches.some(({ nextNodeId }) => nextNodeId === null),
+        reachable.has(node.id) && executableTerminalNodeIds.has(node.id),
     )
     .map(({ id }) => id);
   const markTerminalPath = (nodeId: string) => {

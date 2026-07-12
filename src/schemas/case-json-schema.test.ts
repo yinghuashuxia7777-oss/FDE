@@ -115,14 +115,17 @@ describe('FDE case JSON Schema artifact', () => {
 
   it('declares scoring percentages between 0 and 100', () => {
     const artifact = checkedInArtifact as unknown as CaseJsonSchemaArtifact;
-    const scoring =
-      artifact.oneOf[0]!.properties.nodes.items.oneOf[0]!.properties.scoring;
-
-    for (const field of ['firstTry', 'secondTry', 'thirdTry'] as const) {
-      expect(scoring?.properties?.[field]).toMatchObject({
-        minimum: 0,
-        maximum: 100,
-      });
+    for (const statusVariant of artifact.oneOf) {
+      for (const nodeVariant of statusVariant.properties.nodes.items.oneOf) {
+        for (const field of ['firstTry', 'secondTry', 'thirdTry'] as const) {
+          expect(
+            nodeVariant.properties.scoring?.properties?.[field],
+          ).toMatchObject({
+            minimum: 0,
+            maximum: 100,
+          });
+        }
+      }
     }
   });
 

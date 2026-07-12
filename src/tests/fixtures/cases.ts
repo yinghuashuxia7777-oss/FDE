@@ -83,10 +83,6 @@ export function createMinimalValidCase(): FdeCase {
             nextNodeId: null,
           },
           {
-            key: 'incorrect',
-            nextNodeId: null,
-          },
-          {
             key: 'critical',
             nextNodeId: null,
           },

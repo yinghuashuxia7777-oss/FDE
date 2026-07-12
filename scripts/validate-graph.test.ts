@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { CaseNode, NodeSubmission } from '../src/domain/cases/types';
+import { evaluateNode } from '../src/domain/scoring/evaluate-node';
 import { createMinimalValidCase } from '../src/tests/fixtures/cases';
 
 import { validateCaseGraph } from './validate-graph';
@@ -23,6 +25,17 @@ function makeNonCritical(candidate: ReturnType<typeof createMinimalValidCase>) {
   candidate.nodes.forEach((node) => {
     node.scoring.criticalErrorOptionIds = [];
   });
+}
+
+function evaluatedBranchKeys(
+  node: CaseNode,
+  submissions: readonly NodeSubmission[],
+): string[] {
+  return [
+    ...new Set(
+      submissions.map((submission) => evaluateNode(node, submission).branchKey),
+    ),
+  ].sort();
 }
 
 describe('validateCaseGraph', () => {
@@ -187,13 +200,154 @@ describe('validateCaseGraph', () => {
   it('accepts a reachable option branch on a choice node', () => {
     const candidate = createMinimalValidCase();
     candidate.nodes[0].branches = [
-      { key: 'correct', nextNodeId: null },
-      { key: 'incorrect', nextNodeId: null },
       { key: 'option:option-a', nextNodeId: null },
       { key: 'critical', nextNodeId: null },
     ];
 
     expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('requires only authored option branches that a choice evaluator produces', () => {
+    const candidate = createMinimalValidCase();
+    makeNonCritical(candidate);
+    candidate.nodes[0].branches = [
+      { key: 'option:option-a', nextNodeId: null },
+      { key: 'option:option-b', nextNodeId: null },
+    ];
+
+    expect(
+      evaluatedBranchKeys(candidate.nodes[0], [
+        { type: 'choice', selectedOptionIds: ['option-a'] },
+        { type: 'choice', selectedOptionIds: ['option-b'] },
+      ]),
+    ).toEqual(['option:option-a', 'option:option-b']);
+    expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('derives multiple-choice keys from every legal subset outcome', () => {
+    const candidate = createMinimalValidCase();
+    candidate.nodes[0] = {
+      ...candidate.nodes[0],
+      type: 'multiple-choice',
+      answer: { correctOptionIds: ['option-a'] },
+      branches: [
+        { key: 'correct', nextNodeId: null },
+        { key: 'critical', nextNodeId: null },
+      ],
+    };
+
+    expect(
+      evaluatedBranchKeys(candidate.nodes[0], [
+        { type: 'choice', selectedOptionIds: ['option-a'] },
+        { type: 'choice', selectedOptionIds: ['option-b'] },
+        { type: 'choice', selectedOptionIds: ['option-a', 'option-b'] },
+      ]),
+    ).toEqual(['correct', 'critical']);
+    expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('derives evidence-conclusion keys from conclusions and evidence sets', () => {
+    const candidate = createMinimalValidCase();
+    candidate.nodes[0] = {
+      ...candidate.nodes[0],
+      type: 'evidence-conclusion',
+      answer: {
+        conclusionId: 'option-a',
+        evidenceIds: ['evidence-1'],
+      },
+      branches: [
+        { key: 'correct', nextNodeId: null },
+        { key: 'critical', nextNodeId: null },
+      ],
+    };
+
+    expect(
+      evaluatedBranchKeys(candidate.nodes[0], [
+        {
+          type: 'evidence-conclusion',
+          conclusionId: 'option-a',
+          evidenceIds: ['evidence-1'],
+        },
+        {
+          type: 'evidence-conclusion',
+          conclusionId: 'option-b',
+          evidenceIds: ['evidence-1'],
+        },
+      ]),
+    ).toEqual(['correct', 'critical']);
+    expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('derives ordering keys from complete permutations', () => {
+    const candidate = createMinimalValidCase();
+    candidate.nodes[0] = {
+      ...candidate.nodes[0],
+      type: 'ordering',
+      answer: { orderedOptionIds: ['option-a', 'option-b'] },
+      scoring: {
+        ...candidate.nodes[0].scoring,
+        criticalErrorOptionIds: [],
+      },
+      consequences: [],
+      branches: [
+        { key: 'correct', nextNodeId: null },
+        { key: 'incorrect', nextNodeId: null },
+      ],
+    };
+
+    expect(
+      evaluatedBranchKeys(candidate.nodes[0], [
+        { type: 'ordering', orderedOptionIds: ['option-a', 'option-b'] },
+        { type: 'ordering', orderedOptionIds: ['option-b', 'option-a'] },
+      ]),
+    ).toEqual(['correct', 'incorrect']);
+    expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('does not require an impossible incorrect matching result', () => {
+    const candidate = createMinimalValidCase();
+    candidate.nodes[0] = {
+      ...candidate.nodes[0],
+      type: 'matching',
+      answer: { pairs: { 'option-a': 'option-b' } },
+      scoring: {
+        ...candidate.nodes[0].scoring,
+        criticalErrorOptionIds: [],
+      },
+      consequences: [],
+      branches: [{ key: 'correct', nextNodeId: null }],
+    };
+
+    expect(
+      evaluatedBranchKeys(candidate.nodes[0], [
+        { type: 'matching', pairs: { 'option-a': 'option-b' } },
+      ]),
+    ).toEqual(['correct']);
+    expect(validateCaseGraph(candidate, 'case.json')).toEqual([]);
+  });
+
+  it('excludes evaluator-unreachable branches from graph reachability and terminals', () => {
+    const candidate = createMinimalValidCase();
+    makeNonCritical(candidate);
+    candidate.nodes[0].branches = [
+      { key: 'option:option-a', nextNodeId: 'node-1' },
+      { key: 'option:option-b', nextNodeId: 'node-1' },
+      { key: 'correct', nextNodeId: 'orphan' },
+    ];
+    addNode(candidate, 'orphan', [
+      { key: 'correct', nextNodeId: null },
+      { key: 'incorrect', nextNodeId: null },
+    ]);
+
+    expect(issueCodes(candidate)).toEqual(
+      expect.arrayContaining([
+        'unsupported_branch_key',
+        'unreachable_node',
+        'no_terminal',
+        'no_terminal_path',
+        'closed_cycle',
+      ]),
+    );
   });
 
   it.each(['ordering', 'matching'] as const)(
