@@ -1,9 +1,17 @@
+import { type MouseEvent, useRef } from 'react';
 import { HashRouter, NavLink } from 'react-router-dom';
 
 export function App() {
+  const mainRef = useRef<HTMLElement>(null);
+
+  const focusMain = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    mainRef.current?.focus();
+  };
+
   return (
     <HashRouter>
-      <a className="skip-link" href="#main-content">
+      <a className="skip-link" href="#main-content" onClick={focusMain}>
         Skip to main content
       </a>
       <header className="site-header">
@@ -14,7 +22,12 @@ export function App() {
           <NavLink to="/">Practice</NavLink>
         </nav>
       </header>
-      <main id="main-content" aria-labelledby="app-title" tabIndex={-1}>
+      <main
+        ref={mainRef}
+        id="main-content"
+        aria-labelledby="app-title"
+        tabIndex={-1}
+      >
         <div className="hero">
           <p className="eyebrow">Front-end practice, focused</p>
           <h1 id="app-title">FDE Arena</h1>

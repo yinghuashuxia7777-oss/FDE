@@ -30,6 +30,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]),
   :root[data-theme='system'] {
+    color-scheme: dark;
     --color-canvas: #111315;
     --color-surface: #191c1f;
     --color-text: #f5f4ef;
