@@ -2,7 +2,6 @@ import type {
   CaseProgressRecord,
   CompletedAttemptRecord,
   MistakeRecord,
-  ProgressSnapshot,
   SkillMasteryRecord,
 } from './models';
 
@@ -25,7 +24,6 @@ export interface ProgressRepository {
   get(userId: string, caseId: string): Promise<CaseProgressRecord | undefined>;
   list(userId: string): Promise<CaseProgressRecord[]>;
   save(progress: CaseProgressRecord): Promise<void>;
-  saveSnapshot(snapshot: ProgressSnapshot): Promise<void>;
   commitCompletion(
     attempt: CompletedAttemptRecord,
     merge: CompletionMerge,

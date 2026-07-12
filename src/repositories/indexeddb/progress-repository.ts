@@ -6,6 +6,12 @@ import type {
   ProgressRepository,
   ProgressSnapshot,
 } from '../contracts';
+import {
+  assertAttemptIntrinsic,
+  assertCompletedRetry,
+  assertCompletionProgression,
+  AttemptProgressionError,
+} from '../attempt-progression';
 import type { CompletionMerge } from '../contracts/progress-repository';
 import type { FdeArenaDatabase } from '../../storage/database';
 import { normalizeAttemptRecord } from './attempt-invariants';
@@ -67,34 +73,6 @@ export class IndexedDbProgressRepository implements ProgressRepository {
     await this.database.put('progress', progress);
   }
 
-  async saveSnapshot(snapshot: ProgressSnapshot): Promise<void> {
-    const normalizedSnapshot: ProgressSnapshot = {
-      ...snapshot,
-      attempt: normalizeAttemptRecord(snapshot.attempt),
-    };
-    assertSnapshotIdentity(normalizedSnapshot);
-    const transaction = this.database.transaction(
-      ['attempts', 'progress', 'mastery', 'mistakes'],
-      'readwrite',
-    );
-    try {
-      await transaction.objectStore('attempts').put(normalizedSnapshot.attempt);
-      await transaction
-        .objectStore('progress')
-        .put(normalizedSnapshot.progress);
-      for (const mastery of normalizedSnapshot.mastery) {
-        await transaction.objectStore('mastery').put(mastery);
-      }
-      for (const mistake of normalizedSnapshot.mistakes) {
-        await transaction.objectStore('mistakes').put(toStoredMistake(mistake));
-      }
-      await transaction.done;
-    } catch (error) {
-      await settleAbortedTransaction(transaction);
-      throw error;
-    }
-  }
-
   async commitCompletion(
     attempt: CompletedAttemptRecord,
     merge: CompletionMerge,
@@ -103,6 +81,7 @@ export class IndexedDbProgressRepository implements ProgressRepository {
     if (normalizedAttempt.status !== 'completed') {
       throw new Error('A completion commit requires a completed attempt.');
     }
+    assertAttemptIntrinsic(normalizedAttempt);
     const transaction = this.database.transaction(
       ['attempts', 'progress', 'mastery', 'mistakes'],
       'readwrite',
@@ -119,20 +98,22 @@ export class IndexedDbProgressRepository implements ProgressRepository {
           mastery.index('by-user').getAll(normalizedAttempt.userId),
         ]);
 
-      if (
-        existingAttempt !== undefined &&
-        (existingAttempt.userId !== normalizedAttempt.userId ||
-          existingAttempt.caseId !== normalizedAttempt.caseId ||
-          existingAttempt.caseVersion !== normalizedAttempt.caseVersion)
-      ) {
-        throw new Error(
-          'An existing attempt must use the same user, case, and case version.',
+      if (existingAttempt === undefined) {
+        throw new AttemptProgressionError(
+          'Completion requires an existing in-progress checkpoint.',
         );
       }
-      if (existingAttempt?.status === 'completed') {
+      if (existingAttempt.status === 'completed') {
+        assertCompletedRetry(existingAttempt, normalizedAttempt);
         await transaction.done;
         return existingAttempt;
       }
+      if (existingAttempt.status === 'abandoned') {
+        throw new AttemptProgressionError(
+          'An abandoned attempt cannot be completed.',
+        );
+      }
+      assertCompletionProgression(existingAttempt, normalizedAttempt);
 
       const merged = merge({ previousProgress, previousMastery });
       if (

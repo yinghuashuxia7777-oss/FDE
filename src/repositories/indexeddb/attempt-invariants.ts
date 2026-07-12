@@ -5,6 +5,7 @@ import type {
 } from '../contracts';
 import type { Verdict } from '../../domain/scoring/case-score';
 import {
+  compareRfc3339Timestamps,
   normalizeRfc3339Timestamp,
   TimestampInvariantError,
 } from '../../storage/timestamps';
@@ -41,6 +42,27 @@ function normalizeRoundHistory(
   }));
 }
 
+function assertBaseChronology(
+  startedAt: string,
+  roundHistory: readonly AttemptRoundRecord[],
+  updatedAt: string,
+): void {
+  let previous = startedAt;
+  for (const round of roundHistory) {
+    if (compareRfc3339Timestamps(round.submittedAt, previous) < 0) {
+      throw new AttemptInvariantError(
+        'Attempt round timestamps must be chronological after startedAt.',
+      );
+    }
+    previous = round.submittedAt;
+  }
+  if (compareRfc3339Timestamps(updatedAt, previous) < 0) {
+    throw new AttemptInvariantError(
+      'Attempt updatedAt cannot be before its latest round timestamp.',
+    );
+  }
+}
+
 function hasCompletionField(attempt: AttemptRecord, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(attempt, key);
 }
@@ -49,6 +71,7 @@ export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
   const startedAt = normalizeTimestamp(attempt.startedAt, 'startedAt');
   const updatedAt = normalizeTimestamp(attempt.updatedAt, 'updatedAt');
   const roundHistory = normalizeRoundHistory(attempt.roundHistory);
+  assertBaseChronology(startedAt, roundHistory, updatedAt);
 
   if (attempt.status === 'completed') {
     if (
@@ -64,11 +87,21 @@ export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
         'A completed attempt requires completedAt, score, verdict, and a null currentNodeId.',
       );
     }
+    const completedAt = normalizeTimestamp(attempt.completedAt, 'completedAt');
+    const lastRoundAt = roundHistory.at(-1)?.submittedAt ?? startedAt;
+    if (
+      compareRfc3339Timestamps(completedAt, lastRoundAt) < 0 ||
+      compareRfc3339Timestamps(updatedAt, completedAt) < 0
+    ) {
+      throw new AttemptInvariantError(
+        'A completed attempt requires latest round <= completedAt <= updatedAt.',
+      );
+    }
     const completed: CompletedAttemptRecord = {
       ...attempt,
       startedAt,
       updatedAt,
-      completedAt: normalizeTimestamp(attempt.completedAt, 'completedAt'),
+      completedAt,
       roundHistory,
     };
     return completed;

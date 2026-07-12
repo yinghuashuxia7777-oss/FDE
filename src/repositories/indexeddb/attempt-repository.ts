@@ -5,6 +5,13 @@ import type {
   AttemptRecord,
   AttemptRepository,
 } from '../contracts';
+import {
+  assertAbandonmentProgression,
+  assertAttemptIntrinsic,
+  assertCheckpointProgression,
+  assertFreshCheckpoint,
+  AttemptProgressionError,
+} from '../attempt-progression';
 import type { FdeArenaDatabase } from '../../storage/database';
 import {
   compareRfc3339Timestamps,
@@ -17,27 +24,6 @@ import {
 
 export class AttemptCheckpointConflictError extends Error {
   override readonly name = 'AttemptCheckpointConflictError';
-}
-
-function sameIdentity(left: AttemptRecord, right: AttemptRecord): boolean {
-  return (
-    left.userId === right.userId &&
-    left.caseId === right.caseId &&
-    left.caseVersion === right.caseVersion
-  );
-}
-
-function isJsonPrefix(
-  existing: readonly unknown[],
-  incoming: readonly unknown[],
-): boolean {
-  return (
-    existing.length <= incoming.length &&
-    existing.every(
-      (value, index) =>
-        JSON.stringify(value) === JSON.stringify(incoming[index]),
-    )
-  );
 }
 
 export class IndexedDbAttemptRepository implements AttemptRepository {
@@ -102,48 +88,47 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
 
   async save(attempt: AttemptRecord): Promise<void> {
     const normalized = normalizeAttemptRecord(attempt);
+    if (normalized.status === 'completed') {
+      throw new AttemptCheckpointConflictError(
+        'Completed attempts can only be written through commitCompletion.',
+      );
+    }
+    try {
+      assertAttemptIntrinsic(normalized);
+    } catch (error) {
+      if (error instanceof AttemptProgressionError) {
+        throw new AttemptCheckpointConflictError(error.message);
+      }
+      throw error;
+    }
     const transaction = this.database.transaction('attempts', 'readwrite');
     const existing = await transaction.store.get(normalized.id);
-    if (existing !== undefined && !sameIdentity(existing, normalized)) {
-      throw new AttemptCheckpointConflictError(
-        'Attempt checkpoint identity must use the same user, case, and version.',
-      );
-    }
-    if (
-      existing?.status === 'completed' &&
-      normalized.status === 'in-progress'
-    ) {
-      await transaction.done;
-      return;
-    }
-    if (
-      existing?.status === 'in-progress' &&
-      normalized.status === 'in-progress'
-    ) {
-      const chronologyMovesForward =
-        compareRfc3339Timestamps(normalized.updatedAt, existing.updatedAt) >= 0;
-      const historyMovesForward = isJsonPrefix(
-        existing.roundHistory,
-        normalized.roundHistory,
-      );
-      const pathMovesForward = isJsonPrefix(
-        existing.visitedNodeIds,
-        normalized.visitedNodeIds,
-      );
-      const consequencesMoveForward = isJsonPrefix(
-        existing.consequences ?? [],
-        normalized.consequences ?? [],
-      );
-      if (
-        !chronologyMovesForward ||
-        !historyMovesForward ||
-        !pathMovesForward ||
-        !consequencesMoveForward
-      ) {
-        throw new AttemptCheckpointConflictError(
-          'Attempt checkpoint cannot roll stored history or path backward.',
+    try {
+      if (existing === undefined) {
+        if (normalized.status !== 'in-progress') {
+          throw new AttemptProgressionError(
+            'An abandoned attempt requires an existing in-progress checkpoint.',
+          );
+        }
+        assertFreshCheckpoint(normalized);
+      } else if (existing.status === 'completed') {
+        throw new AttemptProgressionError(
+          'A completed attempt is immutable outside commitCompletion.',
         );
+      } else if (existing.status === 'abandoned') {
+        throw new AttemptProgressionError(
+          'An abandoned attempt cannot transition to another state.',
+        );
+      } else if (normalized.status === 'in-progress') {
+        assertCheckpointProgression(existing, normalized);
+      } else {
+        assertAbandonmentProgression(existing, normalized);
       }
+    } catch (error) {
+      if (error instanceof AttemptProgressionError) {
+        throw new AttemptCheckpointConflictError(error.message);
+      }
+      throw error;
     }
     await transaction.store.put(normalized);
     await transaction.done;
