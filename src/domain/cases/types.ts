@@ -1,7 +1,8 @@
 export type CaseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
-export type CaseStatus =
-  'planned' | 'draft' | 'reviewed' | 'published' | 'deprecated';
+export type UnreviewedCaseStatus = 'planned' | 'draft' | 'deprecated';
+export type ReviewedCaseStatus = 'reviewed' | 'published';
+export type CaseStatus = UnreviewedCaseStatus | ReviewedCaseStatus;
 
 export type ChoiceNodeType =
   | 'single-choice'
@@ -38,16 +39,16 @@ export type ErrorType = string;
 export interface Evidence {
   id: string;
   type: EvidenceType;
-  title?: string;
+  title?: string | undefined;
   content: string;
-  language?: string;
+  language?: string | undefined;
 }
 
 export interface Option {
   id: string;
   label: string;
   explanation: string;
-  errorType?: ErrorType;
+  errorType?: ErrorType | undefined;
 }
 
 export interface Feedback {
@@ -61,24 +62,24 @@ export interface Scoring {
   secondTry: number;
   thirdTry: number;
   weight: number;
-  criticalErrorOptionIds?: string[];
+  criticalErrorOptionIds?: string[] | undefined;
 }
 
 export interface Consequence {
   optionId: string;
-  timeDelta?: number;
-  costDelta?: number;
-  trustDelta?: number;
-  riskDelta?: number;
-  message?: string;
+  timeDelta?: number | undefined;
+  costDelta?: number | undefined;
+  trustDelta?: number | undefined;
+  riskDelta?: number | undefined;
+  message?: string | undefined;
 }
 
 export interface ConsequenceDelta {
-  timeDelta?: number;
-  costDelta?: number;
-  trustDelta?: number;
-  riskDelta?: number;
-  message?: string;
+  timeDelta?: number | undefined;
+  costDelta?: number | undefined;
+  trustDelta?: number | undefined;
+  riskDelta?: number | undefined;
+  message?: string | undefined;
 }
 
 /** A null next node terminates the case explicitly. */
@@ -89,13 +90,13 @@ export interface Branch {
 
 interface SharedCaseNode {
   id: string;
-  title?: string;
+  title?: string | undefined;
   prompt: string;
   evidence: Evidence[];
   options: Option[];
   feedback: Feedback;
   scoring: Scoring;
-  consequences?: Consequence[];
+  consequences?: Consequence[] | undefined;
   branches: Branch[];
 }
 
@@ -109,8 +110,8 @@ export interface MultipleChoiceAnswer {
 
 export interface OrderingAnswer {
   orderedOptionIds: string[];
-  priorityOptionIds?: string[];
-  hazardousOptionIds?: string[];
+  priorityOptionIds?: string[] | undefined;
+  hazardousOptionIds?: string[] | undefined;
 }
 
 export interface MatchingAnswer {
@@ -164,7 +165,7 @@ export interface Debrief {
   remediation: string[];
   verification: string[];
   knowledgePoints: string[];
-  recommendedCaseIds?: string[];
+  recommendedCaseIds?: string[] | undefined;
 }
 
 export interface CaseScenario {
@@ -178,21 +179,25 @@ export interface CaseScenario {
 export interface CaseMetadata {
   version: number;
   sourceType: string;
-  sourceReferences?: string[];
+  sourceReferences?: string[] | undefined;
   createdAt: string;
-  reviewedAt?: string;
-  applicableVersions?: string[];
+  reviewedAt?: string | undefined;
+  applicableVersions?: string[] | undefined;
   author: string;
-  reviewer?: string;
+  reviewer?: string | undefined;
 }
 
-export interface FdeCase {
+export interface ReviewedCaseMetadata extends CaseMetadata {
+  reviewedAt: string;
+  reviewer: string;
+}
+
+interface SharedFdeCase {
   id: string;
   slug: string;
   title: string;
   summary: string;
   level: CaseLevel;
-  status: CaseStatus;
   estimatedMinutes: number;
   domains: string[];
   skills: string[];
@@ -205,8 +210,19 @@ export interface FdeCase {
   startNodeId: string;
   nodes: CaseNode[];
   debrief: Debrief;
+}
+
+export interface UnreviewedFdeCase extends SharedFdeCase {
+  status: UnreviewedCaseStatus;
   metadata: CaseMetadata;
 }
+
+export interface ReviewedFdeCase extends SharedFdeCase {
+  status: ReviewedCaseStatus;
+  metadata: ReviewedCaseMetadata;
+}
+
+export type FdeCase = UnreviewedFdeCase | ReviewedFdeCase;
 
 export type NodeSubmission =
   | { type: 'choice'; selectedOptionIds: string[] }

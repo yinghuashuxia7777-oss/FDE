@@ -32,6 +32,27 @@ describe('export envelope schema', () => {
     ).toBe(false);
   });
 
+  it.each(['1.0.0-01', '1.0.0-alpha.01'])(
+    'rejects numeric prerelease identifiers with leading zeroes: %s',
+    (appVersion) => {
+      expect(
+        EmptyExportEnvelopeSchema.safeParse({
+          ...validEnvelope,
+          appVersion,
+        }).success,
+      ).toBe(false);
+    },
+  );
+
+  it('accepts valid SemVer prerelease and build identifiers', () => {
+    expect(
+      EmptyExportEnvelopeSchema.safeParse({
+        ...validEnvelope,
+        appVersion: '1.0.0-alpha.1+build.5',
+      }).success,
+    ).toBe(true);
+  });
+
   it('lets storage supply a versioned local payload contract', () => {
     const LocalPayloadSchema = z
       .object({

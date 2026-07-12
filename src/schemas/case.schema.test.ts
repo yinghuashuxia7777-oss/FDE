@@ -227,6 +227,127 @@ describe('answer ID set semantics', () => {
   });
 });
 
+describe('complete ordering and matching answers', () => {
+  const sharedNode = minimalValidCase.nodes[0]!;
+  const createOption = (id: string) => ({
+    ...sharedNode.options[0]!,
+    id,
+    label: id,
+  });
+
+  it.each([
+    ['omits an option', ['option-a']],
+    ['adds an unknown option', ['option-a', 'option-b', 'option-extra']],
+  ])('rejects ordering that %s', (_reason, orderedOptionIds) => {
+    expect(
+      FdeCaseSchema.safeParse({
+        ...minimalValidCase,
+        nodes: [
+          {
+            ...sharedNode,
+            type: 'ordering',
+            answer: { orderedOptionIds },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    [
+      'reuses a right-side option',
+      ['option-a', 'option-b', 'option-c'],
+      { 'option-a': 'option-c', 'option-b': 'option-c' },
+    ],
+    [
+      'omits an option',
+      ['option-a', 'option-b', 'option-c'],
+      { 'option-a': 'option-b' },
+    ],
+    [
+      'reuses options across both sides',
+      ['option-a', 'option-b'],
+      { 'option-a': 'option-b', 'option-b': 'option-a' },
+    ],
+  ])('rejects matching that %s', (_reason, optionIds, pairs) => {
+    expect(
+      FdeCaseSchema.safeParse({
+        ...minimalValidCase,
+        nodes: [
+          {
+            ...sharedNode,
+            type: 'matching',
+            options: optionIds.map(createOption),
+            answer: { pairs },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts matching where each option participates exactly once', () => {
+    expect(
+      FdeCaseSchema.safeParse({
+        ...minimalValidCase,
+        nodes: [
+          {
+            ...sharedNode,
+            type: 'matching',
+            options: ['option-a', 'option-b', 'option-c', 'option-d'].map(
+              createOption,
+            ),
+            answer: {
+              pairs: { 'option-a': 'option-b', 'option-c': 'option-d' },
+            },
+          },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('optional answer and scoring ID sets', () => {
+  const sharedNode = minimalValidCase.nodes[0]!;
+
+  it.each([
+    ['priority', { priorityOptionIds: ['option-a', 'option-a'] }],
+    ['hazardous', { hazardousOptionIds: ['option-b', 'option-b'] }],
+  ])('rejects duplicate %s option IDs', (_kind, optionalAnswer) => {
+    expect(
+      FdeCaseSchema.safeParse({
+        ...minimalValidCase,
+        nodes: [
+          {
+            ...sharedNode,
+            type: 'ordering',
+            answer: {
+              orderedOptionIds: ['option-a', 'option-b'],
+              ...optionalAnswer,
+            },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects duplicate critical-error option IDs', () => {
+    expect(
+      FdeCaseSchema.safeParse({
+        ...minimalValidCase,
+        nodes: [
+          {
+            ...sharedNode,
+            scoring: {
+              ...sharedNode.scoring,
+              criticalErrorOptionIds: ['option-b', 'option-b'],
+            },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe('FdeCaseSchema review metadata', () => {
   it.each(['reviewed', 'published'])(
     'rejects %s cases without reviewer metadata',

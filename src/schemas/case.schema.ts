@@ -7,7 +7,14 @@ const NonEmptyUniqueIdListSchema = z
   .min(1)
   .refine((ids) => new Set(ids).size === ids.length, {
     message: 'IDs must be unique.',
-  });
+  })
+  .meta({ uniqueItems: true });
+const UniqueIdListSchema = z
+  .array(NonEmptyStringSchema)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: 'IDs must be unique.',
+  })
+  .meta({ uniqueItems: true });
 
 export const EvidenceSchema = z
   .object({
@@ -53,7 +60,7 @@ export const ScoringSchema = z
     secondTry: z.number().min(0),
     thirdTry: z.number().min(0),
     weight: z.number().positive(),
-    criticalErrorOptionIds: z.array(NonEmptyStringSchema).optional(),
+    criticalErrorOptionIds: UniqueIdListSchema.optional(),
   })
   .strict();
 
@@ -127,8 +134,8 @@ const OrderingNodeSchema = z
     answer: z
       .object({
         orderedOptionIds: NonEmptyUniqueIdListSchema,
-        priorityOptionIds: z.array(NonEmptyStringSchema).optional(),
-        hazardousOptionIds: z.array(NonEmptyStringSchema).optional(),
+        priorityOptionIds: UniqueIdListSchema.optional(),
+        hazardousOptionIds: UniqueIdListSchema.optional(),
       })
       .strict(),
   })
@@ -218,66 +225,74 @@ export const DebriefSchema = z
   })
   .strict();
 
-export const FdeCaseSchema = z
+export const CaseMetadataSchema = z
   .object({
-    id: NonEmptyStringSchema,
-    slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-    title: NonEmptyStringSchema,
-    summary: NonEmptyStringSchema,
-    level: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
-    status: z.enum(['planned', 'draft', 'reviewed', 'published', 'deprecated']),
-    estimatedMinutes: z.number().int().positive(),
-    domains: StringListSchema,
-    skills: StringListSchema,
-    lifecycleStages: StringListSchema,
-    technicalLayers: StringListSchema,
-    environments: StringListSchema,
-    riskTypes: StringListSchema,
-    behaviorPatterns: StringListSchema,
-    scenario: z
-      .object({
-        customerProfile: NonEmptyStringSchema,
-        background: NonEmptyStringSchema,
-        initialIncident: NonEmptyStringSchema,
-        constraints: z.array(NonEmptyStringSchema),
-        confirmedFacts: z.array(NonEmptyStringSchema),
-      })
-      .strict(),
-    startNodeId: NonEmptyStringSchema,
-    nodes: z.array(CaseNodeSchema).min(1),
-    debrief: DebriefSchema,
-    metadata: z
-      .object({
-        version: z.number().int().positive(),
-        sourceType: NonEmptyStringSchema,
-        sourceReferences: z.array(NonEmptyStringSchema).optional(),
-        createdAt: z.iso.datetime(),
-        reviewedAt: z.iso.datetime().optional(),
-        applicableVersions: z.array(NonEmptyStringSchema).optional(),
-        author: NonEmptyStringSchema,
-        reviewer: NonEmptyStringSchema.optional(),
-      })
-      .strict(),
+    version: z.number().int().positive(),
+    sourceType: NonEmptyStringSchema,
+    sourceReferences: z.array(NonEmptyStringSchema).optional(),
+    createdAt: z.iso.datetime(),
+    reviewedAt: z.iso.datetime().optional(),
+    applicableVersions: z.array(NonEmptyStringSchema).optional(),
+    author: NonEmptyStringSchema,
+    reviewer: NonEmptyStringSchema.optional(),
   })
-  .strict()
-  .superRefine((fdeCase, context) => {
-    if (fdeCase.status === 'reviewed' || fdeCase.status === 'published') {
-      if (fdeCase.metadata.reviewer === undefined) {
-        context.addIssue({
-          code: 'custom',
-          message: `${fdeCase.status} cases require a reviewer.`,
-          path: ['metadata', 'reviewer'],
-        });
-      }
-      if (fdeCase.metadata.reviewedAt === undefined) {
-        context.addIssue({
-          code: 'custom',
-          message: `${fdeCase.status} cases require reviewedAt.`,
-          path: ['metadata', 'reviewedAt'],
-        });
-      }
-    }
+  .strict();
 
+export const ReviewedCaseMetadataSchema = CaseMetadataSchema.extend({
+  reviewedAt: z.iso.datetime(),
+  reviewer: NonEmptyStringSchema,
+}).strict();
+
+const SharedCaseShape = {
+  id: NonEmptyStringSchema,
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  title: NonEmptyStringSchema,
+  summary: NonEmptyStringSchema,
+  level: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
+  estimatedMinutes: z.number().int().positive(),
+  domains: StringListSchema,
+  skills: StringListSchema,
+  lifecycleStages: StringListSchema,
+  technicalLayers: StringListSchema,
+  environments: StringListSchema,
+  riskTypes: StringListSchema,
+  behaviorPatterns: StringListSchema,
+  scenario: z
+    .object({
+      customerProfile: NonEmptyStringSchema,
+      background: NonEmptyStringSchema,
+      initialIncident: NonEmptyStringSchema,
+      constraints: z.array(NonEmptyStringSchema),
+      confirmedFacts: z.array(NonEmptyStringSchema),
+    })
+    .strict(),
+  startNodeId: NonEmptyStringSchema,
+  nodes: z.array(CaseNodeSchema).min(1),
+  debrief: DebriefSchema,
+};
+
+const UnreviewedFdeCaseSchema = z
+  .object({
+    ...SharedCaseShape,
+    status: z.enum(['planned', 'draft', 'deprecated']),
+    metadata: CaseMetadataSchema,
+  })
+  .strict();
+
+const ReviewedFdeCaseSchema = z
+  .object({
+    ...SharedCaseShape,
+    status: z.enum(['reviewed', 'published']),
+    metadata: ReviewedCaseMetadataSchema,
+  })
+  .strict();
+
+export const FdeCaseSchema = z
+  .discriminatedUnion('status', [
+    UnreviewedFdeCaseSchema,
+    ReviewedFdeCaseSchema,
+  ])
+  .superRefine((fdeCase, context) => {
     const nodeIds = new Set<string>();
     const optionIds = new Set<string>();
     const evidenceIds = new Set<string>();
@@ -370,6 +385,18 @@ export const FdeCaseSchema = z
               optionIndex,
             ]);
           });
+          if (
+            node.answer.orderedOptionIds.length !== localOptionIds.size ||
+            ![...localOptionIds].every((optionId) =>
+              node.answer.orderedOptionIds.includes(optionId),
+            )
+          ) {
+            context.addIssue({
+              code: 'custom',
+              message: `Ordering answer must contain every option on node ${node.id} exactly once.`,
+              path: [...answerPath, 'orderedOptionIds'],
+            });
+          }
           node.answer.priorityOptionIds?.forEach((optionId, optionIndex) => {
             addMissingOptionIssue(optionId, [
               ...answerPath,
@@ -385,7 +412,38 @@ export const FdeCaseSchema = z
             ]);
           });
           break;
-        case 'matching':
+        case 'matching': {
+          const leftOptionIds = Object.keys(node.answer.pairs);
+          const rightOptionIds = Object.values(node.answer.pairs);
+          const rightOptionIdSet = new Set(rightOptionIds);
+          const participationCounts = new Map<string, number>();
+
+          [...leftOptionIds, ...rightOptionIds].forEach((optionId) => {
+            participationCounts.set(
+              optionId,
+              (participationCounts.get(optionId) ?? 0) + 1,
+            );
+          });
+
+          if (rightOptionIdSet.size !== rightOptionIds.length) {
+            context.addIssue({
+              code: 'custom',
+              message: `Matching right-side options must be unique on node ${node.id}.`,
+              path: [...answerPath, 'pairs'],
+            });
+          }
+          if (
+            participationCounts.size !== localOptionIds.size ||
+            ![...localOptionIds].every(
+              (optionId) => participationCounts.get(optionId) === 1,
+            )
+          ) {
+            context.addIssue({
+              code: 'custom',
+              message: `Every matching option on node ${node.id} must participate exactly once.`,
+              path: [...answerPath, 'pairs'],
+            });
+          }
           Object.entries(node.answer.pairs).forEach(
             ([leftOptionId, rightOptionId]) => {
               addMissingOptionIssue(leftOptionId, [
@@ -401,6 +459,7 @@ export const FdeCaseSchema = z
             },
           );
           break;
+        }
         case 'evidence-conclusion':
           addMissingOptionIssue(node.answer.conclusionId, [
             ...answerPath,
