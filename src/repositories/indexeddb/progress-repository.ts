@@ -1,4 +1,5 @@
 import type { IDBPDatabase } from 'idb';
+import type { FdeCase } from '../../domain/cases/types';
 
 import type {
   CaseProgressRecord,
@@ -8,6 +9,7 @@ import type {
 } from '../contracts';
 import {
   assertAttemptIntrinsic,
+  assertAttemptMatchesCase,
   assertCompletedRetry,
   assertCompletionProgression,
   AttemptProgressionError,
@@ -69,12 +71,9 @@ export class IndexedDbProgressRepository implements ProgressRepository {
     return this.database.getAllFromIndex('progress', 'by-user', userId);
   }
 
-  async save(progress: CaseProgressRecord): Promise<void> {
-    await this.database.put('progress', progress);
-  }
-
   async commitCompletion(
     attempt: CompletedAttemptRecord,
+    caseContent: FdeCase,
     merge: CompletionMerge,
   ): Promise<CompletedAttemptRecord> {
     const normalizedAttempt = normalizeAttemptRecord(attempt);
@@ -82,6 +81,7 @@ export class IndexedDbProgressRepository implements ProgressRepository {
       throw new Error('A completion commit requires a completed attempt.');
     }
     assertAttemptIntrinsic(normalizedAttempt);
+    assertAttemptMatchesCase(normalizedAttempt, caseContent);
     const transaction = this.database.transaction(
       ['attempts', 'progress', 'mastery', 'mistakes'],
       'readwrite',

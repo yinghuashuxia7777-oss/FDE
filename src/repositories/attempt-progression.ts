@@ -5,6 +5,9 @@ import type {
   CompletedAttemptRecord,
   InProgressAttemptRecord,
 } from './contracts';
+import { resolveNextNode } from '../domain/cases/graph';
+import type { CaseNode, FdeCase } from '../domain/cases/types';
+import { evaluateNode } from '../domain/scoring';
 import { compareRfc3339Timestamps } from '../storage/timestamps';
 
 export class AttemptProgressionError extends Error {
@@ -158,6 +161,127 @@ export function assertAttemptIntrinsic(attempt: AttemptRecord): void {
     );
   }
   assertRoundPath(attempt);
+}
+
+function nodeById(
+  nodes: ReadonlyMap<string, CaseNode>,
+  nodeId: string,
+): CaseNode {
+  const node = nodes.get(nodeId);
+  if (node === undefined) {
+    throw new AttemptProgressionError(
+      `Attempt references node "${nodeId}" outside its immutable case version.`,
+    );
+  }
+  return node;
+}
+
+export function assertAttemptMatchesCase(
+  attempt: AttemptRecord,
+  caseContent: FdeCase,
+): void {
+  if (
+    attempt.caseId !== caseContent.id ||
+    attempt.caseVersion !== caseContent.metadata.version
+  ) {
+    throw new AttemptProgressionError(
+      'Attempt case ID and version must match the immutable case content.',
+    );
+  }
+
+  const nodes = new Map<string, CaseNode>();
+  for (const node of caseContent.nodes) {
+    if (nodes.has(node.id)) {
+      throw new AttemptProgressionError(
+        `Immutable case version contains duplicate node "${node.id}".`,
+      );
+    }
+    nodes.set(node.id, node);
+  }
+  if (attempt.visitedNodeIds[0] !== caseContent.startNodeId) {
+    throw new AttemptProgressionError(
+      'Attempt path must start at the immutable case start node.',
+    );
+  }
+  for (const nodeId of attempt.visitedNodeIds) {
+    nodeById(nodes, nodeId);
+  }
+  if (attempt.currentNodeId !== null) {
+    nodeById(nodes, attempt.currentNodeId);
+  }
+  for (const round of attempt.roundHistory) {
+    nodeById(nodes, round.nodeId);
+  }
+
+  let visitOrdinal = 0;
+  let visitRounds: AttemptRoundRecord[] = [];
+  let finalResolvedTarget: string | null | undefined;
+  for (const round of attempt.roundHistory) {
+    const expectedNodeId = attempt.visitedNodeIds[visitOrdinal];
+    if (round.nodeId !== expectedNodeId) {
+      throw new AttemptProgressionError(
+        'Attempt rounds must remain continuous within each visited node ordinal.',
+      );
+    }
+    const node = nodeById(nodes, round.nodeId);
+    let expectedEvaluation;
+    try {
+      expectedEvaluation = evaluateNode(node, round.submission);
+    } catch (error) {
+      throw new AttemptProgressionError(
+        `Attempt submission cannot be evaluated for node "${node.id}": ${error instanceof Error ? error.message : 'unknown evaluation error'}`,
+      );
+    }
+    if (!sameJson(expectedEvaluation, round.evaluation)) {
+      throw new AttemptProgressionError(
+        `Stored evaluation for node "${node.id}" does not match its submission.`,
+      );
+    }
+
+    visitRounds.push(round);
+    if (!isResolved(round)) {
+      continue;
+    }
+    const branchKey = visitRounds.some(
+      (entry) => entry.evaluation.criticalErrorIds.length > 0,
+    )
+      ? 'critical'
+      : expectedEvaluation.branchKey;
+    try {
+      finalResolvedTarget = resolveNextNode(node, branchKey);
+    } catch (error) {
+      throw new AttemptProgressionError(
+        `Attempt branch cannot be resolved for node "${node.id}": ${error instanceof Error ? error.message : 'unknown branch error'}`,
+      );
+    }
+
+    const nextVisitedNodeId = attempt.visitedNodeIds[visitOrdinal + 1];
+    if (nextVisitedNodeId !== undefined) {
+      if (finalResolvedTarget === null) {
+        throw new AttemptProgressionError(
+          `Terminal node "${node.id}" cannot advance the attempt path.`,
+        );
+      }
+      if (nextVisitedNodeId !== finalResolvedTarget) {
+        throw new AttemptProgressionError(
+          `Attempt path does not follow the resolved branch from node "${node.id}".`,
+        );
+      }
+    }
+    visitOrdinal += 1;
+    visitRounds = [];
+  }
+
+  if (
+    attempt.status === 'completed' &&
+    (attempt.roundHistory.length === 0 ||
+      !isResolved(attempt.roundHistory.at(-1)!) ||
+      finalResolvedTarget !== null)
+  ) {
+    throw new AttemptProgressionError(
+      'A completed attempt must end on a resolved terminal branch.',
+    );
+  }
 }
 
 export function assertFreshCheckpoint(attempt: InProgressAttemptRecord): void {

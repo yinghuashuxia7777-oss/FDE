@@ -3,17 +3,88 @@ import 'fake-indexeddb/auto';
 import { deleteDB } from 'idb';
 
 import type {
+  AttemptRecord,
   AttemptRoundRecord,
   CaseProgressRecord,
   CompletedAttemptRecord,
+  CompletionMerge,
   InProgressAttemptRecord,
 } from '../contracts';
+import { createMinimalValidCase } from '../../tests/fixtures/cases';
+import type { FdeCase } from '../../domain/cases/types';
 import { openFdeArenaDatabase } from '../../storage/database';
 import { createIndexedDbRepositories } from './index';
 
 const USER_ID = 'local-user';
 const CASE_ID = 'case-progression';
 const STARTED_AT = '2026-07-13T00:00:00.000Z';
+
+function createProgressionCase(branching: boolean): FdeCase {
+  const result = createMinimalValidCase();
+  result.id = CASE_ID;
+  const first = result.nodes[0]!;
+  if (first.type !== 'single-choice') {
+    throw new Error(
+      'Expected the minimal fixture to start with a choice node.',
+    );
+  }
+  first.options = [
+    { id: 'good', label: 'Good', explanation: 'Correct.' },
+    {
+      id: 'danger',
+      label: 'Danger',
+      explanation: 'Risky.',
+      errorType: 'risk-error',
+    },
+  ];
+  first.answer = { correctOptionId: 'good' };
+  first.scoring.criticalErrorOptionIds = ['danger'];
+  first.consequences = [
+    {
+      optionId: 'danger',
+      riskDelta: 1,
+      message: 'Risk increased.',
+    },
+  ];
+  first.branches = [
+    { key: 'correct', nextNodeId: branching ? 'node-2' : null },
+    { key: 'critical', nextNodeId: null },
+  ];
+  const second = structuredClone(first);
+  second.id = 'node-2';
+  second.branches = [
+    { key: 'correct', nextNodeId: null },
+    { key: 'critical', nextNodeId: null },
+  ];
+  result.nodes = branching ? [first, second] : [first];
+  return result;
+}
+
+const CASE_CONTENT = createProgressionCase(false);
+const BRANCH_CASE_CONTENT = createProgressionCase(true);
+const SELF_LOOP_CASE_CONTENT = createProgressionCase(false);
+SELF_LOOP_CASE_CONTENT.nodes[0]!.branches = [
+  { key: 'correct', nextNodeId: 'node-1' },
+  { key: 'critical', nextNodeId: null },
+];
+type RepositoryBundle = ReturnType<typeof createIndexedDbRepositories>;
+
+function saveAttempt(
+  repositories: RepositoryBundle,
+  attempt: AttemptRecord,
+  caseContent = CASE_CONTENT,
+): Promise<void> {
+  return repositories.attempts.save(attempt, caseContent);
+}
+
+function commitCompletion(
+  repositories: RepositoryBundle,
+  attempt: CompletedAttemptRecord,
+  merge: CompletionMerge,
+  caseContent = CASE_CONTENT,
+): Promise<CompletedAttemptRecord> {
+  return repositories.progress.commitCompletion(attempt, caseContent, merge);
+}
 
 function correctRound(nodeId: string, submittedAt: string): AttemptRoundRecord {
   return {
@@ -133,11 +204,11 @@ it('rejects direct creation or overwrite of a completed attempt', async () => {
     const active = checkpoint();
     const completed = completion(active);
 
-    await expect(repositories.attempts.save(completed)).rejects.toThrow(
+    await expect(saveAttempt(repositories, completed)).rejects.toThrow(
       /completion|completed|commit/i,
     );
-    await repositories.attempts.save(active);
-    await expect(repositories.attempts.save(completed)).rejects.toThrow(
+    await saveAttempt(repositories, active);
+    await expect(saveAttempt(repositories, completed)).rejects.toThrow(
       /completion|completed|commit/i,
     );
     expect(await repositories.attempts.get(active.id)).toEqual(active);
@@ -153,23 +224,31 @@ it('rejects equal-history pollution of critical errors or consequences', async (
       criticalErrorIds: ['danger'],
       consequences: [{ riskDelta: 1, message: 'Risk increased.' }],
     });
-    await repositories.attempts.save(checkpoint());
-    await repositories.attempts.save(existing);
+    await saveAttempt(repositories, checkpoint(), BRANCH_CASE_CONTENT);
+    await saveAttempt(repositories, existing, BRANCH_CASE_CONTENT);
 
     await expect(
-      repositories.attempts.save({
-        ...existing,
-        criticalErrorIds: ['danger', 'polluted'],
-      }),
+      saveAttempt(
+        repositories,
+        {
+          ...existing,
+          criticalErrorIds: ['danger', 'polluted'],
+        },
+        BRANCH_CASE_CONTENT,
+      ),
     ).rejects.toThrow(/critical|history|effect|checkpoint/i);
     await expect(
-      repositories.attempts.save({
-        ...existing,
-        consequences: [
-          ...existing.consequences!,
-          { riskDelta: 99, message: 'Polluted.' },
-        ],
-      }),
+      saveAttempt(
+        repositories,
+        {
+          ...existing,
+          consequences: [
+            ...existing.consequences!,
+            { riskDelta: 99, message: 'Polluted.' },
+          ],
+        },
+        BRANCH_CASE_CONTENT,
+      ),
     ).rejects.toThrow(/consequence|history|effect|checkpoint/i);
   });
 });
@@ -177,7 +256,7 @@ it('rejects equal-history pollution of critical errors or consequences', async (
 it('rejects a current node that is not the last visited node', async () => {
   await withRepositories(async (repositories) => {
     await expect(
-      repositories.attempts.save(checkpoint({ currentNodeId: 'node-other' })),
+      saveAttempt(repositories, checkpoint({ currentNodeId: 'node-other' })),
     ).rejects.toThrow(/current|visited|path/i);
   });
 });
@@ -191,46 +270,152 @@ it('rejects path advancement without a resolved final round', async () => {
       criticalErrorIds: ['danger'],
       consequences: [{ riskDelta: 1, message: 'Risk increased.' }],
     });
-    await repositories.attempts.save(checkpoint());
-    await repositories.attempts.save(existing);
+    await saveAttempt(repositories, checkpoint(), BRANCH_CASE_CONTENT);
+    await saveAttempt(repositories, existing, BRANCH_CASE_CONTENT);
 
     await expect(
-      repositories.attempts.save({
-        ...existing,
-        updatedAt: '2026-07-13T00:02:00.000Z',
-        currentNodeId: 'node-2',
-        visitedNodeIds: ['node-1', 'node-2'],
-      }),
+      saveAttempt(
+        repositories,
+        {
+          ...existing,
+          updatedAt: '2026-07-13T00:02:00.000Z',
+          currentNodeId: 'node-2',
+          visitedNodeIds: ['node-1', 'node-2'],
+        },
+        BRANCH_CASE_CONTENT,
+      ),
     ).rejects.toThrow(/resolved|branch|path|checkpoint/i);
+  });
+});
+
+it('rejects a resolved path advancing to a made-up branch target', async () => {
+  await withRepositories(async (repositories) => {
+    const round = correctRound('node-1', '2026-07-13T00:01:00.000Z');
+    const resolved = checkpoint({
+      updatedAt: round.submittedAt,
+      roundHistory: [round],
+    });
+    await saveAttempt(repositories, checkpoint(), BRANCH_CASE_CONTENT);
+    await saveAttempt(repositories, resolved, BRANCH_CASE_CONTENT);
+
+    await expect(
+      saveAttempt(
+        repositories,
+        {
+          ...resolved,
+          updatedAt: '2026-07-13T00:02:00.000Z',
+          currentNodeId: 'made-up-node',
+          visitedNodeIds: ['node-1', 'made-up-node'],
+        },
+        BRANCH_CASE_CONTENT,
+      ),
+    ).rejects.toThrow(/branch|case|node|path/i);
+  });
+});
+
+it('rejects a stored evaluation that does not match its submission', async () => {
+  await withRepositories(async (repositories) => {
+    const round = correctRound('node-1', '2026-07-13T00:01:00.000Z');
+    const corrupted = checkpoint({
+      updatedAt: round.submittedAt,
+      roundHistory: [
+        {
+          ...round,
+          evaluation: { ...round.evaluation, branchKey: 'critical' },
+        },
+      ],
+    });
+    await saveAttempt(repositories, checkpoint());
+
+    await expect(saveAttempt(repositories, corrupted)).rejects.toThrow(
+      /evaluation|submission/i,
+    );
+  });
+});
+
+it('uses any critical round in a visit to resolve the actual branch', async () => {
+  await withRepositories(async (repositories) => {
+    const first = wrongRound();
+    const final = {
+      ...correctRound('node-1', '2026-07-13T00:02:00.000Z'),
+      attemptNumber: 2,
+    } satisfies AttemptRoundRecord;
+    const wrongCheckpoint = checkpoint({
+      updatedAt: first.submittedAt,
+      roundHistory: [first],
+      criticalErrorIds: ['danger'],
+      consequences: [{ riskDelta: 1, message: 'Risk increased.' }],
+    });
+    const resolved = {
+      ...wrongCheckpoint,
+      updatedAt: final.submittedAt,
+      roundHistory: [first, final],
+    } satisfies InProgressAttemptRecord;
+    await saveAttempt(repositories, checkpoint(), BRANCH_CASE_CONTENT);
+    await saveAttempt(repositories, wrongCheckpoint, BRANCH_CASE_CONTENT);
+    await saveAttempt(repositories, resolved, BRANCH_CASE_CONTENT);
+
+    await expect(
+      saveAttempt(
+        repositories,
+        {
+          ...resolved,
+          updatedAt: '2026-07-13T00:03:00.000Z',
+          currentNodeId: 'node-2',
+          visitedNodeIds: ['node-1', 'node-2'],
+        },
+        BRANCH_CASE_CONTENT,
+      ),
+    ).rejects.toThrow(/critical|terminal|branch|path/i);
+  });
+});
+
+it('supports self-loop paths by visit ordinal', async () => {
+  await withRepositories(async (repositories) => {
+    const first = correctRound('node-1', '2026-07-13T00:01:00.000Z');
+    const resolved = checkpoint({
+      updatedAt: first.submittedAt,
+      roundHistory: [first],
+    });
+    const looped = {
+      ...resolved,
+      updatedAt: '2026-07-13T00:02:00.000Z',
+      visitedNodeIds: ['node-1', 'node-1'],
+    } satisfies InProgressAttemptRecord;
+    const second = correctRound('node-1', '2026-07-13T00:03:00.000Z');
+    const secondResolved = {
+      ...looped,
+      updatedAt: second.submittedAt,
+      roundHistory: [first, second],
+    } satisfies InProgressAttemptRecord;
+
+    await saveAttempt(repositories, checkpoint(), SELF_LOOP_CASE_CONTENT);
+    await saveAttempt(repositories, resolved, SELF_LOOP_CASE_CONTENT);
+    await saveAttempt(repositories, looped, SELF_LOOP_CASE_CONTENT);
+    await expect(
+      saveAttempt(repositories, secondResolved, SELF_LOOP_CASE_CONTENT),
+    ).resolves.toBeUndefined();
   });
 });
 
 it('rejects a stale completion and preserves the newer checkpoint', async () => {
   await withRepositories(async (repositories) => {
     const firstRound = correctRound('node-1', '2026-07-13T00:01:00.000Z');
-    const secondRound = correctRound('node-2', '2026-07-13T00:02:00.000Z');
     const firstResolved = checkpoint({
       updatedAt: firstRound.submittedAt,
       roundHistory: [firstRound],
     });
-    const advanced = {
-      ...firstResolved,
-      currentNodeId: 'node-2',
-      visitedNodeIds: ['node-1', 'node-2'],
-    } satisfies InProgressAttemptRecord;
     const newer = {
-      ...advanced,
-      updatedAt: secondRound.submittedAt,
-      roundHistory: [firstRound, secondRound],
+      ...firstResolved,
+      updatedAt: '2026-07-13T00:02:00.000Z',
     } satisfies InProgressAttemptRecord;
-    await repositories.attempts.save(checkpoint());
-    await repositories.attempts.save(firstResolved);
-    await repositories.attempts.save(advanced);
-    await repositories.attempts.save(newer);
+    await saveAttempt(repositories, checkpoint());
+    await saveAttempt(repositories, firstResolved);
+    await saveAttempt(repositories, newer);
     const stale = completion(firstResolved);
 
     await expect(
-      repositories.progress.commitCompletion(stale, () => mergeFor(stale)),
+      commitCompletion(repositories, stale, () => mergeFor(stale)),
     ).rejects.toThrow(/checkpoint|stale|history|completion/i);
     expect(await repositories.attempts.get(newer.id)).toEqual(newer);
   });
@@ -244,14 +429,13 @@ it('treats only the same completed core payload as an idempotent retry', async (
       roundHistory: [round],
     });
     const completed = completion(resolved);
-    await repositories.attempts.save(checkpoint());
-    await repositories.attempts.save(resolved);
-    await repositories.progress.commitCompletion(completed, () =>
-      mergeFor(completed),
-    );
+    await saveAttempt(repositories, checkpoint());
+    await saveAttempt(repositories, resolved);
+    await commitCompletion(repositories, completed, () => mergeFor(completed));
 
     await expect(
-      repositories.progress.commitCompletion(
+      commitCompletion(
+        repositories,
         {
           ...completed,
           completedAt: '2026-07-13T00:02:00.000Z',
@@ -261,7 +445,8 @@ it('treats only the same completed core payload as an idempotent retry', async (
       ),
     ).resolves.toEqual(completed);
     await expect(
-      repositories.progress.commitCompletion(
+      commitCompletion(
+        repositories,
         { ...completed, score: 10, verdict: 'fail' },
         () => mergeFor(completed),
       ),
@@ -280,13 +465,11 @@ it('rejects completion timestamps that move behind the latest checkpoint update'
       completedAt: '2026-07-13T00:02:00.000Z',
       updatedAt: '2026-07-13T00:02:00.000Z',
     });
-    await repositories.attempts.save(checkpoint());
-    await repositories.attempts.save(resolved);
+    await saveAttempt(repositories, checkpoint());
+    await saveAttempt(repositories, resolved);
 
     await expect(
-      repositories.progress.commitCompletion(staleTime, () =>
-        mergeFor(staleTime),
-      ),
+      commitCompletion(repositories, staleTime, () => mergeFor(staleTime)),
     ).rejects.toThrow(/checkpoint|completedAt|updatedAt|time/i);
     expect(await repositories.attempts.get(resolved.id)).toEqual(resolved);
     expect(await repositories.attempts.list({ status: 'completed' })).toEqual(
@@ -320,13 +503,11 @@ it.each([
         roundHistory: [round],
       });
       const invalid = completion(resolved, times);
-      await repositories.attempts.save(checkpoint());
-      await repositories.attempts.save(resolved);
+      await saveAttempt(repositories, checkpoint());
+      await saveAttempt(repositories, resolved);
 
       await expect(
-        repositories.progress.commitCompletion(invalid, () =>
-          mergeFor(invalid),
-        ),
+        commitCompletion(repositories, invalid, () => mergeFor(invalid)),
       ).rejects.toThrow(/completedAt|updatedAt|chronolog|time/i);
       expect(await repositories.attempts.get(resolved.id)).toEqual(resolved);
       expect(await repositories.progress.list(USER_ID)).toEqual([]);
@@ -356,7 +537,7 @@ it.each([
   ],
 ] as const)('rejects %s for an in-progress record', async (_label, invalid) => {
   await withRepositories(async (repositories) => {
-    await expect(repositories.attempts.save(invalid)).rejects.toThrow(
+    await expect(saveAttempt(repositories, invalid)).rejects.toThrow(
       /startedAt|updatedAt|chronolog|round/i,
     );
     expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);

@@ -1,4 +1,5 @@
 import type { IDBPDatabase } from 'idb';
+import type { FdeCase } from '../../domain/cases/types';
 
 import type {
   AttemptQuery,
@@ -8,6 +9,7 @@ import type {
 import {
   assertAbandonmentProgression,
   assertAttemptIntrinsic,
+  assertAttemptMatchesCase,
   assertCheckpointProgression,
   assertFreshCheckpoint,
   AttemptProgressionError,
@@ -86,7 +88,7 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
       );
   }
 
-  async save(attempt: AttemptRecord): Promise<void> {
+  async save(attempt: AttemptRecord, caseContent: FdeCase): Promise<void> {
     const normalized = normalizeAttemptRecord(attempt);
     if (normalized.status === 'completed') {
       throw new AttemptCheckpointConflictError(
@@ -95,6 +97,7 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
     }
     try {
       assertAttemptIntrinsic(normalized);
+      assertAttemptMatchesCase(normalized, caseContent);
     } catch (error) {
       if (error instanceof AttemptProgressionError) {
         throw new AttemptCheckpointConflictError(error.message);
@@ -135,6 +138,43 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.database.delete('attempts', id);
+    const transaction = this.database.transaction(
+      ['attempts', 'progress'],
+      'readwrite',
+    );
+    const attempts = transaction.objectStore('attempts');
+    const progress = transaction.objectStore('progress');
+    const [existing, progressRecords] = await Promise.all([
+      attempts.get(id),
+      progress.getAll(),
+    ]);
+    if (existing === undefined) {
+      await transaction.done;
+      return;
+    }
+    if (existing.status !== 'in-progress') {
+      transaction.abort();
+      try {
+        await transaction.done;
+      } catch {
+        // The explicit abort preserves the immutable terminal record.
+      }
+      throw new AttemptCheckpointConflictError(
+        'Only in-progress attempts can be deleted directly; terminal attempts require progress clear.',
+      );
+    }
+    if (progressRecords.some((record) => record.latestAttemptId === id)) {
+      transaction.abort();
+      try {
+        await transaction.done;
+      } catch {
+        // The explicit abort preserves the referenced attempt and progress.
+      }
+      throw new AttemptCheckpointConflictError(
+        'An attempt referenced by progress cannot be deleted directly; use progress clear.',
+      );
+    }
+    await attempts.delete(id);
+    await transaction.done;
   }
 }

@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { deleteDB } from 'idb';
 
+import type { FdeCase } from '../../domain/cases/types';
 import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import type {
   AttemptRecord,
@@ -82,9 +83,20 @@ function buildAttempt(
 
 type RepositoryBundle = ReturnType<typeof createIndexedDbRepositories>;
 
+function createCaseForAttempt(
+  attempt: Pick<AttemptRecord, 'caseId' | 'caseVersion'>,
+): FdeCase {
+  const fdeCase = createMinimalValidCase();
+  fdeCase.id = attempt.caseId;
+  fdeCase.slug = attempt.caseId;
+  fdeCase.metadata.version = attempt.caseVersion;
+  return fdeCase;
+}
+
 async function saveCompletionCheckpoint(
   repositories: RepositoryBundle,
   attempt: CompletedAttemptRecord,
+  caseContent = createCaseForAttempt(attempt),
 ): Promise<InProgressAttemptRecord> {
   const firstNodeId = attempt.visitedNodeIds[0]!;
   const fresh: InProgressAttemptRecord = {
@@ -101,7 +113,7 @@ async function saveCompletionCheckpoint(
     roundHistory: [],
     consequences: [],
   };
-  await repositories.attempts.save(fresh);
+  await repositories.attempts.save(fresh, caseContent);
   const checkpoint: InProgressAttemptRecord = {
     ...fresh,
     updatedAt: attempt.roundHistory.at(-1)?.submittedAt ?? attempt.startedAt,
@@ -111,7 +123,7 @@ async function saveCompletionCheckpoint(
     roundHistory: structuredClone(attempt.roundHistory),
     consequences: structuredClone(attempt.consequences ?? []),
   };
-  await repositories.attempts.save(checkpoint);
+  await repositories.attempts.save(checkpoint, caseContent);
   return checkpoint;
 }
 
@@ -119,8 +131,9 @@ async function commitCompleted(
   repositories: RepositoryBundle,
   attempt: CompletedAttemptRecord,
 ): Promise<CompletedAttemptRecord> {
-  await saveCompletionCheckpoint(repositories, attempt);
-  return repositories.progress.commitCompletion(attempt, () => ({
+  const caseContent = createCaseForAttempt(attempt);
+  await saveCompletionCheckpoint(repositories, attempt, caseContent);
+  return repositories.progress.commitCompletion(attempt, caseContent, () => ({
     progress: buildProgress({
       userId: attempt.userId,
       caseId: attempt.caseId,
@@ -351,7 +364,6 @@ describe('repository contracts', () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
     const attempt = buildInProgressAttempt();
-    const progress = buildProgress();
     const mastery = buildMastery();
     const mistake = buildMistake();
     const settings: UserSettings = {
@@ -368,8 +380,7 @@ describe('repository contracts', () => {
       updatedAt: '2026-07-13T00:00:00.000Z',
     };
 
-    await repositories.attempts.save(attempt);
-    await repositories.progress.save(progress);
+    await repositories.attempts.save(attempt, createCaseForAttempt(attempt));
     await repositories.skills.save(mastery);
     await repositories.mistakes.save(mistake);
     await repositories.settings.save(settings);
@@ -377,9 +388,6 @@ describe('repository contracts', () => {
     await repositories.users.ensureLocalUser();
 
     expect(await repositories.attempts.get(attempt.id)).toEqual(attempt);
-    expect(await repositories.progress.get(USER_ID, progress.caseId)).toEqual(
-      progress,
-    );
     expect(await repositories.skills.get(USER_ID, mastery.skillId)).toEqual(
       mastery,
     );
@@ -394,6 +402,59 @@ describe('repository contracts', () => {
     expect(await repositories.mistakes.get(mistake.id)).toBeUndefined();
   });
 
+  it('rejects deleting a completed attempt without leaving dangling progress', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const completed = buildAttempt();
+    await commitCompleted(repositories, completed);
+
+    await expect(repositories.attempts.delete(completed.id)).rejects.toThrow(
+      /completed|delete|clear/i,
+    );
+    expect(await repositories.attempts.get(completed.id)).toEqual(completed);
+    expect(await repositories.progress.get(USER_ID, completed.caseId)).toEqual(
+      expect.objectContaining({ latestAttemptId: completed.id }),
+    );
+  });
+
+  it('rejects deleting abandoned attempts and treats missing IDs as a no-op', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const active = buildInProgressAttempt({ id: 'attempt-abandoned' });
+    const caseContent = createCaseForAttempt(active);
+    await repositories.attempts.save(active, caseContent);
+    const abandoned = {
+      ...active,
+      status: 'abandoned',
+    } satisfies AttemptRecord;
+    await repositories.attempts.save(abandoned, caseContent);
+
+    await expect(repositories.attempts.delete(abandoned.id)).rejects.toThrow(
+      /terminal|delete|clear/i,
+    );
+    expect(await repositories.attempts.get(abandoned.id)).toEqual(abandoned);
+    await expect(
+      repositories.attempts.delete('attempt-missing'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects deleting an in-progress attempt referenced by legacy progress', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const active = buildInProgressAttempt({ id: 'attempt-active-progress' });
+    await repositories.attempts.save(active, createCaseForAttempt(active));
+    const progress = buildProgress({ latestAttemptId: active.id });
+    await db.put('progress', progress);
+
+    await expect(repositories.attempts.delete(active.id)).rejects.toThrow(
+      /progress|reference|delete|clear/i,
+    );
+    expect(await repositories.attempts.get(active.id)).toEqual(active);
+    expect(await repositories.progress.get(USER_ID, progress.caseId)).toEqual(
+      progress,
+    );
+  });
+
   it('uses case, status, completion, skill, error, and critical indexes', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
@@ -405,19 +466,16 @@ describe('repository contracts', () => {
         completedAt: '2026-07-13T02:00:00.000Z',
       }),
     );
-    await repositories.attempts.save({
+    const activeAttempt = buildInProgressAttempt({
       id: 'attempt-active',
-      userId: USER_ID,
       caseId: 'case-other',
-      caseVersion: 1,
-      status: 'in-progress',
       startedAt: '2026-07-13T01:00:00.000Z',
       updatedAt: '2026-07-13T01:05:00.000Z',
-      currentNodeId: 'node-1',
-      criticalErrorIds: [],
-      visitedNodeIds: ['node-1'],
-      roundHistory: [],
     });
+    await repositories.attempts.save(
+      activeAttempt,
+      createCaseForAttempt(activeAttempt),
+    );
     await repositories.mistakes.save(buildMistake());
     await repositories.mistakes.save(
       buildMistake({
@@ -465,10 +523,16 @@ describe('repository contracts', () => {
     } as unknown as AttemptRecord;
 
     await expect(
-      repositories.attempts.save(missingCompletedResult),
+      repositories.attempts.save(
+        missingCompletedResult,
+        createCaseForAttempt(missingCompletedResult),
+      ),
     ).rejects.toThrow(/completed attempt/i);
     await expect(
-      repositories.attempts.save(activeWithCompletedResult),
+      repositories.attempts.save(
+        activeWithCompletedResult,
+        createCaseForAttempt(activeWithCompletedResult),
+      ),
     ).rejects.toThrow(/in-progress attempt/i);
     expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
   });
@@ -497,7 +561,7 @@ describe('repository contracts', () => {
               errorTypes: [],
               criticalErrorIds: [],
               consequences: [],
-              branchKey: 'complete',
+              branchKey: 'correct',
             },
             submittedAt: '2026-07-13T01:30:00+02:00',
             revealed: false,
@@ -577,10 +641,14 @@ describe('repository contracts', () => {
   it('rejects invalid attempt and completion-filter timestamps', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
+    const invalidAttempt = buildInProgressAttempt({
+      updatedAt: 'not-a-timestamp',
+    });
 
     await expect(
       repositories.attempts.save(
-        buildInProgressAttempt({ updatedAt: 'not-a-timestamp' }),
+        invalidAttempt,
+        createCaseForAttempt(invalidAttempt),
       ),
     ).rejects.toThrow(/updatedAt/i);
     await expect(
@@ -594,10 +662,12 @@ describe('repository contracts', () => {
     async (timestamp) => {
       const db = await openTestDatabase();
       const repositories = createIndexedDbRepositories(db);
+      const invalidAttempt = buildInProgressAttempt({ startedAt: timestamp });
 
       await expect(
         repositories.attempts.save(
-          buildInProgressAttempt({ startedAt: timestamp }),
+          invalidAttempt,
+          createCaseForAttempt(invalidAttempt),
         ),
       ).rejects.toThrow(/startedAt/i);
       expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
@@ -614,10 +684,15 @@ describe('repository contracts', () => {
       sampleCount: 1,
       updatedAt: '2026-07-13T00:10:00.000Z',
     } as SkillMasteryRecord;
-    const checkpoint = await saveCompletionCheckpoint(repositories, completed);
+    const caseContent = createCaseForAttempt(completed);
+    const checkpoint = await saveCompletionCheckpoint(
+      repositories,
+      completed,
+      caseContent,
+    );
 
     await expect(
-      repositories.progress.commitCompletion(completed, () => ({
+      repositories.progress.commitCompletion(completed, caseContent, () => ({
         progress: buildProgress(),
         mastery: [invalidMastery],
         mistakes: [buildMistake()],
@@ -634,11 +709,13 @@ describe('repository contracts', () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
     const completed = buildAttempt();
+    const caseContent = createCaseForAttempt(completed);
     let mergeCalls = 0;
-    await saveCompletionCheckpoint(repositories, completed);
+    await saveCompletionCheckpoint(repositories, completed, caseContent);
 
     const merge = repositories.progress.commitCompletion(
       completed,
+      caseContent,
       ({ previousProgress, previousMastery }) => {
         mergeCalls += 1;
         const previousSkill = previousMastery.find(
@@ -664,6 +741,7 @@ describe('repository contracts', () => {
         updatedAt: '2026-07-13T00:20:00.000Z',
         completedAt: '2026-07-13T00:20:00.000Z',
       }),
+      caseContent,
       () => {
         mergeCalls += 1;
         return {
@@ -692,16 +770,24 @@ describe('repository contracts', () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
     const completed = buildAttempt();
-    await saveCompletionCheckpoint(repositories, completed);
-    await repositories.progress.commitCompletion(completed, () => ({
-      progress: buildProgress(),
-      mastery: [],
-      mistakes: [],
-    }));
+    const caseContent = createCaseForAttempt(completed);
+    await saveCompletionCheckpoint(repositories, completed, caseContent);
+    await repositories.progress.commitCompletion(
+      completed,
+      caseContent,
+      () => ({
+        progress: buildProgress(),
+        mastery: [],
+        mistakes: [],
+      }),
+    );
+
+    const conflicting = buildAttempt({ caseId: 'case-other' });
 
     await expect(
       repositories.progress.commitCompletion(
-        buildAttempt({ caseId: 'case-other' }),
+        conflicting,
+        createCaseForAttempt(conflicting),
         () => ({
           progress: buildProgress({ caseId: 'case-other' }),
           mastery: [],
@@ -730,6 +816,7 @@ describe('repository contracts', () => {
     const commit = (attempt: CompletedAttemptRecord) =>
       repositories.progress.commitCompletion(
         attempt,
+        createCaseForAttempt(attempt),
         ({ previousProgress, previousMastery }) => {
           const completedCount = previousProgress?.completedCount ?? 0;
           const previousSkill = previousMastery.find(
@@ -803,8 +890,8 @@ describe('repository contracts', () => {
     await repositories.settings.save(settings);
     await repositories.coverage.saveMany([coverage]);
     const completed = buildAttempt();
-    await saveCompletionCheckpoint(repositories, completed);
-    await repositories.progress.commitCompletion(completed, () => ({
+    await saveCompletionCheckpoint(repositories, completed, fdeCase);
+    await repositories.progress.commitCompletion(completed, fdeCase, () => ({
       progress: buildProgress(),
       mastery: [buildMastery()],
       mistakes: [buildMistake()],

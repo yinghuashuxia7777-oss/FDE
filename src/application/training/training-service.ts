@@ -88,7 +88,10 @@ async function saveInProgress<
   State extends Exclude<TrainingState, { phase: 'completed' }>,
 >(state: State, dependencies: TrainingDependencies): Promise<State> {
   try {
-    await dependencies.attemptRepository.save(toInProgressAttempt(state));
+    await dependencies.attemptRepository.save(
+      toInProgressAttempt(state),
+      state.caseContent,
+    );
     return trainingReducer(state, {
       type: 'persistence-succeeded',
     }) as State;
@@ -449,6 +452,7 @@ async function completeAttemptOnce(
     const attempt = buildCompletedAttempt(checkpoint, dependencies.now());
     const committed = await dependencies.progressRepository.commitCompletion(
       attempt,
+      checkpoint.caseContent,
       (context) => mergeCompletion(checkpoint, attempt, context),
     );
     return trainingReducer(

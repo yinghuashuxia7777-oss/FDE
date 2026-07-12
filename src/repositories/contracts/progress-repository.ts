@@ -1,3 +1,4 @@
+import type { FdeCase } from '../../domain/cases/types';
 import type {
   CaseProgressRecord,
   CompletedAttemptRecord,
@@ -23,9 +24,9 @@ export type CompletionMerge = (
 export interface ProgressRepository {
   get(userId: string, caseId: string): Promise<CaseProgressRecord | undefined>;
   list(userId: string): Promise<CaseProgressRecord[]>;
-  save(progress: CaseProgressRecord): Promise<void>;
   commitCompletion(
     attempt: CompletedAttemptRecord,
+    caseContent: FdeCase,
     merge: CompletionMerge,
   ): Promise<CompletedAttemptRecord>;
   clear(userId: string): Promise<void>;

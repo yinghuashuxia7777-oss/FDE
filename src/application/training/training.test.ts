@@ -242,7 +242,8 @@ function createDependencies(
   const completedAttempts = new Map<string, CompletedAttemptRecord>();
   const dependencies: TrainingDependencies = {
     attemptRepository: {
-      save(attempt) {
+      save(attempt, caseContent) {
+        void caseContent;
         if (saveFailure) {
           return Promise.reject(saveFailure);
         }
@@ -251,7 +252,8 @@ function createDependencies(
       },
     },
     progressRepository: {
-      commitCompletion(attempt, merge) {
+      commitCompletion(attempt, caseContent, merge) {
+        void caseContent;
         const failure = snapshotFailure ?? saveFailure;
         if (failure !== undefined) {
           return Promise.reject(failure);
