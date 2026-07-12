@@ -156,9 +156,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -310,9 +322,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -457,9 +481,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -614,9 +650,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -763,9 +811,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -1107,9 +1167,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -1261,9 +1333,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -1408,9 +1492,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -1565,9 +1661,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",
@@ -1714,9 +1822,21 @@
                   "scoring": {
                     "type": "object",
                     "properties": {
-                      "firstTry": { "type": "number", "minimum": 0 },
-                      "secondTry": { "type": "number", "minimum": 0 },
-                      "thirdTry": { "type": "number", "minimum": 0 },
+                      "firstTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "secondTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "thirdTry": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
                       "weight": { "type": "number", "exclusiveMinimum": 0 },
                       "criticalErrorOptionIds": {
                         "type": "array",

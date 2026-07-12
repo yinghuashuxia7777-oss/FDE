@@ -16,6 +16,32 @@ describe('FdeCaseSchema shared fields', () => {
   });
 });
 
+describe('node scoring percentages', () => {
+  it.each(['firstTry', 'secondTry', 'thirdTry'] as const)(
+    'accepts 0 and 100 for %s',
+    (field) => {
+      for (const percentage of [0, 100]) {
+        const candidate = createMinimalValidCase();
+        candidate.nodes[0]!.scoring[field] = percentage;
+
+        expect(FdeCaseSchema.safeParse(candidate).success).toBe(true);
+      }
+    },
+  );
+
+  it.each(['firstTry', 'secondTry', 'thirdTry'] as const)(
+    'rejects percentages outside 0..100 for %s',
+    (field) => {
+      for (const percentage of [-0.01, 100.01]) {
+        const candidate = createMinimalValidCase();
+        candidate.nodes[0]!.scoring[field] = percentage;
+
+        expect(FdeCaseSchema.safeParse(candidate).success).toBe(false);
+      }
+    },
+  );
+});
+
 describe('node skill weights', () => {
   const withSkillWeights = (skillWeights: Record<string, number>) => {
     const candidate = createMinimalValidCase();

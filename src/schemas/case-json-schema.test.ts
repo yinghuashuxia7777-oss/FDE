@@ -28,6 +28,12 @@ interface NodeJsonSchemaVariant {
         correctOptionIds?: { uniqueItems?: boolean };
       };
     };
+    scoring?: {
+      properties?: Record<
+        'firstTry' | 'secondTry' | 'thirdTry',
+        { minimum?: number; maximum?: number }
+      >;
+    };
   };
 }
 
@@ -105,6 +111,19 @@ describe('FDE case JSON Schema artifact', () => {
       minProperties: 1,
       additionalProperties: { exclusiveMinimum: 0 },
     });
+  });
+
+  it('declares scoring percentages between 0 and 100', () => {
+    const artifact = checkedInArtifact as unknown as CaseJsonSchemaArtifact;
+    const scoring =
+      artifact.oneOf[0]!.properties.nodes.items.oneOf[0]!.properties.scoring;
+
+    for (const field of ['firstTry', 'secondTry', 'thirdTry'] as const) {
+      expect(scoring?.properties?.[field]).toMatchObject({
+        minimum: 0,
+        maximum: 100,
+      });
+    }
   });
 
   it('rejects empty answers through the checked-in JSON Schema', () => {

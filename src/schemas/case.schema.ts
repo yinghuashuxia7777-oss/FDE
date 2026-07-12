@@ -56,9 +56,9 @@ export const FeedbackSchema = z
 
 export const ScoringSchema = z
   .object({
-    firstTry: z.number().min(0),
-    secondTry: z.number().min(0),
-    thirdTry: z.number().min(0),
+    firstTry: z.number().min(0).max(100),
+    secondTry: z.number().min(0).max(100),
+    thirdTry: z.number().min(0).max(100),
     weight: z.number().positive(),
     criticalErrorOptionIds: UniqueIdListSchema.optional(),
   })

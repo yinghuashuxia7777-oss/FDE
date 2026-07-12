@@ -63,9 +63,9 @@ export function createMinimalValidCase(): FdeCase {
           revealedAnswer: 'Inspect the dependency identified by the check.',
         },
         scoring: {
-          firstTry: 1,
-          secondTry: 0.6,
-          thirdTry: 0.3,
+          firstTry: 100,
+          secondTry: 60,
+          thirdTry: 30,
           weight: 1,
           criticalErrorOptionIds: ['option-b'],
         },
@@ -79,7 +79,15 @@ export function createMinimalValidCase(): FdeCase {
         ],
         branches: [
           {
-            key: 'complete',
+            key: 'correct',
+            nextNodeId: null,
+          },
+          {
+            key: 'incorrect',
+            nextNodeId: null,
+          },
+          {
+            key: 'critical',
             nextNodeId: null,
           },
         ],

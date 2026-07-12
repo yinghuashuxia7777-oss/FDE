@@ -1,4 +1,5 @@
 import type { FdeCase } from '../src/domain/cases/types';
+import { isChoiceNode } from '../src/domain/scoring/evaluation-utils';
 
 import { parseCliArgs } from './cli';
 import {
@@ -20,6 +21,35 @@ export interface ContentIssue {
 }
 
 type GraphCase = Pick<FdeCase, 'id' | 'nodes' | 'startNodeId'>;
+
+const DEFAULT_RESULT_BRANCH_KEYS = ['correct', 'incorrect'] as const;
+
+function evaluatorResultBranchKeys(
+  node: FdeCase['nodes'][number],
+): Set<string> {
+  const resultKeys = new Set<string>(DEFAULT_RESULT_BRANCH_KEYS);
+  const supportsDecisionEffects =
+    isChoiceNode(node) ||
+    node.type === 'multiple-choice' ||
+    node.type === 'evidence-conclusion';
+
+  if (
+    supportsDecisionEffects &&
+    (node.scoring.criticalErrorOptionIds?.length ?? 0) > 0
+  ) {
+    resultKeys.add('critical');
+  }
+  if (isChoiceNode(node)) {
+    const criticalOptionIds = new Set(
+      node.scoring.criticalErrorOptionIds ?? [],
+    );
+    node.options.forEach(({ id }) => {
+      if (!criticalOptionIds.has(id)) resultKeys.add(`option:${id}`);
+    });
+  }
+
+  return resultKeys;
+}
 
 function compareIssues(left: ContentIssue, right: ContentIssue): number {
   return (
@@ -131,6 +161,53 @@ export function validateCaseGraph(
         });
       }
     });
+
+    const resultBranchKeys = evaluatorResultBranchKeys(node);
+    DEFAULT_RESULT_BRANCH_KEYS.forEach((resultKey) => {
+      if (branchKeys.has(resultKey)) return;
+      issues.push({
+        file,
+        path: ['nodes', nodeIndex, 'branches'],
+        code: 'missing_result_branch',
+        message: `Node ${node.id} is missing evaluator result branch ${resultKey}.`,
+      });
+    });
+    if (resultBranchKeys.has('critical') && !branchKeys.has('critical')) {
+      issues.push({
+        file,
+        path: ['nodes', nodeIndex, 'branches'],
+        code: 'missing_result_branch',
+        message: `Node ${node.id} is missing evaluator result branch critical.`,
+      });
+    }
+    node.branches.forEach((branch, branchIndex) => {
+      if (branch.key.trim() === '' || resultBranchKeys.has(branch.key)) return;
+      issues.push({
+        file,
+        path: ['nodes', nodeIndex, 'branches', branchIndex, 'key'],
+        code: 'unsupported_branch_key',
+        message: `Evaluator for node ${node.id} cannot produce branch key ${branch.key}.`,
+      });
+    });
+
+    if (node.type === 'ordering' || node.type === 'matching') {
+      if ((node.scoring.criticalErrorOptionIds?.length ?? 0) > 0) {
+        issues.push({
+          file,
+          path: ['nodes', nodeIndex, 'scoring', 'criticalErrorOptionIds'],
+          code: 'unsupported_critical_error_config',
+          message: `${node.type} evaluator does not consume critical error options on node ${node.id}.`,
+        });
+      }
+      if ((node.consequences?.length ?? 0) > 0) {
+        issues.push({
+          file,
+          path: ['nodes', nodeIndex, 'consequences'],
+          code: 'unsupported_consequence_config',
+          message: `${node.type} evaluator does not consume consequences on node ${node.id}.`,
+        });
+      }
+    }
     edges.set(node.id, targets);
   });
 

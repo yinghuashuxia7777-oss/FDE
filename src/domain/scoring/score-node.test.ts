@@ -12,6 +12,12 @@ const exactResult: EvaluationResult = {
 };
 
 describe('scoreNode', () => {
+  it('awards the fixture node its full weight on a correct first try', () => {
+    const node = createMinimalValidCase().nodes[0]!;
+
+    expect(scoreNode(node, exactResult, 1, false)).toBe(node.scoring.weight);
+  });
+
   it('uses the authored percentage for the successful attempt', () => {
     const node = createMinimalValidCase().nodes[0]!;
     node.scoring = {
