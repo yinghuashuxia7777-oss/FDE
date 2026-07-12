@@ -30,6 +30,9 @@ export function createMinimalValidCase(): FdeCase {
         type: 'single-choice',
         title: 'Select the next action',
         prompt: 'What should you do first?',
+        skillWeights: {
+          'evidence-assessment': 1,
+        },
         evidence: [
           {
             id: 'evidence-1',

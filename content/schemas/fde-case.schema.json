@@ -90,6 +90,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -218,6 +227,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -234,6 +244,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -355,6 +374,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -371,6 +391,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -502,6 +531,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -518,6 +548,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -641,6 +680,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -657,6 +697,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -779,6 +828,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -991,6 +1041,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -1119,6 +1178,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -1135,6 +1195,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -1256,6 +1325,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -1272,6 +1342,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -1403,6 +1482,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -1419,6 +1499,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -1542,6 +1631,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",
@@ -1558,6 +1648,15 @@
                   "id": { "type": "string", "minLength": 1 },
                   "title": { "type": "string", "minLength": 1 },
                   "prompt": { "type": "string", "minLength": 1 },
+                  "skillWeights": {
+                    "type": "object",
+                    "propertyNames": { "type": "string", "minLength": 1 },
+                    "additionalProperties": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minProperties": 1
+                  },
                   "evidence": {
                     "type": "array",
                     "items": {
@@ -1680,6 +1779,7 @@
                 "required": [
                   "id",
                   "prompt",
+                  "skillWeights",
                   "evidence",
                   "options",
                   "feedback",

@@ -82,10 +82,28 @@ export const BranchSchema = z
   })
   .strict();
 
+const SkillWeightsSchema = z
+  .record(NonEmptyStringSchema, z.number().finite().positive())
+  .refine((skillWeights) => Object.keys(skillWeights).length > 0, {
+    message: 'Skill weights must contain at least one skill.',
+  })
+  .refine(
+    (skillWeights) =>
+      Math.abs(
+        Object.values(skillWeights).reduce(
+          (total, weight) => total + weight,
+          0,
+        ) - 1,
+      ) <= 1e-9,
+    { message: 'Skill weights must total one.' },
+  )
+  .meta({ minProperties: 1 });
+
 const SharedNodeShape = {
   id: NonEmptyStringSchema,
   title: NonEmptyStringSchema.optional(),
   prompt: NonEmptyStringSchema,
+  skillWeights: SkillWeightsSchema,
   evidence: z.array(EvidenceSchema),
   options: z.array(OptionSchema).min(1),
   feedback: FeedbackSchema,
@@ -327,6 +345,16 @@ export const FdeCaseSchema = z
           });
         }
         evidenceIds.add(evidence.id);
+      });
+
+      Object.keys(node.skillWeights).forEach((skillId) => {
+        if (!fdeCase.skills.includes(skillId)) {
+          context.addIssue({
+            code: 'custom',
+            message: `Skill does not exist on case ${fdeCase.id}: ${skillId}`,
+            path: ['nodes', nodeIndex, 'skillWeights', skillId],
+          });
+        }
       });
     });
 

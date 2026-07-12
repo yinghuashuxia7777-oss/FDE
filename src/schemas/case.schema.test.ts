@@ -16,6 +16,68 @@ describe('FdeCaseSchema shared fields', () => {
   });
 });
 
+describe('node skill weights', () => {
+  const withSkillWeights = (skillWeights: Record<string, number>) => {
+    const candidate = createMinimalValidCase();
+    candidate.nodes[0] = {
+      ...candidate.nodes[0]!,
+      skillWeights,
+    };
+    return candidate;
+  };
+
+  const expectSkillWeightsError = (
+    candidate: ReturnType<typeof createMinimalValidCase>,
+  ) => {
+    const result = FdeCaseSchema.safeParse(candidate);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          ({ path }) =>
+            path[0] === 'nodes' && path[1] === 0 && path[2] === 'skillWeights',
+        ),
+      ).toBe(true);
+    }
+  };
+
+  it('requires skill weights on every node', () => {
+    const candidate = createMinimalValidCase();
+    Reflect.deleteProperty(candidate.nodes[0]!, 'skillWeights');
+
+    expectSkillWeightsError(candidate);
+  });
+
+  it.each([
+    ['empty', {}],
+    ['zero', { 'evidence-assessment': 0 }],
+    ['negative', { 'evidence-assessment': -1 }],
+    ['non-finite', { 'evidence-assessment': Number.POSITIVE_INFINITY }],
+    ['sum-not-one', { 'evidence-assessment': 0.9 }],
+    ['unknown-skill', { 'unknown-skill': 1 }],
+  ])('rejects %s skill weights', (_kind, skillWeights) => {
+    expectSkillWeightsError(withSkillWeights(skillWeights));
+  });
+
+  it('accepts positive finite weights totaling one', () => {
+    expect(
+      FdeCaseSchema.safeParse(withSkillWeights({ 'evidence-assessment': 1 }))
+        .success,
+    ).toBe(true);
+  });
+
+  it('accepts totals within the 1e-9 tolerance', () => {
+    const candidate = withSkillWeights({
+      'evidence-assessment': 0.4,
+      triage: 0.6000000005,
+    });
+    candidate.skills.push('triage');
+
+    expect(FdeCaseSchema.safeParse(candidate).success).toBe(true);
+  });
+});
+
 describe('CaseNodeSchema answer shapes', () => {
   const sharedNode = minimalValidCase.nodes[0];
 

@@ -18,6 +18,11 @@ const checkedInSchema = z.fromJSONSchema(checkedInArtifact);
 interface NodeJsonSchemaVariant {
   properties: {
     type: { const?: string };
+    skillWeights?: {
+      type?: string;
+      minProperties?: number;
+      additionalProperties?: { exclusiveMinimum?: number };
+    };
     answer: {
       properties: {
         correctOptionIds?: { uniqueItems?: boolean };
@@ -87,6 +92,19 @@ describe('FDE case JSON Schema artifact', () => {
         ?.uniqueItems,
     ).toBe(true);
     expect(FdeCaseSchema.safeParse(candidate).success).toBe(false);
+  });
+
+  it('declares the representable skill-weight constraints', () => {
+    const artifact = checkedInArtifact as unknown as CaseJsonSchemaArtifact;
+    const skillWeights =
+      artifact.oneOf[0]!.properties.nodes.items.oneOf[0]!.properties
+        .skillWeights;
+
+    expect(skillWeights).toMatchObject({
+      type: 'object',
+      minProperties: 1,
+      additionalProperties: { exclusiveMinimum: 0 },
+    });
   });
 
   it('rejects empty answers through the checked-in JSON Schema', () => {

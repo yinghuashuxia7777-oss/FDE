@@ -92,6 +92,7 @@ interface SharedCaseNode {
   id: string;
   title?: string | undefined;
   prompt: string;
+  skillWeights: Record<string, number>;
   evidence: Evidence[];
   options: Option[];
   feedback: Feedback;
