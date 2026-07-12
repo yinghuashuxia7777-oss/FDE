@@ -475,6 +475,19 @@ describe('repository contracts', () => {
     expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
   });
 
+  it.each(['July 13, 2026', '07/13/2026', '2026-02-30T00:00:00Z'])(
+    'rejects non-RFC3339 or overflowing timestamp %s',
+    async (timestamp) => {
+      const db = await openTestDatabase();
+      const repositories = createIndexedDbRepositories(db);
+
+      await expect(
+        repositories.attempts.save(buildAttempt({ startedAt: timestamp })),
+      ).rejects.toThrow(/startedAt/i);
+      expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
+    },
+  );
+
   it('rolls back a multi-store progress snapshot if one write is invalid', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
