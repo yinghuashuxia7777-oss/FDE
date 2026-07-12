@@ -23,6 +23,8 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm run test:run
+      - name: Check content quality without writing generated files
+        run: npm run content:check
       - name: Check types
         run: npm run typecheck
       - name: Lint

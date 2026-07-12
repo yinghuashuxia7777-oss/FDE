@@ -11,10 +11,16 @@
     "dev": "vite",
     "test": "vitest",
     "test:run": "vitest run",
+    "content:validate": "node --import tsx scripts/validate-content.ts",
+    "content:graph": "node --import tsx scripts/validate-graph.ts",
+    "content:duplicates": "node --import tsx scripts/detect-duplicate-ids.ts",
+    "content:audit": "node --import tsx scripts/audit-coverage.ts",
+    "content:index": "node --import tsx scripts/build-case-index.ts",
+    "content:check": "npm run content:validate -- --dry-run && npm run content:graph -- --dry-run && npm run content:duplicates -- --dry-run && npm run content:audit -- --dry-run && npm run content:index -- --dry-run",
     "typecheck": "tsc --build --pretty false",
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
-    "build": "tsc --build --pretty false && vite build"
+    "build": "npm run content:check && tsc --build --pretty false && vite build"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
