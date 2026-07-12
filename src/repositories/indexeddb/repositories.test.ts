@@ -6,6 +6,7 @@ import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import type {
   AttemptRecord,
   CaseProgressRecord,
+  CompletedAttemptRecord,
   CoverageRecord,
   MistakeRecord,
   SkillMasteryRecord,
@@ -39,7 +40,9 @@ async function openTestDatabase() {
   return database;
 }
 
-function buildAttempt(overrides: Partial<AttemptRecord> = {}): AttemptRecord {
+function buildAttempt(
+  overrides: Partial<CompletedAttemptRecord> = {},
+): CompletedAttemptRecord {
   return {
     id: 'attempt-1',
     userId: USER_ID,
@@ -51,6 +54,7 @@ function buildAttempt(overrides: Partial<AttemptRecord> = {}): AttemptRecord {
     completedAt: '2026-07-13T00:10:00.000Z',
     currentNodeId: null,
     score: 88,
+    verdict: 'excellent',
     criticalErrorIds: [],
     visitedNodeIds: ['node-1'],
     roundHistory: [],
@@ -263,7 +267,7 @@ describe('repository contracts', () => {
     };
     const coverage: CoverageRecord = {
       caseId: 'case-minimal',
-      status: 'implemented',
+      status: 'published',
       level: 'beginner',
       domains: ['diagnostics'],
       skills: ['evidence-assessment'],
@@ -305,14 +309,19 @@ describe('repository contracts', () => {
         completedAt: '2026-07-13T02:00:00.000Z',
       }),
     );
-    await repositories.attempts.save(
-      buildAttempt({
-        id: 'attempt-active',
-        caseId: 'case-other',
-        status: 'in-progress',
-        completedAt: undefined,
-      }),
-    );
+    await repositories.attempts.save({
+      id: 'attempt-active',
+      userId: USER_ID,
+      caseId: 'case-other',
+      caseVersion: 1,
+      status: 'in-progress',
+      startedAt: '2026-07-13T01:00:00.000Z',
+      updatedAt: '2026-07-13T01:05:00.000Z',
+      currentNodeId: 'node-1',
+      criticalErrorIds: [],
+      visitedNodeIds: ['node-1'],
+      roundHistory: [],
+    });
     await repositories.mistakes.save(buildMistake());
     await repositories.mistakes.save(
       buildMistake({
@@ -343,6 +352,127 @@ describe('repository contracts', () => {
     expect(await repositories.mistakes.list({ critical: true })).toEqual([
       expect.objectContaining({ id: 'mistake-1' }),
     ]);
+  });
+
+  it('rejects contradictory attempt status records at the save boundary', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const missingCompletedResult = {
+      ...buildAttempt(),
+      verdict: undefined,
+    } as unknown as AttemptRecord;
+    const activeWithCompletedResult = {
+      ...buildAttempt(),
+      id: 'attempt-invalid-active',
+      status: 'in-progress',
+      currentNodeId: 'node-1',
+    } as unknown as AttemptRecord;
+
+    await expect(
+      repositories.attempts.save(missingCompletedResult),
+    ).rejects.toThrow(/completed attempt/i);
+    await expect(
+      repositories.attempts.save(activeWithCompletedResult),
+    ).rejects.toThrow(/in-progress attempt/i);
+    expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
+  });
+
+  it('rejects contradictory attempt status records through saveSnapshot', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const invalidAttempt = {
+      ...buildAttempt(),
+      status: 'in-progress',
+      currentNodeId: 'node-1',
+    } as unknown as AttemptRecord;
+
+    await expect(
+      repositories.progress.saveSnapshot({
+        attempt: invalidAttempt,
+        progress: buildProgress(),
+        mastery: [],
+        mistakes: [],
+      }),
+    ).rejects.toThrow(/in-progress attempt/i);
+    expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
+    expect(await repositories.progress.list(USER_ID)).toEqual([]);
+  });
+
+  it('normalizes attempt timestamps before filtering and sorting by absolute time', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    await repositories.attempts.save(
+      buildAttempt({
+        id: 'attempt-earlier',
+        startedAt: '2026-07-13T01:00:00+02:00',
+        updatedAt: '2026-07-13T04:00:00+02:00',
+        completedAt: '2026-07-13T02:00:00+02:00',
+        roundHistory: [
+          {
+            nodeId: 'node-1',
+            attemptNumber: 1,
+            submission: {
+              type: 'choice',
+              selectedOptionIds: ['option-a'],
+            },
+            evaluation: {
+              isCorrect: true,
+              scoreRatio: 1,
+              errorTypes: [],
+              criticalErrorIds: [],
+              consequences: [],
+              branchKey: 'complete',
+            },
+            submittedAt: '2026-07-13T03:00:00+02:00',
+            revealed: false,
+          },
+        ],
+      }),
+    );
+    await repositories.attempts.save(
+      buildAttempt({
+        id: 'attempt-later',
+        startedAt: '2026-07-13T00:00:00.000Z',
+        updatedAt: '2026-07-13T02:30:00.000Z',
+        completedAt: '2026-07-13T00:30:00.000Z',
+      }),
+    );
+
+    expect(
+      await repositories.attempts.list({
+        completedAfter: '2026-07-13T01:00:00+01:00',
+      }),
+    ).toEqual([expect.objectContaining({ id: 'attempt-later' })]);
+    expect(
+      (await repositories.attempts.list()).map((attempt) => attempt.id),
+    ).toEqual(['attempt-later', 'attempt-earlier']);
+    expect(await repositories.attempts.get('attempt-earlier')).toEqual(
+      expect.objectContaining({
+        startedAt: '2026-07-12T23:00:00.000Z',
+        updatedAt: '2026-07-13T02:00:00.000Z',
+        completedAt: '2026-07-13T00:00:00.000Z',
+        roundHistory: [
+          expect.objectContaining({
+            submittedAt: '2026-07-13T01:00:00.000Z',
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('rejects invalid attempt and completion-filter timestamps', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+
+    await expect(
+      repositories.attempts.save(
+        buildAttempt({ updatedAt: 'not-a-timestamp' }),
+      ),
+    ).rejects.toThrow(/updatedAt/i);
+    await expect(
+      repositories.attempts.list({ completedAfter: 'not-a-timestamp' }),
+    ).rejects.toThrow(/completedAfter/i);
+    expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
   });
 
   it('rolls back a multi-store progress snapshot if one write is invalid', async () => {
@@ -387,6 +517,23 @@ describe('repository contracts', () => {
     expect(await repositories.progress.list(USER_ID)).toEqual([]);
   });
 
+  it('rejects a snapshot whose latest attempt id does not match the attempt', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+
+    await expect(
+      repositories.progress.saveSnapshot({
+        attempt: buildAttempt(),
+        progress: buildProgress({ latestAttemptId: 'attempt-other' }),
+        mastery: [],
+        mistakes: [],
+      }),
+    ).rejects.toThrow(/latest attempt id/i);
+
+    expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
+    expect(await repositories.progress.list(USER_ID)).toEqual([]);
+  });
+
   it('clears user progress atomically while retaining content and app-owned data', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
@@ -398,7 +545,7 @@ describe('repository contracts', () => {
     };
     const coverage: CoverageRecord = {
       caseId: fdeCase.id,
-      status: 'implemented',
+      status: 'published',
       level: fdeCase.level,
       domains: fdeCase.domains,
       skills: fdeCase.skills,

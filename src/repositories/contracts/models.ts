@@ -43,23 +43,45 @@ export interface AttemptRoundRecord {
   revealed: boolean;
 }
 
-export interface AttemptRecord {
+interface AttemptRecordBase {
   id: string;
   userId: string;
   caseId: string;
   caseVersion: number;
-  status: AttemptStatus;
   startedAt: string;
   updatedAt: string;
-  completedAt?: string | undefined;
-  currentNodeId: string | null;
-  score?: number | undefined;
-  verdict?: Verdict | undefined;
   criticalErrorIds: string[];
   visitedNodeIds: string[];
   roundHistory: AttemptRoundRecord[];
   consequences?: ConsequenceDelta[] | undefined;
 }
+
+export interface InProgressAttemptRecord extends AttemptRecordBase {
+  status: 'in-progress';
+  currentNodeId: string;
+  completedAt?: never;
+  score?: never;
+  verdict?: never;
+}
+
+export interface CompletedAttemptRecord extends AttemptRecordBase {
+  status: 'completed';
+  currentNodeId: null;
+  completedAt: string;
+  score: number;
+  verdict: Verdict;
+}
+
+export interface AbandonedAttemptRecord extends AttemptRecordBase {
+  status: 'abandoned';
+  currentNodeId: string | null;
+  completedAt?: never;
+  score?: never;
+  verdict?: never;
+}
+
+export type AttemptRecord =
+  InProgressAttemptRecord | CompletedAttemptRecord | AbandonedAttemptRecord;
 
 export interface AttemptQuery {
   userId?: string | undefined;
@@ -128,7 +150,8 @@ export interface LocalUser {
   createdAt: string;
 }
 
-export type CoverageStatus = 'implemented' | 'planned' | 'deprecated';
+export type CoverageStatus =
+  'planned' | 'draft' | 'reviewed' | 'published' | 'deprecated';
 
 export interface CoverageRecord {
   caseId: string;

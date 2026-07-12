@@ -6,6 +6,7 @@ import type {
   ProgressSnapshot,
 } from '../contracts';
 import type { FdeArenaDatabase } from '../../storage/database';
+import { normalizeAttemptRecord } from './attempt-invariants';
 import { toStoredMistake } from './mistake-repository';
 
 function assertSnapshotIdentity(snapshot: ProgressSnapshot): void {
@@ -25,6 +26,11 @@ function assertSnapshotIdentity(snapshot: ProgressSnapshot): void {
   ) {
     throw new Error(
       'A progress snapshot must use the same user, case, and case version.',
+    );
+  }
+  if (progress.latestAttemptId !== attempt.id) {
+    throw new Error(
+      'Progress latest attempt ID must match the persisted attempt ID.',
     );
   }
 }
@@ -60,18 +66,24 @@ export class IndexedDbProgressRepository implements ProgressRepository {
   }
 
   async saveSnapshot(snapshot: ProgressSnapshot): Promise<void> {
-    assertSnapshotIdentity(snapshot);
+    const normalizedSnapshot: ProgressSnapshot = {
+      ...snapshot,
+      attempt: normalizeAttemptRecord(snapshot.attempt),
+    };
+    assertSnapshotIdentity(normalizedSnapshot);
     const transaction = this.database.transaction(
       ['attempts', 'progress', 'mastery', 'mistakes'],
       'readwrite',
     );
     try {
-      await transaction.objectStore('attempts').put(snapshot.attempt);
-      await transaction.objectStore('progress').put(snapshot.progress);
-      for (const mastery of snapshot.mastery) {
+      await transaction.objectStore('attempts').put(normalizedSnapshot.attempt);
+      await transaction
+        .objectStore('progress')
+        .put(normalizedSnapshot.progress);
+      for (const mastery of normalizedSnapshot.mastery) {
         await transaction.objectStore('mastery').put(mastery);
       }
-      for (const mistake of snapshot.mistakes) {
+      for (const mistake of normalizedSnapshot.mistakes) {
         await transaction.objectStore('mistakes').put(toStoredMistake(mistake));
       }
       await transaction.done;
