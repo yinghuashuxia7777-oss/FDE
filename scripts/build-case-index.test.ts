@@ -1,8 +1,13 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { relative, resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import type { FdeCase } from '../src/domain/cases/types';
 import { createMinimalValidCase } from '../src/tests/fixtures/cases';
 
+import { PROJECT_ROOT } from './files';
 import {
   buildValidatedCaseIndex,
   emitCaseIndex,
@@ -56,6 +61,9 @@ describe('generateCaseIndex', () => {
     expect(generated).toContain(
       "load: () => import('../../content/cases/z.json')",
     );
+    expect(generated).toContain(
+      "import type { FdeCase } from '../domain/cases/types'",
+    );
     expect(generateCaseIndex([])).toMatchInlineSnapshot(`
       "import type { FdeCase } from '../domain/cases/types';
 
@@ -78,6 +86,70 @@ describe('generateCaseIndex', () => {
     `);
   });
 
+  it('computes type and content imports relative to a custom output file', () => {
+    const generated = generateCaseIndex(
+      [
+        {
+          file: 'content/cases/a.json',
+          case: withStatus('case-a', 'published'),
+        },
+      ],
+      'reports\\generated\\case-index.ts',
+    );
+
+    expect(generated).toContain(
+      "import type { FdeCase } from '../../src/domain/cases/types'",
+    );
+    expect(generated).toContain(
+      "load: () => import('../../content/cases/a.json')",
+    );
+  });
+
+  it('writes a non-empty custom index whose lazy loader resolves in Vitest', async () => {
+    const temporaryRoot = mkdtempSync(
+      resolve(PROJECT_ROOT, '.tmp-index-import-'),
+    );
+    try {
+      const caseFile = resolve(temporaryRoot, 'content', 'case-a.json');
+      const indexFile = resolve(
+        temporaryRoot,
+        'reports',
+        'generated',
+        'case-index.ts',
+      );
+      mkdirSync(resolve(caseFile, '..'), { recursive: true });
+      mkdirSync(resolve(indexFile, '..'), { recursive: true });
+      const candidate = withStatus('case-a', 'published');
+      writeFileSync(caseFile, JSON.stringify(candidate), 'utf8');
+
+      const projectFile = (file: string) =>
+        relative(PROJECT_ROOT, file).split(sep).join('/');
+      writeFileSync(
+        indexFile,
+        generateCaseIndex(
+          [{ file: projectFile(caseFile), case: candidate }],
+          projectFile(indexFile),
+        ),
+        'utf8',
+      );
+
+      const generatedModule = (await import(
+        /* @vite-ignore */ `${pathToFileURL(indexFile).href}?test=${Date.now()}`
+      )) as {
+        caseIndex: readonly {
+          id: string;
+          load: () => Promise<{ default: FdeCase }>;
+        }[];
+      };
+      expect(generatedModule.caseIndex.map(({ id }) => id)).toEqual(['case-a']);
+      await expect(generatedModule.caseIndex[0].load()).resolves.toMatchObject({
+        default: { id: 'case-a' },
+      });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('refuses to build when content or graph checks fail', () => {
     const invalid = withStatus('case-invalid', 'published');
     invalid.nodes[0].branches = [
@@ -90,6 +162,43 @@ describe('generateCaseIndex', () => {
 
     expect(result.content).toBeNull();
     expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it('refuses to build when cross-domain coverage is below 40%', () => {
+    const candidate = withStatus('case-low-coverage', 'published');
+    candidate.level = 'intermediate';
+    candidate.domains = ['one-domain'];
+
+    const result = buildValidatedCaseIndex([
+      {
+        file: 'content/cases/low-coverage.json',
+        text: JSON.stringify(candidate),
+      },
+    ]);
+
+    expect(result.content).toBeNull();
+    expect(result.issues.map(({ code }) => code)).toContain(
+      'insufficient_cross_domain_ratio',
+    );
+  });
+
+  it('refuses to build when a deprecated case appears in indexed IDs', () => {
+    const candidate = withStatus('case-deprecated', 'deprecated');
+
+    const result = buildValidatedCaseIndex(
+      [
+        {
+          file: 'content/cases/deprecated.json',
+          text: JSON.stringify(candidate),
+        },
+      ],
+      { indexedCaseIds: [candidate.id] },
+    );
+
+    expect(result.content).toBeNull();
+    expect(result.issues.map(({ code }) => code)).toContain(
+      'deprecated_in_index',
+    );
   });
 
   it('does not write during dry-run or when skip-existing finds output', () => {

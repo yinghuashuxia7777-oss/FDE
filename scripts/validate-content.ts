@@ -10,6 +10,7 @@ import {
   PROJECT_ROOT,
   readContentSources,
   resolveSafeProjectPath,
+  writeCliReport,
 } from './files';
 
 export interface ContentTextSource {
@@ -39,11 +40,10 @@ function compareIssues(left: ContentIssue, right: ContentIssue): number {
 
 export function validateContentSources(
   sources: readonly ContentTextSource[],
-  options: { limit?: number } = {},
 ): ContentValidationResult {
-  const selectedSources = [...sources]
-    .sort((left, right) => left.file.localeCompare(right.file))
-    .slice(0, options.limit);
+  const selectedSources = [...sources].sort((left, right) =>
+    left.file.localeCompare(right.file),
+  );
   const cases: ValidatedCaseSource[] = [];
   const issues: ContentIssue[] = [];
 
@@ -124,11 +124,9 @@ export function runValidateContentCli(args: readonly string[]): number {
     const sources = readContentSources(
       PROJECT_ROOT,
       options.input ?? 'content/cases',
-    );
-    const validation = validateContentSources(
-      sources,
       options.limit === undefined ? {} : { limit: options.limit },
     );
+    const validation = validateContentSources(sources);
     const report = {
       ok: validation.issues.length === 0,
       filesChecked: validation.filesChecked,
@@ -140,7 +138,7 @@ export function runValidateContentCli(args: readonly string[]): number {
         ? undefined
         : resolveSafeProjectPath(PROJECT_ROOT, options.output);
     const content = emitJsonReport(report, { dryRun: options.dryRun, output });
-    process.stdout.write(content);
+    writeCliReport(content, report.ok);
     return validation.issues.length === 0 ? 0 : 1;
   } catch (error) {
     return printCliError(error);

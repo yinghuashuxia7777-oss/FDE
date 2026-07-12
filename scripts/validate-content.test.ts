@@ -72,17 +72,4 @@ describe('validateContentSources', () => {
       result.issues.every(({ file }) => file === 'content/cases/z.json'),
     ).toBe(true);
   });
-
-  it('sorts files before applying the limit', () => {
-    const result = validateContentSources(
-      [
-        source('content/cases/z.json', createMinimalValidCase()),
-        { file: 'content/cases/a.json', text: '{' },
-      ],
-      { limit: 1 },
-    );
-
-    expect(result.filesChecked).toBe(1);
-    expect(result.issues[0]?.file).toBe('content/cases/a.json');
-  });
 });

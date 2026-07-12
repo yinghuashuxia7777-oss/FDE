@@ -8,6 +8,7 @@ import {
   PROJECT_ROOT,
   readContentSources,
   resolveSafeProjectPath,
+  writeCliReport,
 } from './files';
 import { validateContentSources } from './validate-content';
 
@@ -90,8 +91,11 @@ export function runDetectDuplicateIdsCli(args: readonly string[]): number {
       output: true,
     });
     const validation = validateContentSources(
-      readContentSources(PROJECT_ROOT, options.input ?? 'content/cases'),
-      options.limit === undefined ? {} : { limit: options.limit },
+      readContentSources(
+        PROJECT_ROOT,
+        options.input ?? 'content/cases',
+        options.limit === undefined ? {} : { limit: options.limit },
+      ),
     );
     const duplicates = detectDuplicateIds(validation.cases);
     const report = {
@@ -104,8 +108,9 @@ export function runDetectDuplicateIdsCli(args: readonly string[]): number {
       options.output === undefined
         ? undefined
         : resolveSafeProjectPath(PROJECT_ROOT, options.output);
-    process.stdout.write(
+    writeCliReport(
       emitJsonReport(report, { dryRun: options.dryRun, output }),
+      report.ok,
     );
     return report.ok ? 0 : 1;
   } catch (error) {

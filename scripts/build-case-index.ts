@@ -1,6 +1,9 @@
-import { posix } from 'node:path';
+import { posix, relative, sep } from 'node:path';
 import { existsSync, writeFileSync } from 'node:fs';
 
+import { caseIndex } from '../src/generated/case-index';
+import type { CoverageReport } from './audit-coverage';
+import { auditCoverage } from './audit-coverage';
 import { parseCliArgs } from './cli';
 import type { CaseSource } from './detect-duplicate-ids';
 import { detectDuplicateIds } from './detect-duplicate-ids';
@@ -10,13 +13,14 @@ import {
   PROJECT_ROOT,
   readContentSources,
   resolveSafeProjectPath,
+  writeCliReport,
 } from './files';
 import type { ContentTextSource } from './validate-content';
 import { validateContentSources } from './validate-content';
 import type { ContentIssue } from './validate-graph';
 import { validateCaseGraph } from './validate-graph';
 
-const indexDirectory = 'src/generated';
+const defaultIndexFile = 'src/generated/case-index.ts';
 
 function singleQuote(value: string): string {
   return `'${value
@@ -26,14 +30,28 @@ function singleQuote(value: string): string {
     .replaceAll('\n', '\\n')}'`;
 }
 
-function normalizedImportPath(file: string): string {
-  const normalized = file.replaceAll('\\', '/').replace(/^\.\//, '');
-  const relative = posix.relative(indexDirectory, normalized);
-  return relative.startsWith('.') ? relative : `./${relative}`;
+function normalizeProjectFile(file: string): string {
+  return file.replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
-function header(): string {
-  return `import type { FdeCase } from '../domain/cases/types';
+function relativeModuleSpecifier(
+  outputFile: string,
+  targetFile: string,
+): string {
+  const outputDirectory = posix.dirname(normalizeProjectFile(outputFile));
+  const modulePath = posix.relative(
+    outputDirectory,
+    normalizeProjectFile(targetFile),
+  );
+  return modulePath.startsWith('.') ? modulePath : `./${modulePath}`;
+}
+
+function header(outputFile: string): string {
+  const typesImport = relativeModuleSpecifier(
+    outputFile,
+    'src/domain/cases/types',
+  );
+  return `import type { FdeCase } from ${singleQuote(typesImport)};
 
 export interface CaseIndexEntry {
   readonly id: string;
@@ -52,7 +70,10 @@ export interface CaseIndexEntry {
 `;
 }
 
-export function generateCaseIndex(sources: readonly CaseSource[]): string {
+export function generateCaseIndex(
+  sources: readonly CaseSource[],
+  outputFile = defaultIndexFile,
+): string {
   const published = sources
     .filter(({ case: candidate }) => candidate.status === 'published')
     .sort(
@@ -62,7 +83,7 @@ export function generateCaseIndex(sources: readonly CaseSource[]): string {
     );
 
   const entries = published.map(({ file, case: candidate }) => {
-    const importPath = normalizedImportPath(file);
+    const importPath = relativeModuleSpecifier(outputFile, file);
     return `  {
     id: ${singleQuote(candidate.id)},
     slug: ${singleQuote(candidate.slug)},
@@ -78,7 +99,7 @@ export function generateCaseIndex(sources: readonly CaseSource[]): string {
   }`;
   });
 
-  return `${header()}export const caseIndex: readonly CaseIndexEntry[] = [${
+  return `${header(outputFile)}export const caseIndex: readonly CaseIndexEntry[] = [${
     entries.length === 0 ? '' : `\n${entries.join(',\n')},\n`
   }];\n`;
 }
@@ -86,13 +107,17 @@ export function generateCaseIndex(sources: readonly CaseSource[]): string {
 export interface ValidatedIndexResult {
   content: string | null;
   issues: ContentIssue[];
+  coverage: CoverageReport;
 }
 
 export function buildValidatedCaseIndex(
   sources: readonly ContentTextSource[],
-  options: { limit?: number } = {},
+  options: {
+    outputFile?: string;
+    indexedCaseIds?: readonly string[];
+  } = {},
 ): ValidatedIndexResult {
-  const validation = validateContentSources(sources, options);
+  const validation = validateContentSources(sources);
   const graphIssues = validation.cases.flatMap(({ file, case: candidate }) =>
     validateCaseGraph(candidate, file),
   );
@@ -104,10 +129,27 @@ export function buildValidatedCaseIndex(
       message: issue.message,
     }),
   );
+  const parsedCases = validation.cases.map(({ case: candidate }) => candidate);
+  const intendedIndexIds = validation.cases
+    .filter(({ case: candidate }) => candidate.status === 'published')
+    .map(({ case: candidate }) => candidate.id);
+  const coverage = auditCoverage(
+    parsedCases,
+    options.indexedCaseIds ?? intendedIndexIds,
+  );
+  const coverageIssues = coverage.gaps
+    .filter(({ severity }) => severity === 'error')
+    .map((gap): ContentIssue => ({
+      file: '<coverage>',
+      path: ['coverage'],
+      code: gap.code,
+      message: gap.message,
+    }));
   const issues = [
     ...validation.issues,
     ...graphIssues,
     ...duplicateIssues,
+    ...coverageIssues,
   ].sort(
     (left, right) =>
       left.file.localeCompare(right.file) ||
@@ -115,8 +157,12 @@ export function buildValidatedCaseIndex(
       left.code.localeCompare(right.code),
   );
   return {
-    content: issues.length === 0 ? generateCaseIndex(validation.cases) : null,
+    content:
+      issues.length === 0
+        ? generateCaseIndex(validation.cases, options.outputFile)
+        : null,
     issues,
+    coverage,
   };
 }
 
@@ -155,20 +201,26 @@ export function runBuildCaseIndexCli(args: readonly string[]): number {
       output: true,
       skipExisting: true,
     });
+    const output = resolveSafeProjectPath(
+      PROJECT_ROOT,
+      options.output ?? defaultIndexFile,
+    );
+    const outputFile = relative(PROJECT_ROOT, output).split(sep).join('/');
     const result = buildValidatedCaseIndex(
-      readContentSources(PROJECT_ROOT, options.input ?? 'content/cases'),
-      options.limit === undefined ? {} : { limit: options.limit },
+      readContentSources(
+        PROJECT_ROOT,
+        options.input ?? 'content/cases',
+        options.limit === undefined ? {} : { limit: options.limit },
+      ),
+      { outputFile, indexedCaseIds: caseIndex.map(({ id }) => id) },
     );
     if (result.content === null) {
-      process.stdout.write(
+      writeCliReport(
         `${JSON.stringify({ ok: false, issues: result.issues }, null, 2)}\n`,
+        false,
       );
       return 1;
     }
-    const output = resolveSafeProjectPath(
-      PROJECT_ROOT,
-      options.output ?? 'src/generated/case-index.ts',
-    );
     const emitted = emitCaseIndex(
       result.content,
       {

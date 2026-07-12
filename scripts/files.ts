@@ -76,11 +76,17 @@ function discoverJsonFiles(input: string): string[] {
 export function readContentSources(
   root: string,
   input: string,
+  options: {
+    limit?: number;
+    read?: (file: string) => string;
+  } = {},
 ): ContentTextSource[] {
   const inputPath = resolveSafeProjectPath(root, input);
-  return discoverJsonFiles(inputPath).map((file) => ({
+  const selectedFiles = discoverJsonFiles(inputPath).slice(0, options.limit);
+  const read = options.read ?? ((file: string) => readFileSync(file, 'utf8'));
+  return selectedFiles.map((file) => ({
     file: relative(resolve(root), file).split(sep).join('/'),
-    text: readFileSync(file, 'utf8'),
+    text: read(file),
   }));
 }
 
@@ -111,6 +117,12 @@ export function isDirectRun(moduleUrl: string): boolean {
 
 export function printCliError(error: unknown): number {
   const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`${message}\n`);
+  process.stderr.write(
+    `${JSON.stringify({ ok: false, error: { code: 'cli_error', message } })}\n`,
+  );
   return 1;
+}
+
+export function writeCliReport(content: string, ok: boolean): void {
+  (ok ? process.stdout : process.stderr).write(content);
 }

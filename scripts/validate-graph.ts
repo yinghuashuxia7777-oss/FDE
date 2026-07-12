@@ -8,6 +8,7 @@ import {
   PROJECT_ROOT,
   readContentSources,
   resolveSafeProjectPath,
+  writeCliReport,
 } from './files';
 import { validateContentSources } from './validate-content';
 
@@ -225,11 +226,9 @@ export function runValidateGraphCli(args: readonly string[]): number {
     const sources = readContentSources(
       PROJECT_ROOT,
       options.input ?? 'content/cases',
-    );
-    const validation = validateContentSources(
-      sources,
       options.limit === undefined ? {} : { limit: options.limit },
     );
+    const validation = validateContentSources(sources);
     const issues = [
       ...validation.issues,
       ...validation.cases.flatMap(({ file, case: candidate }) =>
@@ -245,8 +244,9 @@ export function runValidateGraphCli(args: readonly string[]): number {
       options.output === undefined
         ? undefined
         : resolveSafeProjectPath(PROJECT_ROOT, options.output);
-    process.stdout.write(
+    writeCliReport(
       emitJsonReport(report, { dryRun: options.dryRun, output }),
+      report.ok,
     );
     return issues.length === 0 ? 0 : 1;
   } catch (error) {
