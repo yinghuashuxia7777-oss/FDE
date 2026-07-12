@@ -35,8 +35,7 @@ export interface NodeScoreEntry {
   critical: boolean;
 }
 
-export interface TrainingState {
-  phase: TrainingPhase;
+interface TrainingStateBase {
   caseContent: FdeCase;
   caseId: string;
   caseVersion: number;
@@ -53,28 +52,79 @@ export interface TrainingState {
   consequences: ConsequenceDelta[];
   criticalErrorIds: string[];
   currentNodeRoundStartIndex: number;
-  feedback: TrainingFeedback | null;
-  pendingBranchKey: string | null;
   persistenceError: string | null;
-  completedAttempt?: CompletedAttemptRecord | undefined;
+  transitionToken: string;
 }
+
+export interface LoadingTrainingState extends TrainingStateBase {
+  phase: 'loading';
+  currentNode: CaseNode;
+  feedback: null;
+  pendingBranchKey: null;
+  completedAttempt?: never;
+}
+
+export interface ActiveTrainingState extends TrainingStateBase {
+  phase: 'active';
+  currentNode: CaseNode;
+  feedback: null;
+  pendingBranchKey: null;
+  completedAttempt?: never;
+}
+
+export interface FeedbackTrainingState extends TrainingStateBase {
+  phase: 'feedback';
+  currentNode: CaseNode;
+  feedback: TrainingFeedback;
+  pendingBranchKey: null;
+  completedAttempt?: never;
+}
+
+export interface AdvancingTrainingState extends TrainingStateBase {
+  phase: 'advancing';
+  currentNode: CaseNode;
+  feedback: TrainingFeedback | null;
+  pendingBranchKey: string;
+  completedAttempt?: never;
+}
+
+export interface CompletedTrainingState extends TrainingStateBase {
+  phase: 'completed';
+  currentNode: null;
+  feedback: null;
+  pendingBranchKey: null;
+  completedAttempt: CompletedAttemptRecord;
+}
+
+export type TrainingState =
+  | LoadingTrainingState
+  | ActiveTrainingState
+  | FeedbackTrainingState
+  | AdvancingTrainingState
+  | CompletedTrainingState;
 
 export interface TrainingDependencies {
   attemptRepository: Pick<AttemptRepository, 'save'>;
-  progressRepository: Pick<ProgressRepository, 'get' | 'saveSnapshot'>;
-  skillRepository: Pick<SkillRepository, 'list'>;
+  progressRepository: Pick<ProgressRepository, 'commitCompletion'>;
+  /** Kept for repository-bundle compatibility; completion reads are transactional. */
+  skillRepository?: Pick<SkillRepository, 'list'> | undefined;
   now: () => string;
   createId: () => string;
 }
 
 export type TrainingAction =
-  | { type: 'loaded' }
-  | { type: 'evaluated'; round: AttemptRoundRecord }
-  | { type: 'retry' }
-  | { type: 'advanced'; nextNode: CaseNode }
-  | { type: 'completed'; attempt: CompletedAttemptRecord }
+  | TransitionAction<'loaded'>
+  | (TransitionAction<'evaluated'> & { round: AttemptRoundRecord })
+  | TransitionAction<'retry'>
+  | (TransitionAction<'advanced'> & { nextNode: CaseNode })
+  | (TransitionAction<'completed'> & { attempt: CompletedAttemptRecord })
   | { type: 'persistence-failed'; message: string }
   | { type: 'persistence-succeeded' };
+
+interface TransitionAction<Type extends string> {
+  type: Type;
+  token: string;
+}
 
 export class TrainingSessionError extends Error {
   override readonly name = 'TrainingSessionError';

@@ -8,6 +8,7 @@ import type {
   CaseProgressRecord,
   CompletedAttemptRecord,
   CoverageRecord,
+  InProgressAttemptRecord,
   MistakeRecord,
   SkillMasteryRecord,
   UserSettings,
@@ -55,6 +56,25 @@ function buildAttempt(
     currentNodeId: null,
     score: 88,
     verdict: 'excellent',
+    criticalErrorIds: [],
+    visitedNodeIds: ['node-1'],
+    roundHistory: [],
+    ...overrides,
+  };
+}
+
+function buildInProgressAttempt(
+  overrides: Partial<InProgressAttemptRecord> = {},
+): InProgressAttemptRecord {
+  return {
+    id: 'attempt-1',
+    userId: USER_ID,
+    caseId: 'case-minimal',
+    caseVersion: 1,
+    status: 'in-progress',
+    startedAt: '2026-07-13T00:00:00.000Z',
+    updatedAt: '2026-07-13T00:05:00.000Z',
+    currentNodeId: 'node-1',
     criticalErrorIds: [],
     visitedNodeIds: ['node-1'],
     roundHistory: [],
@@ -460,6 +480,41 @@ describe('repository contracts', () => {
     );
   });
 
+  it('preserves and exactly orders arbitrary fractional seconds in storage queries', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    await repositories.attempts.save(
+      buildAttempt({
+        id: 'attempt-fraction-later',
+        updatedAt: '2026-07-13T00:00:00.0009Z',
+        completedAt: '2026-07-13T00:00:00.0009Z',
+      }),
+    );
+    await repositories.attempts.save(
+      buildAttempt({
+        id: 'attempt-fraction-earlier',
+        updatedAt: '2026-07-13T00:00:00.0001Z',
+        completedAt: '2026-07-13T00:00:00.0001Z',
+      }),
+    );
+
+    expect((await repositories.attempts.list()).map(({ id }) => id)).toEqual([
+      'attempt-fraction-later',
+      'attempt-fraction-earlier',
+    ]);
+    expect(
+      await repositories.attempts.list({
+        completedAfter: '2026-07-13T00:00:00.0001Z',
+      }),
+    ).toEqual([expect.objectContaining({ id: 'attempt-fraction-later' })]);
+    expect(
+      await repositories.attempts.get('attempt-fraction-later'),
+    ).toMatchObject({
+      completedAt: '2026-07-13T00:00:00.0009Z',
+      updatedAt: '2026-07-13T00:00:00.0009Z',
+    });
+  });
+
   it('rejects invalid attempt and completion-filter timestamps', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
@@ -545,6 +600,185 @@ describe('repository contracts', () => {
 
     expect(await repositories.attempts.list({ userId: USER_ID })).toEqual([]);
     expect(await repositories.progress.list(USER_ID)).toEqual([]);
+  });
+
+  it('rolls back every completion write when the atomic commit fails', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const checkpoint = buildInProgressAttempt();
+    const invalidMastery = {
+      userId: USER_ID,
+      score: 82,
+      sampleCount: 1,
+      updatedAt: '2026-07-13T00:10:00.000Z',
+    } as SkillMasteryRecord;
+    await repositories.attempts.save(checkpoint);
+
+    await expect(
+      repositories.progress.commitCompletion(buildAttempt(), () => ({
+        progress: buildProgress(),
+        mastery: [invalidMastery],
+        mistakes: [buildMistake()],
+      })),
+    ).rejects.toThrow();
+
+    expect(await repositories.attempts.get(checkpoint.id)).toEqual(checkpoint);
+    expect(await repositories.progress.list(USER_ID)).toEqual([]);
+    expect(await repositories.skills.list(USER_ID)).toEqual([]);
+    expect(await repositories.mistakes.list({ userId: USER_ID })).toEqual([]);
+  });
+
+  it('returns the stored completion without merging or counting the same attempt twice', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const completed = buildAttempt();
+    let mergeCalls = 0;
+    await repositories.attempts.save(buildInProgressAttempt());
+
+    const merge = repositories.progress.commitCompletion(
+      completed,
+      ({ previousProgress, previousMastery }) => {
+        mergeCalls += 1;
+        const previousSkill = previousMastery.find(
+          ({ skillId }) => skillId === 'evidence-assessment',
+        );
+        return {
+          progress: buildProgress({
+            attemptCount: (previousProgress?.attemptCount ?? 0) + 1,
+            completedCount: (previousProgress?.completedCount ?? 0) + 1,
+          }),
+          mastery: [
+            buildMastery({
+              sampleCount: (previousSkill?.sampleCount ?? 0) + 1,
+            }),
+          ],
+          mistakes: [buildMistake()],
+        };
+      },
+    );
+    const firstResult = await merge;
+    const secondResult = await repositories.progress.commitCompletion(
+      buildAttempt({
+        score: 10,
+        verdict: 'fail',
+        updatedAt: '2026-07-13T00:20:00.000Z',
+        completedAt: '2026-07-13T00:20:00.000Z',
+      }),
+      () => {
+        mergeCalls += 1;
+        return {
+          progress: buildProgress({ attemptCount: 99, completedCount: 99 }),
+          mastery: [buildMastery({ sampleCount: 99 })],
+          mistakes: [],
+        };
+      },
+    );
+
+    expect(firstResult).toEqual(completed);
+    expect(secondResult).toEqual(completed);
+    expect(mergeCalls).toBe(1);
+    expect(await repositories.progress.get(USER_ID, completed.caseId)).toEqual(
+      buildProgress(),
+    );
+    expect(
+      await repositories.skills.get(USER_ID, 'evidence-assessment'),
+    ).toEqual(buildMastery({ sampleCount: 1 }));
+    expect(await repositories.mistakes.list({ userId: USER_ID })).toHaveLength(
+      1,
+    );
+  });
+
+  it('rejects a completed attempt ID collision before applying idempotency', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const completed = buildAttempt();
+    await repositories.progress.commitCompletion(completed, () => ({
+      progress: buildProgress(),
+      mastery: [],
+      mistakes: [],
+    }));
+
+    await expect(
+      repositories.progress.commitCompletion(
+        buildAttempt({ caseId: 'case-other' }),
+        () => ({
+          progress: buildProgress({ caseId: 'case-other' }),
+          mastery: [],
+          mistakes: [],
+        }),
+      ),
+    ).rejects.toThrow(/same user, case, and case version/i);
+    expect(await repositories.attempts.get(completed.id)).toEqual(completed);
+  });
+
+  it('serializes concurrent completion merges for different attempts', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const first = buildAttempt({ id: 'attempt-concurrent-1' });
+    const second = buildAttempt({
+      id: 'attempt-concurrent-2',
+      score: 72,
+      verdict: 'pass',
+      updatedAt: '2026-07-13T00:11:00.000Z',
+      completedAt: '2026-07-13T00:11:00.000Z',
+    });
+    await repositories.attempts.save(buildInProgressAttempt({ id: first.id }));
+    await repositories.attempts.save(buildInProgressAttempt({ id: second.id }));
+    const observedCompletedCounts: number[] = [];
+
+    const commit = (attempt: CompletedAttemptRecord) =>
+      repositories.progress.commitCompletion(
+        attempt,
+        ({ previousProgress, previousMastery }) => {
+          const completedCount = previousProgress?.completedCount ?? 0;
+          const previousSkill = previousMastery.find(
+            ({ skillId }) => skillId === 'evidence-assessment',
+          );
+          observedCompletedCounts.push(completedCount);
+          return {
+            progress: buildProgress({
+              latestAttemptId: attempt.id,
+              attemptCount: (previousProgress?.attemptCount ?? 0) + 1,
+              completedCount: completedCount + 1,
+              highestScore: Math.max(
+                previousProgress?.highestScore ?? 0,
+                attempt.score,
+              ),
+              latestScore: attempt.score,
+              latestVerdict: attempt.verdict,
+              updatedAt: attempt.completedAt,
+            }),
+            mastery: [
+              buildMastery({
+                sampleCount: (previousSkill?.sampleCount ?? 0) + 1,
+                updatedAt: attempt.completedAt,
+              }),
+            ],
+            mistakes: [
+              buildMistake({
+                id: `mistake-${attempt.id}`,
+                attemptId: attempt.id,
+                createdAt: attempt.completedAt,
+              }),
+            ],
+          };
+        },
+      );
+
+    await Promise.all([commit(first), commit(second)]);
+
+    expect(observedCompletedCounts.sort()).toEqual([0, 1]);
+    expect(await repositories.progress.get(USER_ID, first.caseId)).toEqual(
+      expect.objectContaining({ attemptCount: 2, completedCount: 2 }),
+    );
+    expect(
+      await repositories.skills.get(USER_ID, 'evidence-assessment'),
+    ).toEqual(expect.objectContaining({ sampleCount: 2 }));
+    expect(await repositories.mistakes.list({ userId: USER_ID })).toHaveLength(
+      2,
+    );
+    expect(await repositories.attempts.get(first.id)).toEqual(first);
+    expect(await repositories.attempts.get(second.id)).toEqual(second);
   });
 
   it('clears user progress atomically while retaining content and app-owned data', async () => {

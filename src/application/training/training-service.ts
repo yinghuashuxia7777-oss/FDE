@@ -12,17 +12,33 @@ import type {
   AttemptRoundRecord,
   CaseProgressRecord,
   CompletedAttemptRecord,
+  CompletionMergeContext,
+  CompletionMergeResult,
   InProgressAttemptRecord,
   MistakeRecord,
-  ProgressSnapshot,
   SkillMasteryRecord,
 } from '../../repositories/contracts';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
+import {
+  compareRfc3339Timestamps,
+  normalizeRfc3339Timestamp,
+} from '../../storage/timestamps';
 import { trainingReducer } from './training-reducer';
-import type { TrainingDependencies, TrainingState } from './types';
+import type {
+  ActiveTrainingState,
+  AdvancingTrainingState,
+  LoadingTrainingState,
+  TrainingDependencies,
+  TrainingPhase,
+  TrainingState,
+} from './types';
 import { TrainingSessionError } from './types';
 
 const FALLBACK_ERROR_TYPE = 'incorrect-submission';
+const consumedOperations = new WeakMap<
+  TrainingState,
+  Map<string, Promise<TrainingState>>
+>();
 
 function findNode(fdeCase: FdeCase, nodeId: string): CaseNode {
   const node = fdeCase.nodes.find((candidate) => candidate.id === nodeId);
@@ -34,18 +50,24 @@ function findNode(fdeCase: FdeCase, nodeId: string): CaseNode {
   return node;
 }
 
+function transitionToken(
+  attemptId: string,
+  phase: TrainingPhase,
+  roundCount: number,
+  scoreCount: number,
+): string {
+  return `${attemptId}:${phase}:${roundCount}:${scoreCount}`;
+}
+
 function persistenceMessage(error: unknown): string {
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
     : 'Training progress could not be saved.';
 }
 
-function toInProgressAttempt(state: TrainingState): InProgressAttemptRecord {
-  if (state.currentNode === null) {
-    throw new TrainingSessionError(
-      'An in-progress attempt requires a current node.',
-    );
-  }
+function toInProgressAttempt(
+  state: Exclude<TrainingState, { phase: 'completed' }>,
+): InProgressAttemptRecord {
   return {
     id: state.attemptId,
     userId: LOCAL_USER_ID,
@@ -62,25 +84,26 @@ function toInProgressAttempt(state: TrainingState): InProgressAttemptRecord {
   };
 }
 
-async function saveInProgress(
-  state: TrainingState,
-  dependencies: TrainingDependencies,
-): Promise<TrainingState> {
+async function saveInProgress<
+  State extends Exclude<TrainingState, { phase: 'completed' }>,
+>(state: State, dependencies: TrainingDependencies): Promise<State> {
   try {
     await dependencies.attemptRepository.save(toInProgressAttempt(state));
-    return trainingReducer(state, { type: 'persistence-succeeded' });
+    return trainingReducer(state, {
+      type: 'persistence-succeeded',
+    }) as State;
   } catch (error) {
     return trainingReducer(state, {
       type: 'persistence-failed',
       message: persistenceMessage(error),
-    });
+    }) as State;
   }
 }
 
 function initialState(
   fdeCase: FdeCase,
   dependencies: TrainingDependencies,
-): TrainingState {
+): LoadingTrainingState {
   const attemptId = dependencies.createId();
   if (attemptId.trim().length === 0) {
     throw new TrainingSessionError(
@@ -109,6 +132,7 @@ function initialState(
     feedback: null,
     pendingBranchKey: null,
     persistenceError: null,
+    transitionToken: transitionToken(attemptId, 'loading', 0, 0),
   };
 }
 
@@ -117,30 +141,71 @@ export async function createTrainingSession(
   dependencies: TrainingDependencies,
 ): Promise<TrainingState> {
   const loading = initialState(fdeCase, dependencies);
-  const active = trainingReducer(loading, { type: 'loaded' });
-  const saved = await saveInProgress(active, dependencies);
-  if (saved.persistenceError !== null) {
-    return { ...loading, persistenceError: saved.persistenceError };
+  const active = trainingReducer(loading, {
+    type: 'loaded',
+    token: loading.transitionToken,
+  });
+  if (active.phase !== 'active') {
+    throw new TrainingSessionError(
+      'Loading did not produce an active session.',
+    );
   }
-  return saved;
+  const saved = await saveInProgress(active, dependencies);
+  return saved.persistenceError === null
+    ? saved
+    : { ...loading, persistenceError: saved.persistenceError };
 }
 
-function assertActive(state: TrainingState): asserts state is TrainingState & {
-  currentNode: CaseNode;
-} {
-  if (state.phase !== 'active' || state.currentNode === null) {
+function assertActive(
+  state: TrainingState,
+): asserts state is ActiveTrainingState {
+  if (state.phase !== 'active') {
     throw new TrainingSessionError(
       `A node can only be submitted from the active phase, not "${state.phase}".`,
     );
   }
 }
 
-export async function submitNode(
+function runOnce(
+  state: TrainingState,
+  operationName: string,
+  operation: () => Promise<TrainingState>,
+): Promise<TrainingState> {
+  let operations = consumedOperations.get(state);
+  if (operations === undefined) {
+    operations = new Map();
+    consumedOperations.set(state, operations);
+  }
+  const existing = operations.get(operationName);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const pending = operation().catch((error: unknown) => {
+    if (operations.get(operationName) === pending) {
+      operations.delete(operationName);
+    }
+    throw error;
+  });
+  operations.set(operationName, pending);
+  return pending;
+}
+
+export function submitNode(
   state: TrainingState,
   submission: NodeSubmission,
   dependencies: TrainingDependencies,
 ): Promise<TrainingState> {
   assertActive(state);
+  return runOnce(state, 'submit', () =>
+    submitNodeOnce(state, submission, dependencies),
+  );
+}
+
+async function submitNodeOnce(
+  state: ActiveTrainingState,
+  submission: NodeSubmission,
+  dependencies: TrainingDependencies,
+): Promise<TrainingState> {
   const evaluation = evaluateNode(state.currentNode, submission);
   const round: AttemptRoundRecord = {
     nodeId: state.currentNode.id,
@@ -152,11 +217,18 @@ export async function submitNode(
   };
   const evaluated = trainingReducer(
     { ...state, updatedAt: round.submittedAt },
-    { type: 'evaluated', round },
+    {
+      type: 'evaluated',
+      round,
+      token: state.transitionToken,
+    },
   );
 
   if (evaluated.phase === 'feedback') {
     return saveInProgress(evaluated, dependencies);
+  }
+  if (evaluated.phase !== 'advancing') {
+    throw new TrainingSessionError('Evaluation did not reach a valid phase.');
   }
   if (evaluated.feedback?.revealed === true) {
     return saveInProgress(evaluated, dependencies);
@@ -198,7 +270,7 @@ function evidenceIdsForMistake(node: CaseNode): string[] {
     : node.evidence.map(({ id }) => id);
 }
 
-function buildMistakes(state: TrainingState): MistakeRecord[] {
+function buildMistakes(state: AdvancingTrainingState): MistakeRecord[] {
   const mistakes: MistakeRecord[] = [];
   let visitOrdinal = 0;
   for (const round of state.roundHistory) {
@@ -234,13 +306,11 @@ function buildMistakes(state: TrainingState): MistakeRecord[] {
   return mistakes;
 }
 
-async function buildMastery(
-  state: TrainingState,
-  dependencies: TrainingDependencies,
+function buildMastery(
+  state: AdvancingTrainingState,
+  previousRecords: readonly SkillMasteryRecord[],
   completedAt: string,
-): Promise<SkillMasteryRecord[]> {
-  const previousRecords =
-    await dependencies.skillRepository.list(LOCAL_USER_ID);
+): SkillMasteryRecord[] {
   const previousBySkill = new Map(
     previousRecords.map((record) => [record.skillId, record]),
   );
@@ -269,14 +339,12 @@ async function buildMastery(
   });
 }
 
-async function buildSnapshot(
-  state: TrainingState,
-  dependencies: TrainingDependencies,
-): Promise<ProgressSnapshot & { attempt: CompletedAttemptRecord }> {
-  const completedAt = dependencies.now();
+function buildCompletedAttempt(
+  state: AdvancingTrainingState,
+  completedAt: string,
+): CompletedAttemptRecord {
   const score = scoreCase(state.scoreEntries);
-  const verdict = getVerdict(score, state.criticalErrorIds);
-  const attempt: CompletedAttemptRecord = {
+  return {
     id: state.attemptId,
     userId: LOCAL_USER_ID,
     caseId: state.caseId,
@@ -287,16 +355,20 @@ async function buildSnapshot(
     completedAt,
     currentNodeId: null,
     score,
-    verdict,
+    verdict: getVerdict(score, state.criticalErrorIds),
     criticalErrorIds: [...state.criticalErrorIds],
     visitedNodeIds: [...state.visitedNodeIds],
     roundHistory: structuredClone(state.roundHistory),
     consequences: structuredClone(state.consequences),
   };
-  const previousProgress = await dependencies.progressRepository.get(
-    LOCAL_USER_ID,
-    state.caseId,
-  );
+}
+
+function mergeCompletion(
+  state: AdvancingTrainingState,
+  attempt: CompletedAttemptRecord,
+  context: CompletionMergeContext,
+): CompletionMergeResult {
+  const previousProgress = context.previousProgress;
   const progress: CaseProgressRecord = {
     userId: LOCAL_USER_ID,
     caseId: state.caseId,
@@ -304,59 +376,91 @@ async function buildSnapshot(
     latestAttemptId: state.attemptId,
     attemptCount: (previousProgress?.attemptCount ?? 0) + 1,
     completedCount: (previousProgress?.completedCount ?? 0) + 1,
-    highestScore: Math.max(previousProgress?.highestScore ?? 0, score),
-    latestScore: score,
-    latestVerdict: verdict,
+    highestScore: Math.max(previousProgress?.highestScore ?? 0, attempt.score),
+    latestScore: attempt.score,
+    latestVerdict: attempt.verdict,
     hasCriticalError:
       (previousProgress?.hasCriticalError ?? false) ||
       state.criticalErrorIds.length > 0,
-    updatedAt: completedAt,
+    updatedAt: attempt.completedAt,
   };
   return {
-    attempt,
     progress,
-    mastery: await buildMastery(state, dependencies, completedAt),
+    mastery: buildMastery(state, context.previousMastery, attempt.completedAt),
     mistakes: buildMistakes(state),
   };
 }
 
-export async function completeAttempt(
+export function completeAttempt(
   state: TrainingState,
   dependencies: TrainingDependencies,
 ): Promise<TrainingState> {
-  if (
-    state.phase !== 'advancing' ||
-    state.currentNode === null ||
-    state.pendingBranchKey === null
-  ) {
-    throw new TrainingSessionError(
-      'Only a resolved advancing node can be completed or advanced.',
+  if (state.phase !== 'advancing') {
+    return Promise.reject(
+      new TrainingSessionError(
+        'Only a resolved advancing node can be completed or advanced.',
+      ),
     );
   }
-  const nextNodeId = resolveNextNode(state.currentNode, state.pendingBranchKey);
+  return runOnce(state, 'complete', () =>
+    completeAttemptOnce(state, dependencies),
+  );
+}
+
+async function completeAttemptOnce(
+  state: AdvancingTrainingState,
+  dependencies: TrainingDependencies,
+): Promise<TrainingState> {
+  const checkpoint = await saveInProgress(state, dependencies);
+  if (checkpoint.persistenceError !== null) {
+    return checkpoint;
+  }
+
+  const nextNodeId = resolveNextNode(
+    checkpoint.currentNode,
+    checkpoint.pendingBranchKey,
+  );
   if (nextNodeId !== null) {
-    const nextNode = findNode(state.caseContent, nextNodeId);
-    const advanced = trainingReducer(state, { type: 'advanced', nextNode });
-    const candidate = { ...advanced, updatedAt: dependencies.now() };
-    const saved = await saveInProgress(candidate, dependencies);
-    if (saved.persistenceError !== null) {
-      return trainingReducer(state, {
-        type: 'persistence-failed',
-        message: saved.persistenceError,
-      });
+    const nextNode = findNode(checkpoint.caseContent, nextNodeId);
+    const advanced = trainingReducer(checkpoint, {
+      type: 'advanced',
+      nextNode,
+      token: checkpoint.transitionToken,
+    });
+    if (advanced.phase !== 'active') {
+      throw new TrainingSessionError(
+        'Advancement did not produce active state.',
+      );
     }
-    return saved;
+    const candidate: ActiveTrainingState = {
+      ...advanced,
+      updatedAt: dependencies.now(),
+    };
+    const saved = await saveInProgress(candidate, dependencies);
+    return saved.persistenceError === null
+      ? saved
+      : trainingReducer(checkpoint, {
+          type: 'persistence-failed',
+          message: saved.persistenceError,
+        });
   }
 
   try {
-    const snapshot = await buildSnapshot(state, dependencies);
-    await dependencies.progressRepository.saveSnapshot(snapshot);
+    const attempt = buildCompletedAttempt(checkpoint, dependencies.now());
+    const committed = await dependencies.progressRepository.commitCompletion(
+      attempt,
+      (context) => mergeCompletion(checkpoint, attempt, context),
+    );
     return trainingReducer(
-      { ...state, updatedAt: snapshot.attempt.updatedAt },
-      { type: 'completed', attempt: snapshot.attempt },
+      { ...checkpoint, updatedAt: committed.updatedAt },
+      {
+        type: 'completed',
+        attempt: committed,
+        token: checkpoint.transitionToken,
+      },
     );
   } catch (error) {
-    return trainingReducer(state, {
+    return trainingReducer(checkpoint, {
       type: 'persistence-failed',
       message: persistenceMessage(error),
     });
@@ -387,10 +491,37 @@ function assertResumeIdentity(
   }
 }
 
+function normalizeResumeTimeline(
+  attempt: InProgressAttemptRecord,
+): InProgressAttemptRecord {
+  const startedAt = normalizeRfc3339Timestamp(attempt.startedAt, 'startedAt');
+  const updatedAt = normalizeRfc3339Timestamp(attempt.updatedAt, 'updatedAt');
+  let previous = startedAt;
+  const roundHistory = attempt.roundHistory.map((round, index) => {
+    const submittedAt = normalizeRfc3339Timestamp(
+      round.submittedAt,
+      `round ${index + 1} submittedAt`,
+    );
+    if (compareRfc3339Timestamps(submittedAt, previous) < 0) {
+      throw new TrainingSessionError(
+        'Attempt timestamps must be chronological from startedAt through every round.',
+      );
+    }
+    previous = submittedAt;
+    return { ...round, submittedAt };
+  });
+  if (compareRfc3339Timestamps(updatedAt, previous) < 0) {
+    throw new TrainingSessionError(
+      'Attempt updatedAt cannot be before its last submitted round.',
+    );
+  }
+  return { ...attempt, startedAt, updatedAt, roundHistory };
+}
+
 function baseResumeState(
   fdeCase: FdeCase,
   attempt: InProgressAttemptRecord,
-): TrainingState {
+): ActiveTrainingState {
   return {
     phase: 'active',
     caseContent: fdeCase,
@@ -412,6 +543,7 @@ function baseResumeState(
     feedback: null,
     pendingBranchKey: null,
     persistenceError: null,
+    transitionToken: transitionToken(attempt.id, 'active', 0, 0),
   };
 }
 
@@ -435,38 +567,50 @@ function validateStoredEvaluation(
 
 export function resumeAttempt(
   fdeCase: FdeCase,
-  attempt: AttemptRecord,
+  rawAttempt: AttemptRecord,
 ): TrainingState {
-  assertResumeIdentity(fdeCase, attempt);
-  let state = baseResumeState(fdeCase, attempt);
+  assertResumeIdentity(fdeCase, rawAttempt);
+  const attempt = normalizeResumeTimeline(rawAttempt);
+  let state: TrainingState = baseResumeState(fdeCase, attempt);
 
   for (const [roundIndex, round] of attempt.roundHistory.entries()) {
     if (state.phase === 'feedback') {
-      state = trainingReducer(state, { type: 'retry' });
+      state = trainingReducer(state, {
+        type: 'retry',
+        token: state.transitionToken,
+      });
     }
-    if (state.phase !== 'active' || state.currentNode === null) {
+    if (state.phase !== 'active') {
       throw new TrainingSessionError('Stored round history is not resumable.');
     }
     validateStoredEvaluation(state.currentNode, round);
-    state = trainingReducer(state, { type: 'evaluated', round });
+    state = trainingReducer(state, {
+      type: 'evaluated',
+      round,
+      token: state.transitionToken,
+    });
     if (state.phase === 'advancing') {
-      const isPersistedRevealCheckpoint =
-        round.revealed && roundIndex === attempt.roundHistory.length - 1;
-      if (isPersistedRevealCheckpoint) {
+      const isLastRound = roundIndex === attempt.roundHistory.length - 1;
+      const isPersistedCheckpoint =
+        isLastRound &&
+        state.currentNode.id === attempt.currentNodeId &&
+        sameJson(state.visitedNodeIds, attempt.visitedNodeIds);
+      if (isPersistedCheckpoint) {
         continue;
       }
       const nextNodeId = resolveNextNode(
-        state.currentNode!,
-        state.pendingBranchKey!,
+        state.currentNode,
+        state.pendingBranchKey,
       );
       if (nextNodeId === null) {
         throw new TrainingSessionError(
-          'A terminal history must be stored as a completed attempt.',
+          'A terminal history must remain at its resolved checkpoint.',
         );
       }
       state = trainingReducer(state, {
         type: 'advanced',
         nextNode: findNode(fdeCase, nextNodeId),
+        token: state.transitionToken,
       });
     }
   }

@@ -1,33 +1,36 @@
 import { scoreNode } from '../../domain/scoring';
 import type { AttemptRoundRecord } from '../../repositories/contracts';
-import type { TrainingAction, TrainingFeedback, TrainingState } from './types';
+import type {
+  ActiveTrainingState,
+  AdvancingTrainingState,
+  FeedbackTrainingState,
+  TrainingAction,
+  TrainingFeedback,
+  TrainingState,
+} from './types';
 import { TrainingSessionError } from './types';
-
-function requirePhase(
-  state: TrainingState,
-  allowed: readonly TrainingState['phase'][],
-  action: string,
-): void {
-  if (!allowed.includes(state.phase)) {
-    throw new TrainingSessionError(
-      `Cannot ${action} while training is in phase "${state.phase}".`,
-    );
-  }
-}
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
-function feedbackFor(
+function nextTransitionToken(
   state: TrainingState,
+  phase: TrainingState['phase'],
+  roundCount = state.roundHistory.length,
+  scoreCount = state.scoreEntries.length,
+): string {
+  return `${state.attemptId}:${phase}:${roundCount}:${scoreCount}`;
+}
+
+function feedbackFor(
+  state: ActiveTrainingState,
   round: AttemptRoundRecord,
 ): TrainingFeedback {
-  const node = state.currentNode!;
   if (round.revealed) {
     return {
       kind: 'revealedAnswer',
-      message: node.feedback.revealedAnswer,
+      message: state.currentNode.feedback.revealedAnswer,
       errorTypes: round.evaluation.errorTypes,
       revealed: true,
     };
@@ -35,25 +38,27 @@ function feedbackFor(
   if (round.attemptNumber === 1) {
     return {
       kind: 'firstWrong',
-      message: node.feedback.firstWrong,
+      message: state.currentNode.feedback.firstWrong,
       errorTypes: round.evaluation.errorTypes,
       revealed: false,
     };
   }
   return {
     kind: 'secondWrong',
-    message: node.feedback.secondWrong,
+    message: state.currentNode.feedback.secondWrong,
     errorTypes: round.evaluation.errorTypes,
     revealed: false,
   };
 }
 
-function validateRound(state: TrainingState, round: AttemptRoundRecord): void {
-  const node = state.currentNode;
-  if (node === null) {
-    throw new TrainingSessionError('Cannot evaluate without a current node.');
-  }
-  if (round.nodeId !== node.id || round.attemptNumber !== state.attemptNumber) {
+function validateRound(
+  state: ActiveTrainingState,
+  round: AttemptRoundRecord,
+): void {
+  if (
+    round.nodeId !== state.currentNode.id ||
+    round.attemptNumber !== state.attemptNumber
+  ) {
     throw new TrainingSessionError(
       'The evaluated round does not match the current node and attempt number.',
     );
@@ -67,12 +72,11 @@ function validateRound(state: TrainingState, round: AttemptRoundRecord): void {
 }
 
 function reduceEvaluated(
-  state: TrainingState,
+  state: ActiveTrainingState,
   round: AttemptRoundRecord,
-): TrainingState {
-  requirePhase(state, ['active'], 'evaluate a node');
+): FeedbackTrainingState | AdvancingTrainingState {
   validateRound(state, round);
-  const node = state.currentNode!;
+  const node = state.currentNode;
   const roundHistory = [...state.roundHistory, round];
   const criticalErrorIds = unique([
     ...state.criticalErrorIds,
@@ -85,17 +89,21 @@ function reduceEvaluated(
   const resolved = round.evaluation.isCorrect || round.revealed;
 
   if (!resolved) {
-    const nextAttempt = (round.attemptNumber + 1) as 2 | 3;
     return {
       ...state,
       phase: 'feedback',
-      attemptNumber: nextAttempt,
+      attemptNumber: (round.attemptNumber + 1) as 2 | 3,
       hintLevel: round.attemptNumber,
       roundHistory,
       criticalErrorIds,
       consequences,
       feedback: feedbackFor(state, round),
       persistenceError: null,
+      transitionToken: nextTransitionToken(
+        state,
+        'feedback',
+        roundHistory.length,
+      ),
     };
   }
 
@@ -133,28 +141,70 @@ function reduceEvaluated(
       },
     ],
     persistenceError: null,
+    transitionToken: nextTransitionToken(
+      state,
+      'advancing',
+      roundHistory.length,
+      state.scoreEntries.length + 1,
+    ),
   };
+}
+
+function isTransitionAction(
+  action: TrainingAction,
+): action is Exclude<
+  TrainingAction,
+  { type: 'persistence-failed' } | { type: 'persistence-succeeded' }
+> {
+  return (
+    action.type !== 'persistence-failed' &&
+    action.type !== 'persistence-succeeded'
+  );
+}
+
+function invalidPhase(state: TrainingState, action: string): never {
+  throw new TrainingSessionError(
+    `Cannot ${action} while training is in phase "${state.phase}".`,
+  );
 }
 
 export function trainingReducer(
   state: TrainingState,
   action: TrainingAction,
 ): TrainingState {
+  if (isTransitionAction(action) && action.token !== state.transitionToken) {
+    return state;
+  }
+
   switch (action.type) {
     case 'loaded':
-      requirePhase(state, ['loading'], 'finish loading');
-      return { ...state, phase: 'active', persistenceError: null };
+      if (state.phase !== 'loading') {
+        return invalidPhase(state, 'finish loading');
+      }
+      return {
+        ...state,
+        phase: 'active',
+        persistenceError: null,
+        transitionToken: nextTransitionToken(state, 'active'),
+      };
     case 'evaluated':
-      return reduceEvaluated(state, action.round);
+      return state.phase === 'active'
+        ? reduceEvaluated(state, action.round)
+        : invalidPhase(state, 'evaluate a node');
     case 'retry':
-      requirePhase(state, ['feedback'], 'retry the current node');
+      if (state.phase !== 'feedback') {
+        return invalidPhase(state, 'retry the current node');
+      }
       return {
         ...state,
         phase: 'active',
         feedback: null,
+        transitionToken: nextTransitionToken(state, 'active'),
       };
     case 'advanced':
-      requirePhase(state, ['advancing'], 'advance to the next node');
+      if (state.phase !== 'advancing') {
+        return invalidPhase(state, 'advance to the next node');
+      }
       return {
         ...state,
         phase: 'active',
@@ -167,16 +217,21 @@ export function trainingReducer(
         feedback: null,
         pendingBranchKey: null,
         persistenceError: null,
+        transitionToken: nextTransitionToken(state, 'active'),
       };
     case 'completed':
-      requirePhase(state, ['advancing'], 'complete the attempt');
+      if (state.phase !== 'advancing') {
+        return invalidPhase(state, 'complete the attempt');
+      }
       return {
         ...state,
         phase: 'completed',
         currentNode: null,
+        feedback: null,
         pendingBranchKey: null,
         persistenceError: null,
         completedAttempt: action.attempt,
+        transitionToken: nextTransitionToken(state, 'completed'),
       };
     case 'persistence-failed':
       return { ...state, persistenceError: action.message };

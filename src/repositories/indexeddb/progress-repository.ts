@@ -2,9 +2,11 @@ import type { IDBPDatabase } from 'idb';
 
 import type {
   CaseProgressRecord,
+  CompletedAttemptRecord,
   ProgressRepository,
   ProgressSnapshot,
 } from '../contracts';
+import type { CompletionMerge } from '../contracts/progress-repository';
 import type { FdeArenaDatabase } from '../../storage/database';
 import { normalizeAttemptRecord } from './attempt-invariants';
 import { toStoredMistake } from './mistake-repository';
@@ -87,6 +89,77 @@ export class IndexedDbProgressRepository implements ProgressRepository {
         await transaction.objectStore('mistakes').put(toStoredMistake(mistake));
       }
       await transaction.done;
+    } catch (error) {
+      await settleAbortedTransaction(transaction);
+      throw error;
+    }
+  }
+
+  async commitCompletion(
+    attempt: CompletedAttemptRecord,
+    merge: CompletionMerge,
+  ): Promise<CompletedAttemptRecord> {
+    const normalizedAttempt = normalizeAttemptRecord(attempt);
+    if (normalizedAttempt.status !== 'completed') {
+      throw new Error('A completion commit requires a completed attempt.');
+    }
+    const transaction = this.database.transaction(
+      ['attempts', 'progress', 'mastery', 'mistakes'],
+      'readwrite',
+    );
+    try {
+      const attempts = transaction.objectStore('attempts');
+      const progress = transaction.objectStore('progress');
+      const mastery = transaction.objectStore('mastery');
+      const mistakes = transaction.objectStore('mistakes');
+      const [existingAttempt, previousProgress, previousMastery] =
+        await Promise.all([
+          attempts.get(normalizedAttempt.id),
+          progress.get([normalizedAttempt.userId, normalizedAttempt.caseId]),
+          mastery.index('by-user').getAll(normalizedAttempt.userId),
+        ]);
+
+      if (
+        existingAttempt !== undefined &&
+        (existingAttempt.userId !== normalizedAttempt.userId ||
+          existingAttempt.caseId !== normalizedAttempt.caseId ||
+          existingAttempt.caseVersion !== normalizedAttempt.caseVersion)
+      ) {
+        throw new Error(
+          'An existing attempt must use the same user, case, and case version.',
+        );
+      }
+      if (existingAttempt?.status === 'completed') {
+        await transaction.done;
+        return existingAttempt;
+      }
+
+      const merged = merge({ previousProgress, previousMastery });
+      if (
+        typeof merged !== 'object' ||
+        merged === null ||
+        typeof (merged as { then?: unknown }).then === 'function'
+      ) {
+        throw new Error('The completion merge callback must be synchronous.');
+      }
+      const snapshot: ProgressSnapshot = {
+        attempt: normalizedAttempt,
+        progress: merged.progress,
+        mastery: [...merged.mastery],
+        mistakes: [...merged.mistakes],
+      };
+      assertSnapshotIdentity(snapshot);
+
+      await attempts.put(normalizedAttempt);
+      await progress.put(snapshot.progress);
+      for (const masteryRecord of snapshot.mastery) {
+        await mastery.put(masteryRecord);
+      }
+      for (const mistake of snapshot.mistakes) {
+        await mistakes.put(toStoredMistake(mistake));
+      }
+      await transaction.done;
+      return normalizedAttempt;
     } catch (error) {
       await settleAbortedTransaction(transaction);
       throw error;

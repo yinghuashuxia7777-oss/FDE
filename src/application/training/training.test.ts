@@ -5,6 +5,7 @@ import type {
 } from '../../domain/cases/types';
 import type {
   AttemptRecord,
+  CompletedAttemptRecord,
   InProgressAttemptRecord,
   ProgressSnapshot,
   SkillMasteryRecord,
@@ -14,7 +15,8 @@ import {
   createTrainingSession,
   resumeAttempt,
   submitNode,
-  trainingReducer,
+  trainingReducer as reduceTrainingState,
+  type TrainingAction,
   type TrainingDependencies,
   type TrainingState,
 } from './index';
@@ -190,6 +192,42 @@ interface DependencyHarness {
   savedAttempts: AttemptRecord[];
   snapshots: ProgressSnapshot[];
   setSaveFailure(error: Error | undefined): void;
+  setSnapshotFailure(error: Error | undefined): void;
+}
+
+type UntokenedTrainingAction =
+  | { type: 'loaded' }
+  | {
+      type: 'evaluated';
+      round: InProgressAttemptRecord['roundHistory'][number];
+    }
+  | { type: 'retry' }
+  | { type: 'advanced'; nextNode: CaseNode }
+  | { type: 'completed'; attempt: CompletedAttemptRecord }
+  | { type: 'persistence-failed'; message: string }
+  | { type: 'persistence-succeeded' };
+
+const publicRetryAction: TrainingAction = {
+  type: 'retry',
+  token: 'consumer-supplied-current-token',
+};
+void publicRetryAction;
+
+function trainingReducer(
+  state: TrainingState,
+  action: TrainingAction | UntokenedTrainingAction,
+): TrainingState {
+  if (
+    action.type === 'persistence-failed' ||
+    action.type === 'persistence-succeeded' ||
+    'token' in action
+  ) {
+    return reduceTrainingState(state, action);
+  }
+  return reduceTrainingState(state, {
+    ...action,
+    token: state.transitionToken,
+  });
 }
 
 function createDependencies(
@@ -198,6 +236,10 @@ function createDependencies(
   const savedAttempts: AttemptRecord[] = [];
   const snapshots: ProgressSnapshot[] = [];
   let saveFailure: Error | undefined;
+  let snapshotFailure: Error | undefined;
+  let previousProgress: ProgressSnapshot['progress'] | undefined;
+  let storedMastery = structuredClone(previousMastery);
+  const completedAttempts = new Map<string, CompletedAttemptRecord>();
   const dependencies: TrainingDependencies = {
     attemptRepository: {
       save(attempt) {
@@ -209,15 +251,36 @@ function createDependencies(
       },
     },
     progressRepository: {
-      get() {
-        return Promise.resolve(undefined);
-      },
-      saveSnapshot(snapshot) {
-        if (saveFailure) {
-          return Promise.reject(saveFailure);
+      commitCompletion(attempt, merge) {
+        const failure = snapshotFailure ?? saveFailure;
+        if (failure !== undefined) {
+          return Promise.reject(failure);
         }
+        const existing = completedAttempts.get(attempt.id);
+        if (existing !== undefined) {
+          return Promise.resolve(structuredClone(existing));
+        }
+        const merged = merge({
+          previousProgress,
+          previousMastery: storedMastery,
+        });
+        const snapshot: ProgressSnapshot = {
+          attempt,
+          progress: merged.progress,
+          mastery: [...merged.mastery],
+          mistakes: [...merged.mistakes],
+        };
         snapshots.push(structuredClone(snapshot));
-        return Promise.resolve();
+        previousProgress = structuredClone(merged.progress);
+        const masteryBySkill = new Map(
+          storedMastery.map((record) => [record.skillId, record]),
+        );
+        for (const record of merged.mastery) {
+          masteryBySkill.set(record.skillId, structuredClone(record));
+        }
+        storedMastery = [...masteryBySkill.values()];
+        completedAttempts.set(attempt.id, structuredClone(attempt));
+        return Promise.resolve(structuredClone(attempt));
       },
     },
     skillRepository: {
@@ -234,6 +297,9 @@ function createDependencies(
     snapshots,
     setSaveFailure(error) {
       saveFailure = error;
+    },
+    setSnapshotFailure(error) {
+      snapshotFailure = error;
     },
   };
 }
@@ -260,8 +326,17 @@ function loadingState(fdeCase = createTrainingCase()): TrainingState {
     feedback: null,
     pendingBranchKey: null,
     persistenceError: null,
+    transitionToken: 'test:loading:0',
   };
 }
+
+const invalidCompletedState = {
+  ...loadingState(),
+  phase: 'completed' as const,
+};
+// @ts-expect-error completed state requires null currentNode and completedAttempt
+const completedStateMustBeDiscriminated: TrainingState = invalidCompletedState;
+void completedStateMustBeDiscriminated;
 
 function round(
   nodeId: string,
@@ -488,6 +563,32 @@ describe('trainingReducer', () => {
       persistenceError: 'quota exceeded',
     });
   });
+
+  it('treats a repeated or stale retry token as an idempotent no-op', () => {
+    let state = trainingReducer(loadingState(), { type: 'loaded' });
+    state = trainingReducer(state, {
+      type: 'evaluated',
+      round: round(
+        'node-1',
+        1,
+        { type: 'choice', selectedOptionIds: ['slow'] },
+        false,
+      ),
+    });
+    const retry = {
+      type: 'retry' as const,
+      token: state.transitionToken,
+    };
+
+    const active = trainingReducer(state, retry);
+    expect(trainingReducer(active, retry)).toBe(active);
+    expect(
+      trainingReducer(state, {
+        ...retry,
+        token: 'stale-token',
+      }),
+    ).toBe(state);
+  });
 });
 
 describe('training application service', () => {
@@ -574,6 +675,84 @@ describe('training application service', () => {
     });
   });
 
+  it('deduplicates concurrent double submission of the same active transition', async () => {
+    const harness = createDependencies();
+    const active = await createTrainingSession(
+      createTrainingCase(),
+      harness.dependencies,
+    );
+
+    const first = submitNode(
+      active,
+      { type: 'choice', selectedOptionIds: ['good'] },
+      harness.dependencies,
+    );
+    const duplicate = submitNode(
+      active,
+      { type: 'choice', selectedOptionIds: ['good'] },
+      harness.dependencies,
+    );
+
+    expect(duplicate).toBe(first);
+    const [firstState, duplicateState] = await Promise.all([first, duplicate]);
+    expect(duplicateState).toBe(firstState);
+    expect(firstState).toMatchObject({
+      phase: 'active',
+      currentNode: { id: 'node-2' },
+    });
+    expect(harness.savedAttempts).toHaveLength(3);
+  });
+
+  it('returns the consumed result when an old active state is submitted again later', async () => {
+    const harness = createDependencies();
+    const staleActive = await createTrainingSession(
+      createTrainingCase(),
+      harness.dependencies,
+    );
+    const advanced = await submitNode(
+      staleActive,
+      { type: 'choice', selectedOptionIds: ['good'] },
+      harness.dependencies,
+    );
+    const persistedWrites = harness.savedAttempts.length;
+
+    const delayedDuplicate = await submitNode(
+      staleActive,
+      { type: 'choice', selectedOptionIds: ['slow'] },
+      harness.dependencies,
+    );
+
+    expect(delayedDuplicate).toBe(advanced);
+    expect(harness.savedAttempts).toHaveLength(persistedWrites);
+  });
+
+  it('allows a valid retry after a rejected submission from the same active state', async () => {
+    const harness = createDependencies();
+    const active = await createTrainingSession(
+      createTrainingCase(),
+      harness.dependencies,
+    );
+
+    await expect(
+      submitNode(
+        active,
+        { type: 'ordering', orderedOptionIds: ['good', 'slow', 'danger'] },
+        harness.dependencies,
+      ),
+    ).rejects.toThrow(/does not match/i);
+
+    await expect(
+      submitNode(
+        active,
+        { type: 'choice', selectedOptionIds: ['good'] },
+        harness.dependencies,
+      ),
+    ).resolves.toMatchObject({
+      phase: 'active',
+      currentNode: { id: 'node-2' },
+    });
+  });
+
   it('does not advance the path when saving a resolved non-terminal round fails', async () => {
     const harness = createDependencies();
     const active = await createTrainingSession(
@@ -601,6 +780,26 @@ describe('training application service', () => {
       currentNode: { id: 'node-2' },
       visitedNodeIds: ['node-1', 'node-2'],
       persistenceError: null,
+    });
+  });
+
+  it('does not resolve a malformed branch when its resolved checkpoint fails', async () => {
+    const harness = createDependencies();
+    const malformed = createTrainingCase();
+    malformed.nodes[0]!.branches = [];
+    const active = await createTrainingSession(malformed, harness.dependencies);
+    harness.setSaveFailure(new Error('checkpoint failed'));
+
+    await expect(
+      submitNode(
+        active,
+        { type: 'choice', selectedOptionIds: ['good'] },
+        harness.dependencies,
+      ),
+    ).resolves.toMatchObject({
+      phase: 'advancing',
+      currentNode: { id: 'node-1' },
+      persistenceError: 'checkpoint failed',
     });
   });
 
@@ -641,6 +840,14 @@ describe('training application service', () => {
       ],
     });
 
+    state = resumeAttempt(
+      createTrainingCase(),
+      harness.savedAttempts.at(-1) as InProgressAttemptRecord,
+    );
+    expect(state).toMatchObject({
+      phase: 'advancing',
+      feedback: { kind: 'revealedAnswer', revealed: true },
+    });
     state = await completeAttempt(state, harness.dependencies);
     expect(state).toMatchObject({
       phase: 'active',
@@ -789,6 +996,147 @@ describe('training application service', () => {
     harness.setSaveFailure(undefined);
     state = await completeAttempt(state, harness.dependencies);
     expect(state.phase).toBe('completed');
+  });
+
+  it('checkpoints a terminal resolved round before snapshot and resumes it after failure', async () => {
+    const harness = createDependencies();
+    let state = await createTrainingSession(
+      createTrainingCase(),
+      harness.dependencies,
+    );
+    state = await submitNode(
+      state,
+      { type: 'choice', selectedOptionIds: ['good'] },
+      harness.dependencies,
+    );
+    harness.setSnapshotFailure(new Error('snapshot failed'));
+
+    state = await submitNode(
+      state,
+      { type: 'choice', selectedOptionIds: ['good'] },
+      harness.dependencies,
+    );
+
+    expect(state).toMatchObject({
+      phase: 'advancing',
+      currentNode: { id: 'node-2' },
+      persistenceError: 'snapshot failed',
+    });
+    const checkpoint = harness.savedAttempts.at(-1) as InProgressAttemptRecord;
+    expect(checkpoint).toMatchObject({
+      currentNodeId: 'node-2',
+      roundHistory: [
+        expect.objectContaining({ nodeId: 'node-1', attemptNumber: 1 }),
+        expect.objectContaining({ nodeId: 'node-2', attemptNumber: 1 }),
+      ],
+    });
+
+    const resumed = resumeAttempt(createTrainingCase(), checkpoint);
+    expect(resumed).toMatchObject({
+      phase: 'advancing',
+      currentNode: { id: 'node-2' },
+      pendingBranchKey: 'correct',
+      scoreEntries: [
+        { nodeId: 'node-1', earnedPoints: 10 },
+        { nodeId: 'node-2', earnedPoints: 10 },
+      ],
+    });
+    harness.setSnapshotFailure(undefined);
+    expect(await completeAttempt(resumed, harness.dependencies)).toMatchObject({
+      phase: 'completed',
+    });
+  });
+
+  it('commits the same advancing attempt idempotently across sequential retries', async () => {
+    const harness = createDependencies();
+    let state = await createTrainingSession(
+      createOrderingCase(),
+      harness.dependencies,
+    );
+    for (let attemptNumber = 1; attemptNumber <= 3; attemptNumber += 1) {
+      state = await submitNode(
+        state,
+        {
+          type: 'ordering',
+          orderedOptionIds: ['repair', 'inspect', 'verify'],
+        },
+        harness.dependencies,
+      );
+      if (state.phase === 'feedback') {
+        state = trainingReducer(state, { type: 'retry' });
+      }
+    }
+    expect(state.phase).toBe('advancing');
+
+    const firstPending = completeAttempt(state, harness.dependencies);
+    const duplicatePending = completeAttempt(state, harness.dependencies);
+    expect(duplicatePending).toBe(firstPending);
+    const [first, duplicate] = await Promise.all([
+      firstPending,
+      duplicatePending,
+    ]);
+    const sequentialRetry = await completeAttempt(state, harness.dependencies);
+
+    expect(first).toMatchObject({ phase: 'completed' });
+    expect(duplicate).toMatchObject({
+      phase: 'completed',
+      completedAttempt: { id: 'attempt-fixed' },
+    });
+    expect(sequentialRetry).toMatchObject({
+      phase: 'completed',
+      completedAttempt: { id: 'attempt-fixed' },
+    });
+    expect(harness.snapshots).toHaveLength(1);
+    expect(harness.snapshots[0]).toMatchObject({
+      progress: { attemptCount: 1, completedCount: 1 },
+      mastery: [expect.objectContaining({ sampleCount: 1 })],
+    });
+  });
+
+  it('serializes distinct concurrent completions against the latest progress and mastery', async () => {
+    const harness = createDependencies();
+    const ids = ['attempt-a', 'attempt-b'];
+    harness.dependencies.createId = () => ids.shift()!;
+
+    async function reachTerminalCheckpoint(): Promise<TrainingState> {
+      let checkpoint = await createTrainingSession(
+        createOrderingCase(),
+        harness.dependencies,
+      );
+      for (let attemptNumber = 1; attemptNumber <= 3; attemptNumber += 1) {
+        checkpoint = await submitNode(
+          checkpoint,
+          {
+            type: 'ordering',
+            orderedOptionIds: ['repair', 'inspect', 'verify'],
+          },
+          harness.dependencies,
+        );
+        if (checkpoint.phase === 'feedback') {
+          checkpoint = trainingReducer(checkpoint, { type: 'retry' });
+        }
+      }
+      return checkpoint;
+    }
+
+    const [firstCheckpoint, secondCheckpoint] = await Promise.all([
+      reachTerminalCheckpoint(),
+      reachTerminalCheckpoint(),
+    ]);
+    const [first, second] = await Promise.all([
+      completeAttempt(firstCheckpoint, harness.dependencies),
+      completeAttempt(secondCheckpoint, harness.dependencies),
+    ]);
+
+    expect(first.phase).toBe('completed');
+    expect(second.phase).toBe('completed');
+    expect(
+      harness.snapshots.map(({ progress }) => progress.attemptCount),
+    ).toEqual([1, 2]);
+    expect(harness.snapshots[1]).toMatchObject({
+      progress: { completedCount: 2 },
+      mastery: [expect.objectContaining({ sampleCount: 2 })],
+    });
   });
 
   it('resumes unresolved feedback with score, path, consequences, and hint level', async () => {
@@ -941,5 +1289,142 @@ describe('training application service', () => {
     const invalid = { ...saved, ...override } as AttemptRecord;
 
     expect(() => resumeAttempt(createTrainingCase(), invalid)).toThrow();
+  });
+
+  it.each([
+    [
+      'an invalid startedAt',
+      {
+        startedAt: 'July 13, 2026',
+      },
+    ],
+    [
+      'a round before startedAt',
+      {
+        startedAt: '2026-07-13T08:00:00.000Z',
+        updatedAt: '2026-07-13T09:00:00.000Z',
+        roundHistory: [
+          {
+            ...round(
+              'node-1',
+              1,
+              { type: 'choice', selectedOptionIds: ['slow'] },
+              false,
+            ),
+            submittedAt: '2026-07-13T07:00:00.000Z',
+          },
+        ],
+        consequences: [],
+      },
+    ],
+    [
+      'non-monotonic round times',
+      {
+        startedAt: '2026-07-13T06:00:00.000Z',
+        updatedAt: '2026-07-13T09:00:00.000Z',
+        roundHistory: [
+          {
+            ...round(
+              'node-1',
+              1,
+              { type: 'choice', selectedOptionIds: ['slow'] },
+              false,
+            ),
+            submittedAt: '2026-07-13T08:00:00.000Z',
+          },
+          {
+            ...round(
+              'node-1',
+              2,
+              { type: 'choice', selectedOptionIds: ['slow'] },
+              false,
+            ),
+            submittedAt: '2026-07-13T07:00:00.000Z',
+          },
+        ],
+        consequences: [],
+      },
+    ],
+    [
+      'updatedAt before the last round',
+      {
+        startedAt: '2026-07-13T06:00:00.000Z',
+        updatedAt: '2026-07-13T07:00:00.000Z',
+        roundHistory: [
+          {
+            ...round(
+              'node-1',
+              1,
+              { type: 'choice', selectedOptionIds: ['slow'] },
+              false,
+            ),
+            submittedAt: '2026-07-13T08:00:00.000Z',
+          },
+        ],
+        consequences: [],
+      },
+    ],
+  ])('rejects resume for %s', async (_label, override) => {
+    const harness = createDependencies();
+    await createTrainingSession(createTrainingCase(), harness.dependencies);
+    const saved = harness.savedAttempts[0] as InProgressAttemptRecord;
+    const invalid = { ...saved, ...override } as InProgressAttemptRecord;
+
+    expect(() => resumeAttempt(createTrainingCase(), invalid)).toThrow(
+      /timestamp|chronolog|before|after/i,
+    );
+  });
+
+  it('preserves arbitrary fractional precision and offsets while resuming', async () => {
+    const harness = createDependencies();
+    await createTrainingSession(createTrainingCase(), harness.dependencies);
+    const saved = harness.savedAttempts[0] as InProgressAttemptRecord;
+    const precise: InProgressAttemptRecord = {
+      ...saved,
+      startedAt: '2026-07-13T10:00:00.123456789+02:00',
+      updatedAt: '2026-07-13T08:00:01.000Z',
+    };
+
+    expect(resumeAttempt(createTrainingCase(), precise)).toMatchObject({
+      phase: 'active',
+      startedAt: '2026-07-13T08:00:00.123456789Z',
+      updatedAt: '2026-07-13T08:00:01.000Z',
+    });
+  });
+
+  it('rejects sub-millisecond round timestamps in descending exact order', async () => {
+    const harness = createDependencies();
+    await createTrainingSession(createTrainingCase(), harness.dependencies);
+    const saved = harness.savedAttempts[0] as InProgressAttemptRecord;
+    const descending: InProgressAttemptRecord = {
+      ...saved,
+      startedAt: '2026-07-13T08:00:00.000Z',
+      updatedAt: '2026-07-13T08:00:00.001Z',
+      roundHistory: [
+        {
+          ...round(
+            'node-1',
+            1,
+            { type: 'choice', selectedOptionIds: ['slow'] },
+            false,
+          ),
+          submittedAt: '2026-07-13T08:00:00.0009Z',
+        },
+        {
+          ...round(
+            'node-1',
+            2,
+            { type: 'choice', selectedOptionIds: ['slow'] },
+            false,
+          ),
+          submittedAt: '2026-07-13T08:00:00.0001Z',
+        },
+      ],
+      consequences: [],
+    };
+
+    expect(() => resumeAttempt(createTrainingCase(), descending)).toThrow(
+      /chronological/i,
+    );
   });
 });

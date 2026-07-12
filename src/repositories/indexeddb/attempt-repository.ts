@@ -7,9 +7,38 @@ import type {
 } from '../contracts';
 import type { FdeArenaDatabase } from '../../storage/database';
 import {
+  compareRfc3339Timestamps,
+  rfc3339SecondIndexPrefix,
+} from '../../storage/timestamps';
+import {
   normalizeAttemptRecord,
   normalizeTimestamp,
 } from './attempt-invariants';
+
+export class AttemptCheckpointConflictError extends Error {
+  override readonly name = 'AttemptCheckpointConflictError';
+}
+
+function sameIdentity(left: AttemptRecord, right: AttemptRecord): boolean {
+  return (
+    left.userId === right.userId &&
+    left.caseId === right.caseId &&
+    left.caseVersion === right.caseVersion
+  );
+}
+
+function isJsonPrefix(
+  existing: readonly unknown[],
+  incoming: readonly unknown[],
+): boolean {
+  return (
+    existing.length <= incoming.length &&
+    existing.every(
+      (value, index) =>
+        JSON.stringify(value) === JSON.stringify(incoming[index]),
+    )
+  );
+}
 
 export class IndexedDbAttemptRepository implements AttemptRepository {
   constructor(private readonly database: IDBPDatabase<FdeArenaDatabase>) {}
@@ -28,7 +57,10 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
       attempts = await this.database.getAllFromIndex(
         'attempts',
         'by-completed-at',
-        IDBKeyRange.lowerBound(completedAfter, true),
+        IDBKeyRange.lowerBound(
+          rfc3339SecondIndexPrefix(completedAfter, 'completedAfter'),
+          true,
+        ),
       );
     } else if (query.caseId !== undefined) {
       attempts = await this.database.getAllFromIndex(
@@ -60,13 +92,61 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
           (query.status === undefined || attempt.status === query.status) &&
           (completedAfter === undefined ||
             (attempt.completedAt !== undefined &&
-              attempt.completedAt > completedAfter)),
+              compareRfc3339Timestamps(attempt.completedAt, completedAfter) >
+                0)),
       )
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+      .sort((left, right) =>
+        compareRfc3339Timestamps(right.updatedAt, left.updatedAt),
+      );
   }
 
   async save(attempt: AttemptRecord): Promise<void> {
-    await this.database.put('attempts', normalizeAttemptRecord(attempt));
+    const normalized = normalizeAttemptRecord(attempt);
+    const transaction = this.database.transaction('attempts', 'readwrite');
+    const existing = await transaction.store.get(normalized.id);
+    if (existing !== undefined && !sameIdentity(existing, normalized)) {
+      throw new AttemptCheckpointConflictError(
+        'Attempt checkpoint identity must use the same user, case, and version.',
+      );
+    }
+    if (
+      existing?.status === 'completed' &&
+      normalized.status === 'in-progress'
+    ) {
+      await transaction.done;
+      return;
+    }
+    if (
+      existing?.status === 'in-progress' &&
+      normalized.status === 'in-progress'
+    ) {
+      const chronologyMovesForward =
+        compareRfc3339Timestamps(normalized.updatedAt, existing.updatedAt) >= 0;
+      const historyMovesForward = isJsonPrefix(
+        existing.roundHistory,
+        normalized.roundHistory,
+      );
+      const pathMovesForward = isJsonPrefix(
+        existing.visitedNodeIds,
+        normalized.visitedNodeIds,
+      );
+      const consequencesMoveForward = isJsonPrefix(
+        existing.consequences ?? [],
+        normalized.consequences ?? [],
+      );
+      if (
+        !chronologyMovesForward ||
+        !historyMovesForward ||
+        !pathMovesForward ||
+        !consequencesMoveForward
+      ) {
+        throw new AttemptCheckpointConflictError(
+          'Attempt checkpoint cannot roll stored history or path backward.',
+        );
+      }
+    }
+    await transaction.store.put(normalized);
+    await transaction.done;
   }
 
   async delete(id: string): Promise<void> {

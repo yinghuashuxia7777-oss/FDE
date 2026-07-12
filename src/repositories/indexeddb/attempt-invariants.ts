@@ -4,6 +4,10 @@ import type {
   CompletedAttemptRecord,
 } from '../contracts';
 import type { Verdict } from '../../domain/scoring/case-score';
+import {
+  normalizeRfc3339Timestamp,
+  TimestampInvariantError,
+} from '../../storage/timestamps';
 
 const VERDICTS = new Set<Verdict>([
   'excellent',
@@ -13,75 +17,19 @@ const VERDICTS = new Set<Verdict>([
   'critical-risk',
 ]);
 
-const RFC3339_TIMESTAMP =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/;
-
 export class AttemptInvariantError extends Error {
   override readonly name = 'AttemptInvariantError';
 }
 
-function isLeapYear(year: number): boolean {
-  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-}
-
-function isValidCalendarTime(match: RegExpExecArray): boolean {
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const second = Number(match[6]);
-  const offsetHour = match[7] === undefined ? 0 : Number(match[7]);
-  const offsetMinute = match[8] === undefined ? 0 : Number(match[8]);
-  const daysInMonth = [
-    31,
-    isLeapYear(year) ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
-
-  return (
-    Number.isInteger(year) &&
-    month >= 1 &&
-    month <= 12 &&
-    day >= 1 &&
-    day <= (daysInMonth[month - 1] ?? 0) &&
-    hour >= 0 &&
-    hour <= 23 &&
-    minute >= 0 &&
-    minute <= 59 &&
-    second >= 0 &&
-    second <= 59 &&
-    offsetHour >= 0 &&
-    offsetHour <= 23 &&
-    offsetMinute >= 0 &&
-    offsetMinute <= 59
-  );
-}
-
 export function normalizeTimestamp(value: unknown, label: string): string {
-  if (typeof value !== 'string') {
-    throw new AttemptInvariantError(`${label} must be a valid timestamp.`);
+  try {
+    return normalizeRfc3339Timestamp(value, label);
+  } catch (error) {
+    if (error instanceof TimestampInvariantError) {
+      throw new AttemptInvariantError(error.message);
+    }
+    throw error;
   }
-  const match = RFC3339_TIMESTAMP.exec(value);
-  if (match === null || !isValidCalendarTime(match)) {
-    throw new AttemptInvariantError(
-      `${label} must be a valid RFC3339 timestamp.`,
-    );
-  }
-  const timestamp = new Date(value);
-  if (!Number.isFinite(timestamp.getTime())) {
-    throw new AttemptInvariantError(`${label} must be a valid timestamp.`);
-  }
-  return timestamp.toISOString();
 }
 
 function normalizeRoundHistory(
