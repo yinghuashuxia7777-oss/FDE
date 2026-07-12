@@ -66,12 +66,14 @@ export function evaluateChoiceSubmission(
       selectedOptionIdSet.has(option.id) && !correctOptionIdSet.has(option.id),
   );
   const optionBranchKey = `option:${selectedOptionIds[0] ?? ''}`;
-  const branchKey = isCorrect
-    ? isChoiceNode(node) &&
-      node.branches.some((branch) => branch.key === optionBranchKey)
-      ? optionBranchKey
-      : 'correct'
-    : 'incorrect';
+  const hasOptionBranch =
+    isChoiceNode(node) &&
+    node.branches.some((branch) => branch.key === optionBranchKey);
+  const branchKey = hasOptionBranch
+    ? optionBranchKey
+    : isCorrect
+      ? 'correct'
+      : 'incorrect';
 
   return applyDecisionEffects(node, selectedOptionIds, {
     isCorrect,

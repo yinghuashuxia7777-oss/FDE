@@ -88,6 +88,15 @@ export function evaluateOrderingSubmission(
       `Canonical order on node "${node.id}" must contain every option exactly once.`,
     );
   }
+  const submittedOptionIds = new Set(submittedOrder);
+  if (
+    submittedOrder.length !== canonicalOrder.length ||
+    canonicalOrder.some((optionId) => !submittedOptionIds.has(optionId))
+  ) {
+    throw new EvaluationDomainError(
+      `Ordering submission for node "${node.id}" must be a complete permutation of the canonical options.`,
+    );
+  }
 
   const isCorrect = arraysEqual(submittedOrder, canonicalOrder);
   const scoreRatio =

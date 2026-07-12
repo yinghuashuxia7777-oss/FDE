@@ -1,12 +1,13 @@
 import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import type {
+  CaseNode,
   ChoiceNodeType,
   EvidenceConclusionCaseNode,
   MatchingCaseNode,
   MultipleChoiceCaseNode,
   OrderingCaseNode,
 } from '../cases/types';
-import { evaluateNode } from './evaluate-node';
+import { EvaluationDomainError, evaluateNode } from './evaluate-node';
 
 describe('evaluateNode choice nodes', () => {
   it('marks only the exact option correct and uses an option-specific branch', () => {
@@ -15,6 +16,7 @@ describe('evaluateNode choice nodes', () => {
     node.consequences = [];
     node.branches = [
       { key: 'option:option-a', nextNodeId: null },
+      { key: 'option:option-b', nextNodeId: null },
       { key: 'incorrect', nextNodeId: null },
     ];
 
@@ -43,7 +45,23 @@ describe('evaluateNode choice nodes', () => {
       errorTypes: ['unsupported-action'],
       criticalErrorIds: [],
       consequences: [],
-      branchKey: 'incorrect',
+      branchKey: 'option:option-b',
+    });
+  });
+
+  it('lets critical decisions override an authored option branch', () => {
+    const node = createMinimalValidCase().nodes[0]!;
+    node.branches = [{ key: 'option:option-b', nextNodeId: null }];
+
+    expect(
+      evaluateNode(node, {
+        type: 'choice',
+        selectedOptionIds: ['option-b'],
+      }),
+    ).toMatchObject({
+      isCorrect: false,
+      criticalErrorIds: ['option-b'],
+      branchKey: 'critical',
     });
   });
 
@@ -67,7 +85,7 @@ describe('evaluateNode choice nodes', () => {
           type: 'choice',
           selectedOptionIds: ['option-a'],
         }),
-      ).toMatchObject({ isCorrect: true, scoreRatio: 1 });
+      ).toMatchObject({ isCorrect: true, scoreRatio: 1, branchKey: 'correct' });
     },
   );
 });
@@ -167,6 +185,41 @@ describe('evaluateNode ordering nodes', () => {
         orderedOptionIds: node.answer.orderedOptionIds,
       }),
     ).toMatchObject({ isCorrect: true, scoreRatio: 1 });
+  });
+
+  it('rejects subsets and extra IDs instead of partially scoring them', () => {
+    const choiceNode = createMinimalValidCase().nodes[0]!;
+    const node: OrderingCaseNode = {
+      ...choiceNode,
+      type: 'ordering',
+      answer: { orderedOptionIds: ['option-a', 'option-b'] },
+      branches: [],
+    };
+
+    expect(() =>
+      evaluateNode(node, {
+        type: 'ordering',
+        orderedOptionIds: ['option-a'],
+      }),
+    ).toThrow(/complete permutation/i);
+    expect(() =>
+      evaluateNode(node, {
+        type: 'ordering',
+        orderedOptionIds: ['option-a', 'option-b', 'option-extra'],
+      }),
+    ).toThrow(EvaluationDomainError);
+    expect(() =>
+      evaluateNode(node, {
+        type: 'ordering',
+        orderedOptionIds: ['option-a', 'option-a'],
+      }),
+    ).toThrow(/duplicate/i);
+    expect(() =>
+      evaluateNode(node, {
+        type: 'ordering',
+        orderedOptionIds: ['option-a', 'option-unknown'],
+      }),
+    ).toThrow(/unknown option/i);
   });
 });
 
@@ -283,8 +336,8 @@ describe('evaluateNode decision effects', () => {
         {
           id: 'option-d',
           label: 'Repeated error type',
-          explanation: 'This repeats an existing error category.',
-          errorType: 'unsupported-action',
+          explanation: 'This has a distinct later error category.',
+          errorType: 'late-authored-error',
         },
       ],
       answer: { correctOptionIds: ['option-a'] },
@@ -307,7 +360,11 @@ describe('evaluateNode decision effects', () => {
     ).toEqual({
       isCorrect: false,
       scoreRatio: 0,
-      errorTypes: ['unsupported-action', 'incorrect-option'],
+      errorTypes: [
+        'unsupported-action',
+        'incorrect-option',
+        'late-authored-error',
+      ],
       criticalErrorIds: ['option-b'],
       consequences: [
         { timeDelta: 5, message: 'Delayed recovery.' },
@@ -432,5 +489,19 @@ describe('evaluateNode submission boundaries', () => {
         evidenceIds: ['unknown-evidence'],
       }),
     ).toThrow(/unknown evidence/i);
+  });
+
+  it('rejects an unknown runtime node discriminator', () => {
+    const node = {
+      ...createMinimalValidCase().nodes[0]!,
+      type: 'unknown-runtime-node',
+    } as unknown as CaseNode;
+
+    expect(() =>
+      evaluateNode(node, {
+        type: 'choice',
+        selectedOptionIds: ['option-a'],
+      }),
+    ).toThrow(EvaluationDomainError);
   });
 });

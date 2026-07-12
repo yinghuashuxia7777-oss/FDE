@@ -12,12 +12,19 @@ import { EvaluationDomainError } from './evaluation-error';
 export const FALLBACK_ERROR_TYPE = 'incorrect-option';
 
 export function isChoiceNode(node: CaseNode): node is ChoiceCaseNode {
-  return ![
-    'multiple-choice',
-    'ordering',
-    'matching',
-    'evidence-conclusion',
-  ].includes(node.type);
+  switch (node.type) {
+    case 'single-choice':
+    case 'true-false':
+    case 'log-analysis':
+    case 'command-choice':
+    case 'diff-review':
+    case 'configuration-review':
+    case 'architecture-tradeoff':
+    case 'customer-response':
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function assertUniqueIds(ids: readonly string[], label: string): void {
