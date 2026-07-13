@@ -53,14 +53,13 @@ interface DiffLineProps {
 }
 
 function DiffLine({ content, index }: DiffLineProps) {
-  const kind =
-    content.startsWith('+++') || content.startsWith('---')
-      ? 'metadata'
-      : content.startsWith('+')
-        ? 'added'
-        : content.startsWith('-')
-          ? 'removed'
-          : 'context';
+  const kind = /^(?:\+\+\+|---)(?:\s|$)/.test(content)
+    ? 'metadata'
+    : content.startsWith('+')
+      ? 'added'
+      : content.startsWith('-')
+        ? 'removed'
+        : 'context';
   const label =
     kind === 'metadata'
       ? 'Metadata'

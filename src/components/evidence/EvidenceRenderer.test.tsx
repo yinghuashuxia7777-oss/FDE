@@ -49,7 +49,9 @@ describe('evidence components', () => {
     render(
       <DiffBlock
         title="Unified change"
-        content={'--- a/config.ts\n+++ b/config.ts\n-old flag\n+new flag'}
+        content={
+          '--- a/config.ts\n+++ b/config.ts\n-old flag\n+new flag\n+++counter;'
+        }
       />,
     );
 
@@ -58,7 +60,8 @@ describe('evidence components', () => {
     });
     expect(within(region).getAllByText('Metadata')).toHaveLength(2);
     expect(within(region).getAllByText('Removed')).toHaveLength(1);
-    expect(within(region).getAllByText('Added')).toHaveLength(1);
+    expect(within(region).getAllByText('Added')).toHaveLength(2);
+    expect(within(region).getByText('+++counter;')).toBeInTheDocument();
   });
 
   it.each<EvidenceType>([
