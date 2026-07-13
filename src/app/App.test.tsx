@@ -5,6 +5,7 @@ import { createMemoryRouter, Link, RouterProvider } from 'react-router-dom';
 import { ApplicationShell } from '../components/layout/ApplicationShell';
 import { ThemeProvider } from '../components/layout/ThemeProvider';
 import { App } from './App';
+import { RouteFrame } from './route-pages';
 
 const defaultMatchMedia = window.matchMedia;
 
@@ -132,18 +133,23 @@ describe('application shell', () => {
       [
         {
           path: '/',
-          element: <ApplicationShell />,
+          element: <RouteFrame />,
           children: [
             {
-              path: 'cases',
-              element: (
-                <>
-                  <h1 id="page-title" tabIndex={-1}>
-                    Cases
-                  </h1>
-                  <Link to="?level=advanced">Advanced cases</Link>
-                </>
-              ),
+              element: <ApplicationShell />,
+              children: [
+                {
+                  path: 'cases',
+                  element: (
+                    <>
+                      <h1 id="page-title" tabIndex={-1}>
+                        Cases
+                      </h1>
+                      <Link to="?level=advanced">Advanced cases</Link>
+                    </>
+                  ),
+                },
+              ],
             },
           ],
         },

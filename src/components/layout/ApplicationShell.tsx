@@ -6,8 +6,8 @@ import {
   UserCircle,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { type MouseEvent, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import type { MouseEvent } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
 
 import { MobileNavigation } from './MobileNavigation';
 import { ThemeSelector } from './ThemeProvider';
@@ -34,22 +34,6 @@ const desktopDestinations = [
   { to: '/profile', label: 'Profile', Icon: UserCircle, end: false },
   { to: '/settings', label: 'Settings', Icon: Gear, end: false },
 ] as const;
-
-function RouteFocus() {
-  const location = useLocation();
-  const initialRender = useRef(true);
-
-  useEffect(() => {
-    if (initialRender.current) {
-      initialRender.current = false;
-      return;
-    }
-
-    document.getElementById('page-title')?.focus();
-  }, [location.pathname]);
-
-  return null;
-}
 
 export function ApplicationShell() {
   const desktop = useMediaQuery('(min-width: 64rem)');
@@ -97,7 +81,6 @@ export function ApplicationShell() {
           aria-labelledby="page-title"
           tabIndex={-1}
         >
-          <RouteFocus />
           <Outlet />
         </main>
         {desktop ? null : <MobileNavigation />}

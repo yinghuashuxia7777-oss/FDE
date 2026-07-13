@@ -1,7 +1,30 @@
 import { ArrowLeft } from '@phosphor-icons/react';
-import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import {
+  isRouteErrorResponse,
+  Link,
+  Outlet,
+  useLocation,
+  useRouteError,
+} from 'react-router-dom';
 
 import { SkipLink } from '../components/layout/ApplicationShell';
+
+export function RouteFrame() {
+  const location = useLocation();
+  const initialRender = useRef(true);
+
+  useEffect(() => {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+
+    document.getElementById('page-title')?.focus();
+  }, [location.pathname]);
+
+  return <Outlet />;
+}
 
 interface PlaceholderPageProps {
   description: string;
