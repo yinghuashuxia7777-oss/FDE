@@ -1,51 +1,94 @@
 :root,
-:root[data-theme='light'] {
+:root[data-theme='light'],
+:root[data-theme='system'] {
   color-scheme: light;
-  --color-canvas: #f7f5ef;
-  --color-surface: #fffdf8;
-  --color-text: #191b1f;
-  --color-text-muted: #5e625f;
-  --color-border: #d9d5ca;
-  --color-accent: #155eef;
-  --color-accent-contrast: #ffffff;
-  --shadow-raised: 0 1rem 3rem rgb(36 33 25 / 10%);
+  --canvas: #f3f5f7;
+  --surface: #ffffff;
+  --surface-subtle: #e9edf1;
+  --text: #17202b;
+  --text-muted: #566273;
+  --border: #cdd5de;
+  --accent: #176b87;
+  --accent-strong: #0d526a;
+  --success: #257a57;
+  --warning: #9a6700;
+  --danger: #b13a45;
+  --critical: #7f1d2d;
+  --focus: #005fcc;
+  --on-accent: #ffffff;
+  --overlay: rgb(15 20 26 / 58%);
+  --shadow-overlay: 0 1.5rem 4rem rgb(23 32 43 / 18%);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --color-canvas: #111315;
-  --color-surface: #191c1f;
-  --color-text: #f5f4ef;
-  --color-text-muted: #b7bbb8;
-  --color-border: #35393c;
-  --color-accent: #8fb4ff;
-  --color-accent-contrast: #071b44;
-  --shadow-raised: 0 1rem 3rem rgb(0 0 0 / 30%);
-}
-
-:root[data-theme='system'] {
-  color-scheme: light dark;
+  --canvas: #0f141a;
+  --surface: #171e26;
+  --surface-subtle: #202a35;
+  --text: #f1f5f8;
+  --text-muted: #aab5c2;
+  --border: #384554;
+  --accent: #5ab3ce;
+  --accent-strong: #82cce0;
+  --success: #62c695;
+  --warning: #e6b84c;
+  --danger: #f27d87;
+  --critical: #ff9aa5;
+  --focus: #8cc8ff;
+  --on-accent: #0f141a;
+  --overlay: rgb(2 6 12 / 72%);
+  --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 46%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]),
   :root[data-theme='system'] {
     color-scheme: dark;
-    --color-canvas: #111315;
-    --color-surface: #191c1f;
-    --color-text: #f5f4ef;
-    --color-text-muted: #b7bbb8;
-    --color-border: #35393c;
-    --color-accent: #8fb4ff;
-    --color-accent-contrast: #071b44;
-    --shadow-raised: 0 1rem 3rem rgb(0 0 0 / 30%);
+    --canvas: #0f141a;
+    --surface: #171e26;
+    --surface-subtle: #202a35;
+    --text: #f1f5f8;
+    --text-muted: #aab5c2;
+    --border: #384554;
+    --accent: #5ab3ce;
+    --accent-strong: #82cce0;
+    --success: #62c695;
+    --warning: #e6b84c;
+    --danger: #f27d87;
+    --critical: #ff9aa5;
+    --focus: #8cc8ff;
+    --on-accent: #0f141a;
+    --overlay: rgb(2 6 12 / 72%);
+    --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 46%);
   }
 }
 
 :root {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-contrast: var(--on-accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-critical: var(--critical);
+  --color-focus: var(--focus);
   --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', sans-serif;
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Noto Sans CJK SC', sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'Cascadia Code', 'Roboto Mono', monospace;
+  --font-size-1: 0.75rem;
+  --font-size-2: 0.875rem;
+  --font-size-3: 1rem;
+  --font-size-4: 1.125rem;
+  --font-size-5: 1.375rem;
+  --font-size-6: 1.75rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -53,6 +96,16 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
-  --radius-medium: 0.75rem;
-  --content-width: 72rem;
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --radius-medium: var(--radius-panel);
+  --target-min: 2.75rem;
+  --content-max: 93.75rem;
+  --layer-sticky: 20;
+  --layer-dropdown: 40;
+  --layer-modal: 80;
+  --layer-toast: 100;
+  --duration-feedback: 140ms;
+  --duration-disclosure: 200ms;
+  --duration-route: 220ms;
 }

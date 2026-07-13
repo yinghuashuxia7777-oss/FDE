@@ -10,12 +10,14 @@ html {
 
 body,
 h1,
-p {
+h2,
+h3,
+p,
+figure {
   margin: 0;
 }
 
 body {
-  min-width: 20rem;
   min-height: 100vh;
 }
 
@@ -24,6 +26,12 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+button,
+summary,
+select {
+  cursor: pointer;
 }
 
 a {
@@ -35,4 +43,8 @@ picture,
 svg {
   display: block;
   max-width: 100%;
+}
+
+pre {
+  margin: 0;
 }
