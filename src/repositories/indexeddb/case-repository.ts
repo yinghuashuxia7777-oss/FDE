@@ -24,6 +24,9 @@ function toSummary(record: CaseVersionRecord): CaseSummary {
     domains: content.domains,
     skills: content.skills,
     riskTypes: content.riskTypes,
+    scenarioSummary: content.scenario.initialIncident,
+    technicalLayers: content.technicalLayers,
+    nodeTypes: [...new Set(content.nodes.map(({ type }) => type))],
   };
 }
 

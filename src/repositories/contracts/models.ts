@@ -5,6 +5,7 @@ import type {
   ErrorType,
   EvaluationResult,
   FdeCase,
+  NodeType,
   NodeSubmission,
 } from '../../domain/cases/types';
 import type { AttemptNumber } from '../../domain/scoring/score-node';
@@ -24,6 +25,9 @@ export interface CaseSummary {
   domains: string[];
   skills: string[];
   riskTypes: string[];
+  scenarioSummary: string;
+  technicalLayers: string[];
+  nodeTypes: NodeType[];
 }
 
 export interface CaseQuery {
@@ -186,4 +190,14 @@ export interface AppMetaRecord {
   key: string;
   value: unknown;
   updatedAt: string;
+}
+
+/** User-owned portable data. Installed case content is deliberately excluded. */
+export interface LocalDataBundle {
+  userId: typeof LOCAL_USER_ID;
+  attempts: AttemptRecord[];
+  progress: CaseProgressRecord[];
+  mastery: SkillMasteryRecord[];
+  mistakes: MistakeRecord[];
+  settings: UserSettings | null;
 }

@@ -2,6 +2,7 @@ import type { FdeCase } from '../../domain/cases/types';
 import type {
   CaseProgressRecord,
   CompletedAttemptRecord,
+  LocalDataBundle,
   MistakeRecord,
   SkillMasteryRecord,
 } from './models';
@@ -30,4 +31,6 @@ export interface ProgressRepository {
     merge: CompletionMerge,
   ): Promise<CompletedAttemptRecord>;
   clear(userId: string): Promise<void>;
+  exportUserData(userId: string): Promise<LocalDataBundle>;
+  replaceUserData(bundle: LocalDataBundle): Promise<void>;
 }

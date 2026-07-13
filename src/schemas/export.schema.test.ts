@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   EmptyExportEnvelopeSchema,
+  LocalDataBundleSchema,
   createExportEnvelopeSchema,
 } from './export.schema';
 
@@ -53,6 +54,15 @@ describe('export envelope schema', () => {
     ).toBe(true);
   });
 
+  it('normalizes an RFC3339 offset timestamp for storage', () => {
+    expect(
+      EmptyExportEnvelopeSchema.parse({
+        ...validEnvelope,
+        exportedAt: '2026-07-13T10:00:00.12+08:00',
+      }).exportedAt,
+    ).toBe('2026-07-13T02:00:00.120Z');
+  });
+
   it('lets storage supply a versioned local payload contract', () => {
     const LocalPayloadSchema = z
       .object({
@@ -85,6 +95,94 @@ describe('export envelope schema', () => {
       EmptyExportEnvelopeSchema.safeParse({
         ...validEnvelope,
         payload: { account: {} },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('keeps historical critical risk when the latest attempt is clean', () => {
+    const base = {
+      userId: 'local-user' as const,
+      caseId: 'case-one',
+      caseVersion: 1,
+      startedAt: '2026-07-13T00:00:00.000Z',
+      currentNodeId: null,
+      visitedNodeIds: ['node-one'],
+      roundHistory: [],
+      consequences: [],
+      status: 'completed' as const,
+    };
+    const criticalAttempt = {
+      ...base,
+      id: 'attempt-critical',
+      updatedAt: '2026-07-13T00:10:00.000Z',
+      completedAt: '2026-07-13T00:10:00.000Z',
+      score: 40,
+      verdict: 'critical-risk' as const,
+      criticalErrorIds: ['critical-one'],
+    };
+    const cleanAttempt = {
+      ...base,
+      id: 'attempt-clean',
+      startedAt: '2026-07-14T00:00:00.000Z',
+      updatedAt: '2026-07-14T00:10:00.000Z',
+      completedAt: '2026-07-14T00:10:00.000Z',
+      score: 90,
+      verdict: 'excellent' as const,
+      criticalErrorIds: [],
+    };
+
+    expect(
+      LocalDataBundleSchema.safeParse({
+        userId: 'local-user',
+        attempts: [criticalAttempt, cleanAttempt],
+        progress: [
+          {
+            userId: 'local-user',
+            caseId: 'case-one',
+            caseVersion: 1,
+            latestAttemptId: 'attempt-clean',
+            attemptCount: 2,
+            completedCount: 2,
+            highestScore: 90,
+            latestScore: 90,
+            latestVerdict: 'excellent',
+            hasCriticalError: true,
+            updatedAt: '2026-07-14T00:10:00.000Z',
+          },
+        ],
+        mastery: [],
+        mistakes: [],
+        settings: null,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('requires a progress aggregate for every case with a completed attempt', () => {
+    expect(
+      LocalDataBundleSchema.safeParse({
+        userId: 'local-user',
+        attempts: [
+          {
+            id: 'attempt-orphan-complete',
+            userId: 'local-user',
+            caseId: 'case-orphan',
+            caseVersion: 1,
+            status: 'completed',
+            startedAt: '2026-07-13T00:00:00.000Z',
+            updatedAt: '2026-07-13T00:10:00.000Z',
+            completedAt: '2026-07-13T00:10:00.000Z',
+            currentNodeId: null,
+            score: 90,
+            verdict: 'excellent',
+            criticalErrorIds: [],
+            visitedNodeIds: ['node-one'],
+            roundHistory: [],
+          },
+        ],
+        progress: [],
+        mastery: [],
+        mistakes: [],
+        settings: null,
       }).success,
     ).toBe(false);
   });
