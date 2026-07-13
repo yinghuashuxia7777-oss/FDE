@@ -7,31 +7,44 @@ type ChangeListener = (event: MediaQueryListEvent) => void;
 
 function installMatchMedia(initialMatches: boolean) {
   let matches = initialMatches;
-  let listener: ChangeListener | undefined;
+  const listeners = new Set<ChangeListener>();
+  const addEventListener = vi.fn((_type: string, next: ChangeListener) => {
+    listeners.add(next);
+  });
+  const removeEventListener = vi.fn(
+    (_type: string, listener: ChangeListener) => {
+      listeners.delete(listener);
+    },
+  );
+  const matchMedia = vi.fn().mockImplementation(() => ({
+    get matches() {
+      return matches;
+    },
+    media: '(prefers-color-scheme: dark)',
+    onchange: null,
+    addEventListener,
+    removeEventListener,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
 
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
-    value: vi.fn().mockImplementation(() => ({
-      get matches() {
-        return matches;
-      },
-      media: '(prefers-color-scheme: dark)',
-      onchange: null,
-      addEventListener: (_type: string, next: ChangeListener) => {
-        listener = next;
-      },
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
+    value: matchMedia,
   });
 
   return {
+    addEventListener,
     change(nextMatches: boolean) {
       matches = nextMatches;
-      listener?.({ matches: nextMatches } as MediaQueryListEvent);
+      for (const listener of listeners) {
+        listener({ matches: nextMatches } as MediaQueryListEvent);
+      }
     },
+    listenerCount: () => listeners.size,
+    matchMedia,
+    removeEventListener,
   };
 }
 
@@ -43,7 +56,7 @@ describe('ThemeProvider', () => {
   });
 
   it('offers labeled light, dark, and system choices', async () => {
-    installMatchMedia(false);
+    const media = installMatchMedia(false);
     const user = userEvent.setup();
     render(
       <ThemeProvider initialTheme="light">
@@ -59,11 +72,13 @@ describe('ThemeProvider', () => {
     await user.selectOptions(selector, 'dark');
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
+    expect(media.matchMedia).not.toHaveBeenCalled();
+    expect(media.addEventListener).not.toHaveBeenCalled();
   });
 
   it('reacts to operating-system changes while system theme is selected', () => {
     const media = installMatchMedia(false);
-    render(
+    const view = render(
       <ThemeProvider initialTheme="system">
         <ThemeSelector />
       </ThemeProvider>,
@@ -71,9 +86,14 @@ describe('ThemeProvider', () => {
 
     expect(document.documentElement).toHaveAttribute('data-theme', 'system');
     expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(media.listenerCount()).toBe(1);
 
     media.change(true);
 
     expect(document.documentElement.style.colorScheme).toBe('dark');
+
+    view.unmount();
+    expect(media.listenerCount()).toBe(0);
+    expect(media.removeEventListener).toHaveBeenCalledOnce();
   });
 });

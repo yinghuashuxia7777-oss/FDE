@@ -17,22 +17,29 @@ export function ThemeProvider({
     const root = document.documentElement;
     const previousTheme = root.dataset.theme;
     const previousColorScheme = root.style.colorScheme;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const applyTheme = () => {
-      root.dataset.theme = theme;
-      root.style.colorScheme =
-        theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
-    };
-
-    applyTheme();
-    media.addEventListener('change', applyTheme);
-
-    return () => {
-      media.removeEventListener('change', applyTheme);
+    const restoreRoot = () => {
       if (previousTheme === undefined) delete root.dataset.theme;
       else root.dataset.theme = previousTheme;
       root.style.colorScheme = previousColorScheme;
+    };
+
+    root.dataset.theme = theme;
+    if (theme !== 'system') {
+      root.style.colorScheme = theme;
+      return restoreRoot;
+    }
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applySystemTheme = () => {
+      root.style.colorScheme = media.matches ? 'dark' : 'light';
+    };
+
+    applySystemTheme();
+    media.addEventListener('change', applySystemTheme);
+
+    return () => {
+      media.removeEventListener('change', applySystemTheme);
+      restoreRoot();
     };
   }, [theme]);
 

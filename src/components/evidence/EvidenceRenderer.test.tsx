@@ -18,6 +18,9 @@ describe('evidence components', () => {
     expect(
       within(figure).getByText('request failed').closest('pre'),
     ).toHaveAttribute('tabindex', '0');
+    expect(
+      within(figure).getByRole('region', { name: /log evidence.*log/i }),
+    ).toBeInTheDocument();
   });
 
   it('gives diff lines text labels instead of communicating by color alone', () => {
@@ -35,6 +38,27 @@ describe('evidence components', () => {
     expect(
       within(figure).getByText('+new flag').closest('pre'),
     ).toHaveAttribute('tabindex', '0');
+    expect(
+      within(figure).getByRole('region', {
+        name: /deployment change.*diff/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('labels unified diff file headers as metadata, not changes', () => {
+    render(
+      <DiffBlock
+        title="Unified change"
+        content={'--- a/config.ts\n+++ b/config.ts\n-old flag\n+new flag'}
+      />,
+    );
+
+    const region = screen.getByRole('region', {
+      name: /unified change.*diff/i,
+    });
+    expect(within(region).getAllByText('Metadata')).toHaveLength(2);
+    expect(within(region).getAllByText('Removed')).toHaveLength(1);
+    expect(within(region).getAllByText('Added')).toHaveLength(1);
   });
 
   it.each<EvidenceType>([

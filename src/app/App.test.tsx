@@ -1,16 +1,29 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { createMemoryRouter, Link, RouterProvider } from 'react-router-dom';
 
 import { ApplicationShell } from '../components/layout/ApplicationShell';
 import { ThemeProvider } from '../components/layout/ThemeProvider';
 import { App } from './App';
 import { RouteFrame } from './route-pages';
+import { createAppRouter } from './router';
 
 const defaultMatchMedia = window.matchMedia;
+const activeRouters = new Set<{ dispose: () => void }>();
 
 function setRoute(path: string) {
   window.history.replaceState(null, '', `/#${path}`);
+}
+
+function trackRouter<T extends { dispose: () => void }>(router: T) {
+  activeRouters.add(router);
+  return router;
+}
+
+function renderApp() {
+  const router = trackRouter(createAppRouter());
+  return render(<App router={router} />);
 }
 
 function installResponsiveMatchMedia(initialDesktop: boolean) {
@@ -34,13 +47,21 @@ function installResponsiveMatchMedia(initialDesktop: boolean) {
       queryListeners.add(listener);
       listeners.set(query, queryListeners);
     },
-    removeEventListener: vi.fn(),
+    removeEventListener: (
+      _type: string,
+      listener: (event: MediaQueryListEvent) => void,
+    ) => {
+      listeners.get(query)?.delete(listener);
+    },
     addListener: vi.fn(),
     removeListener: vi.fn(),
     dispatchEvent: vi.fn(),
   }));
 
   return {
+    listenerCount(query: string) {
+      return listeners.get(query)?.size ?? 0;
+    },
     setDesktop(nextDesktop: boolean) {
       desktop = nextDesktop;
       for (const listener of listeners.get('(min-width: 64rem)') ?? []) {
@@ -52,15 +73,18 @@ function installResponsiveMatchMedia(initialDesktop: boolean) {
 
 describe('application shell', () => {
   afterEach(() => {
+    for (const router of activeRouters) router.dispose();
+    activeRouters.clear();
     setRoute('/');
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.removeProperty('color-scheme');
     window.matchMedia = defaultMatchMedia;
+    vi.restoreAllMocks();
   });
 
   it('exposes only mobile navigation below the desktop boundary', () => {
     setRoute('/cases');
-    render(<App />);
+    renderApp();
 
     const mobileNavigation = screen.getByRole('navigation', {
       name: 'Mobile navigation',
@@ -78,7 +102,7 @@ describe('application shell', () => {
   it('exposes only desktop navigation at the desktop boundary', () => {
     installResponsiveMatchMedia(true);
     setRoute('/cases');
-    render(<App />);
+    renderApp();
 
     const desktopNavigation = screen.getByRole('navigation', {
       name: 'Primary navigation',
@@ -95,7 +119,7 @@ describe('application shell', () => {
   it('keeps the hash route while the skip link focuses main content', async () => {
     const user = userEvent.setup();
     setRoute('/cases?level=advanced');
-    render(<App />);
+    renderApp();
     const routeHash = window.location.hash;
 
     await user.click(
@@ -109,7 +133,7 @@ describe('application shell', () => {
   it('focuses the page heading after client-side route changes, not on load', async () => {
     const user = userEvent.setup();
     setRoute('/');
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByRole('heading', { name: 'Dashboard' }),
@@ -129,32 +153,34 @@ describe('application shell', () => {
 
   it('does not steal focus when only search parameters change', async () => {
     const user = userEvent.setup();
-    const router = createMemoryRouter(
-      [
-        {
-          path: '/',
-          element: <RouteFrame />,
-          children: [
-            {
-              element: <ApplicationShell />,
-              children: [
-                {
-                  path: 'cases',
-                  element: (
-                    <>
-                      <h1 id="page-title" tabIndex={-1}>
-                        Cases
-                      </h1>
-                      <Link to="?level=advanced">Advanced cases</Link>
-                    </>
-                  ),
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      { initialEntries: ['/cases'] },
+    const router = trackRouter(
+      createMemoryRouter(
+        [
+          {
+            path: '/',
+            element: <RouteFrame />,
+            children: [
+              {
+                element: <ApplicationShell />,
+                children: [
+                  {
+                    path: 'cases',
+                    element: (
+                      <>
+                        <h1 id="page-title" tabIndex={-1}>
+                          Cases
+                        </h1>
+                        <Link to="?level=advanced">Advanced cases</Link>
+                      </>
+                    ),
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        { initialEntries: ['/cases'] },
+      ),
     );
     render(
       <ThemeProvider>
@@ -171,12 +197,27 @@ describe('application shell', () => {
   it('opens an accessible More drawer and traps focus until Escape restores it', async () => {
     const user = userEvent.setup();
     setRoute('/');
-    render(<App />);
+    renderApp();
     const trigger = screen.getByRole('button', { name: 'More' });
+    expect(trigger).toHaveAttribute(
+      'aria-controls',
+      'more-destinations-drawer',
+    );
 
     await user.click(trigger);
 
     const drawer = screen.getByRole('dialog', { name: 'More destinations' });
+    expect(drawer).toHaveAttribute('id', 'more-destinations-drawer');
+    expect(document.getElementById('main-content')).toHaveAttribute('inert');
+    expect(document.getElementById('main-content')?.inert).toBe(true);
+    expect(screen.getByTestId('context-bar')).toHaveAttribute('inert');
+    expect(screen.getByTestId('context-bar').inert).toBe(true);
+    expect(document.querySelector('.mobile-bottom-nav')).toHaveAttribute(
+      'inert',
+    );
+    expect(
+      document.querySelector<HTMLElement>('.mobile-bottom-nav')?.inert,
+    ).toBe(true);
     const close = within(drawer).getByRole('button', {
       name: 'Close more destinations',
     });
@@ -194,12 +235,20 @@ describe('application shell', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+    expect(document.getElementById('main-content')).not.toHaveAttribute(
+      'inert',
+    );
+    expect(document.getElementById('main-content')?.inert).not.toBe(true);
+    expect(screen.getByTestId('context-bar')).not.toHaveAttribute('inert');
+    expect(document.querySelector('.mobile-bottom-nav')).not.toHaveAttribute(
+      'inert',
+    );
   });
 
   it('closes the drawer on navigation without restoring focus over the new heading', async () => {
     const user = userEvent.setup();
     setRoute('/');
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole('button', { name: 'More' }));
     const drawer = screen.getByRole('dialog', { name: 'More destinations' });
@@ -215,11 +264,14 @@ describe('application shell', () => {
     const media = installResponsiveMatchMedia(false);
     const user = userEvent.setup();
     setRoute('/');
-    render(<App />);
+    const view = renderApp();
+    expect(media.listenerCount('(min-width: 64rem)')).toBe(1);
     await user.click(screen.getByRole('button', { name: 'More' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    media.setDesktop(true);
+    act(() => {
+      media.setDesktop(true);
+    });
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -227,11 +279,19 @@ describe('application shell', () => {
     expect(
       screen.getByRole('navigation', { name: 'Primary navigation' }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toHaveFocus();
+    expect(document.getElementById('main-content')).not.toHaveAttribute(
+      'inert',
+    );
+    expect(screen.getByTestId('context-bar')).not.toHaveAttribute('inert');
+
+    view.unmount();
+    expect(media.listenerCount('(min-width: 64rem)')).toBe(0);
   });
 
   it('uses an immersive training shell with a clear exit', () => {
     setRoute('/training');
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByRole('heading', { name: 'Training' }),
@@ -249,7 +309,7 @@ describe('application shell', () => {
   it('focuses the training heading when entering immersive mode', async () => {
     const user = userEvent.setup();
     setRoute('/');
-    render(<App />);
+    renderApp();
     const mobileNavigation = screen.getByRole('navigation', {
       name: 'Mobile navigation',
     });
@@ -265,7 +325,7 @@ describe('application shell', () => {
 
   it('shows a useful not-found route', () => {
     setRoute('/missing-route');
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByRole('heading', { name: 'Page not found' }),
@@ -273,5 +333,30 @@ describe('application shell', () => {
     expect(
       screen.getByRole('link', { name: 'Return to dashboard' }),
     ).toBeInTheDocument();
+  });
+
+  it('uses one caller-owned history listener under StrictMode and disposes it', () => {
+    setRoute('/');
+    const addListener = vi.spyOn(window, 'addEventListener');
+    const removeListener = vi.spyOn(window, 'removeEventListener');
+    const router = trackRouter(createAppRouter());
+
+    const view = render(
+      <StrictMode>
+        <App router={router} />
+      </StrictMode>,
+    );
+
+    expect(
+      addListener.mock.calls.filter(([type]) => type === 'popstate'),
+    ).toHaveLength(1);
+
+    view.unmount();
+    router.dispose();
+    activeRouters.delete(router);
+
+    expect(
+      removeListener.mock.calls.filter(([type]) => type === 'popstate'),
+    ).toHaveLength(1);
   });
 });

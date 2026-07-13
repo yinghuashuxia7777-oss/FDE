@@ -1,4 +1,5 @@
 import { FolderOpen, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { type ReactNode, useId } from 'react';
 
 import { Button } from './Button';
 
@@ -8,31 +9,38 @@ interface LoadingStateProps {
 
 export function LoadingState({ label = 'Loading' }: LoadingStateProps) {
   return (
-    <section className="state-panel state-panel--loading" aria-label={label}>
+    <section
+      className="state-panel state-panel--loading"
+      role="status"
+      aria-label={label}
+      aria-live="polite"
+    >
       <SpinnerGap
         className="state-panel__spinner"
         aria-hidden="true"
         size={24}
       />
-      <p aria-live="polite">{label}</p>
+      <p>{label}</p>
     </section>
   );
 }
 
 interface EmptyStateProps {
-  action?: React.ReactNode;
+  action?: ReactNode;
   description: string;
   title: string;
 }
 
 export function EmptyState({ action, description, title }: EmptyStateProps) {
+  const titleId = useId();
+
   return (
     <section
       className="state-panel state-panel--empty"
-      aria-labelledby="empty-state-title"
+      aria-labelledby={titleId}
     >
       <FolderOpen aria-hidden="true" size={24} />
-      <h2 id="empty-state-title">{title}</h2>
+      <h2 id={titleId}>{title}</h2>
       <p>{description}</p>
       {action}
     </section>

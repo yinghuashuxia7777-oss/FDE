@@ -43,13 +43,22 @@ describe('responsive shell CSS contract', () => {
     expect(globalCss).toMatch(/min-height:\s*var\(--target-min\)/);
   });
 
-  it('removes transforms and near-eliminates motion when requested', () => {
+  it('keeps semantic badge text on the high-contrast surface', () => {
+    const badgeRules = /\.status-badge\s*\{([^}]*)\}/.exec(globalCss)?.[1];
+    expect(badgeRules).toContain('background: var(--color-surface);');
+    expect(badgeRules).not.toContain('var(--color-surface-subtle)');
+  });
+
+  it('near-eliminates motion without exposing transform-hidden controls', () => {
     const reducedMotion =
       /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*)\}\s*$/.exec(
         globalCss,
       )?.[1];
     expect(reducedMotion).toContain('animation-duration: 0.01ms');
     expect(reducedMotion).toContain('transition-duration: 0.01ms');
-    expect(reducedMotion).toContain('transform: none');
+    expect(reducedMotion).not.toContain('transform: none');
+    expect(globalCss).toMatch(
+      /\.skip-link\s*\{[^}]*transform:\s*translateY\(calc\(-100%/s,
+    );
   });
 });

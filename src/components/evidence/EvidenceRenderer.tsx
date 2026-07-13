@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Scrollable evidence regions must be reachable without a pointer. */
 import { useId } from 'react';
 
 import type { Evidence, EvidenceType } from '../../domain/cases/types';
@@ -30,8 +31,12 @@ export function CodeBlock({ content, title, typeLabel = 'Code' }: BlockProps) {
         <span>{title}</span>
         <span className="evidence-caption__type">{typeLabel}</span>
       </figcaption>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Scrollable evidence must be reachable without a pointer. */}
-      <pre className="evidence-scroll" tabIndex={0}>
+      <pre
+        className="evidence-scroll"
+        role="region"
+        aria-labelledby={captionId}
+        tabIndex={0}
+      >
         <code>{content}</code>
       </pre>
     </figure>
@@ -48,13 +53,22 @@ interface DiffLineProps {
 }
 
 function DiffLine({ content, index }: DiffLineProps) {
-  const kind = content.startsWith('+')
-    ? 'added'
-    : content.startsWith('-')
-      ? 'removed'
-      : 'context';
+  const kind =
+    content.startsWith('+++') || content.startsWith('---')
+      ? 'metadata'
+      : content.startsWith('+')
+        ? 'added'
+        : content.startsWith('-')
+          ? 'removed'
+          : 'context';
   const label =
-    kind === 'added' ? 'Added' : kind === 'removed' ? 'Removed' : 'Context';
+    kind === 'metadata'
+      ? 'Metadata'
+      : kind === 'added'
+        ? 'Added'
+        : kind === 'removed'
+          ? 'Removed'
+          : 'Context';
 
   return (
     <span
@@ -69,14 +83,20 @@ function DiffLine({ content, index }: DiffLineProps) {
 }
 
 export function DiffBlock({ content, title }: Omit<BlockProps, 'typeLabel'>) {
+  const captionId = useId();
+
   return (
     <figure className="evidence-block" aria-label={title}>
-      <figcaption className="evidence-caption">
+      <figcaption id={captionId} className="evidence-caption">
         <span>{title}</span>
         <span className="evidence-caption__type">Diff</span>
       </figcaption>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Scrollable evidence must be reachable without a pointer. */}
-      <pre className="evidence-scroll evidence-scroll--diff" tabIndex={0}>
+      <pre
+        className="evidence-scroll evidence-scroll--diff"
+        role="region"
+        aria-labelledby={captionId}
+        tabIndex={0}
+      >
         <code>
           {content
             .split('\n')

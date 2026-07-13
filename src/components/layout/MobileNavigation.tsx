@@ -9,7 +9,7 @@ import {
   WarningCircle,
   X,
 } from '@phosphor-icons/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const drawerDestinations = [
@@ -18,28 +18,77 @@ const drawerDestinations = [
   { to: '/settings', label: 'Settings', Icon: Gear },
 ] as const;
 
-export function MobileNavigation() {
+const drawerId = 'more-destinations-drawer';
+
+interface MobileNavigationProps {
+  onOpenChange: (open: boolean) => void;
+}
+
+interface InertSnapshot {
+  element: HTMLElement;
+  hadAttribute: boolean;
+  inert: boolean;
+}
+
+function makeBackgroundInert() {
+  const elements = [
+    document.getElementById('main-content'),
+    document.querySelector<HTMLElement>('.context-bar'),
+    document.querySelector<HTMLElement>('.mobile-bottom-nav'),
+  ].filter((element): element is HTMLElement => element !== null);
+  const snapshots: InertSnapshot[] = elements.map((element) => ({
+    element,
+    hadAttribute: element.hasAttribute('inert'),
+    inert: element.inert,
+  }));
+
+  for (const { element } of snapshots) {
+    element.inert = true;
+    element.setAttribute('inert', '');
+  }
+
+  return () => {
+    for (const snapshot of snapshots) {
+      snapshot.element.inert = snapshot.inert;
+      if (snapshot.hadAttribute) snapshot.element.setAttribute('inert', '');
+      else snapshot.element.removeAttribute('inert');
+    }
+  };
+}
+
+export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
+  const restoreTriggerRef = useRef(false);
   const location = useLocation();
   const secondaryRoute = drawerDestinations.some(({ to }) =>
     location.pathname.startsWith(to),
   );
 
-  const closeDrawer = () => {
-    triggerRef.current?.focus();
+  const closeDrawer = useCallback(() => {
+    restoreTriggerRef.current = true;
+    onOpenChange(false);
     setOpen(false);
-  };
+  }, [onOpenChange]);
 
   const followDrawerLink = () => {
+    restoreTriggerRef.current = false;
+    onOpenChange(false);
     setOpen(false);
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      if (restoreTriggerRef.current) {
+        restoreTriggerRef.current = false;
+        triggerRef.current?.focus();
+      }
+      return;
+    }
 
+    const restoreBackground = makeBackgroundInert();
     closeRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -58,7 +107,10 @@ export function MobileNavigation() {
       const first = focusable.at(0);
       const last = focusable.at(-1);
 
-      if (event.shiftKey && document.activeElement === first) {
+      if (!drawerRef.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last?.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -70,8 +122,9 @@ export function MobileNavigation() {
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      restoreBackground();
     };
-  }, [open]);
+  }, [closeDrawer, open]);
 
   return (
     <>
@@ -98,8 +151,10 @@ export function MobileNavigation() {
           type="button"
           aria-expanded={open}
           aria-haspopup="dialog"
+          aria-controls={drawerId}
           data-active={secondaryRoute || undefined}
           onClick={() => {
+            onOpenChange(true);
             setOpen(true);
           }}
         >
@@ -118,6 +173,7 @@ export function MobileNavigation() {
             onClick={closeDrawer}
           />
           <aside
+            id={drawerId}
             ref={drawerRef}
             className="mobile-drawer"
             role="dialog"

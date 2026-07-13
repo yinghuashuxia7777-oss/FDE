@@ -33,10 +33,9 @@ describe('shared UI', () => {
       </>,
     );
 
-    expect(screen.getByText('Loading cases')).toHaveAttribute(
-      'aria-live',
-      'polite',
-    );
+    expect(
+      screen.getByRole('status', { name: 'Loading cases' }),
+    ).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByText('No attempts yet')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Cases unavailable');
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -70,5 +69,23 @@ describe('shared UI', () => {
     const details = screen.getByText('Current question').closest('details');
     expect(details).toHaveAttribute('open');
     expect(screen.getByText('Which signal is decisive?')).toBeInTheDocument();
+  });
+
+  it('gives each empty state a unique heading relationship', () => {
+    render(
+      <>
+        <EmptyState title="No attempts" description="Complete a case." />
+        <EmptyState title="No mistakes" description="Keep training." />
+      </>,
+    );
+
+    const attemptHeading = screen.getByRole('heading', { name: 'No attempts' });
+    const mistakeHeading = screen.getByRole('heading', { name: 'No mistakes' });
+    const attemptState = attemptHeading.closest('section');
+    const mistakeState = mistakeHeading.closest('section');
+
+    expect(attemptHeading.id).not.toBe(mistakeHeading.id);
+    expect(attemptState).toHaveAttribute('aria-labelledby', attemptHeading.id);
+    expect(mistakeState).toHaveAttribute('aria-labelledby', mistakeHeading.id);
   });
 });

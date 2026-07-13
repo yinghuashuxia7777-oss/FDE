@@ -7,6 +7,7 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import type { MouseEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { MobileNavigation } from './MobileNavigation';
@@ -37,6 +38,17 @@ const desktopDestinations = [
 
 export function ApplicationShell() {
   const desktop = useMediaQuery('(min-width: 64rem)');
+  const mobileDrawerOpenRef = useRef(false);
+  const handleDrawerOpenChange = useCallback((open: boolean) => {
+    mobileDrawerOpenRef.current = open;
+  }, []);
+
+  useEffect(() => {
+    if (!desktop || !mobileDrawerOpenRef.current) return;
+
+    mobileDrawerOpenRef.current = false;
+    document.getElementById('page-title')?.focus();
+  }, [desktop]);
 
   return (
     <div className="application-shell">
@@ -83,7 +95,9 @@ export function ApplicationShell() {
         >
           <Outlet />
         </main>
-        {desktop ? null : <MobileNavigation />}
+        {desktop ? null : (
+          <MobileNavigation onOpenChange={handleDrawerOpenChange} />
+        )}
       </div>
     </div>
   );
