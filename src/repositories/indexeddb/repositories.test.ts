@@ -50,6 +50,7 @@ function buildAttempt(
     userId: USER_ID,
     caseId: 'case-minimal',
     caseVersion: 1,
+    schemaVersion: 1,
     status: 'completed',
     startedAt: '2026-07-13T00:00:00.000Z',
     updatedAt: '2026-07-13T00:10:00.000Z',
@@ -104,6 +105,7 @@ async function saveCompletionCheckpoint(
     userId: attempt.userId,
     caseId: attempt.caseId,
     caseVersion: attempt.caseVersion,
+    schemaVersion: attempt.schemaVersion,
     status: 'in-progress',
     startedAt: attempt.startedAt,
     updatedAt: attempt.startedAt,
@@ -158,6 +160,7 @@ function buildInProgressAttempt(
     userId: USER_ID,
     caseId: 'case-minimal',
     caseVersion: 1,
+    schemaVersion: 1,
     status: 'in-progress',
     startedAt: '2026-07-13T00:00:00.000Z',
     updatedAt: '2026-07-13T00:05:00.000Z',
@@ -229,7 +232,7 @@ afterEach(async () => {
   }
 });
 
-describe('IndexedDB schema version 1', () => {
+describe('IndexedDB schema version 2', () => {
   it('creates the required stores and query indexes', async () => {
     const db = await openTestDatabase();
 
@@ -238,6 +241,7 @@ describe('IndexedDB schema version 1', () => {
       'appMeta',
       'attempts',
       'caseVersions',
+      'contentPacks',
       'coverage',
       'mastery',
       'mistakes',
@@ -291,16 +295,8 @@ describe('case versions and bootstrap', () => {
     expect(await repositories.cases.getVersion(versionOne.id, 2)).toEqual(
       versionTwo,
     );
-    expect(await repositories.cases.getVersion(versionOne.id)).toEqual(
-      versionTwo,
-    );
-    expect(await repositories.cases.list()).toEqual([
-      expect.objectContaining({
-        id: versionOne.id,
-        version: 2,
-        title: versionTwo.title,
-      }),
-    ]);
+    expect(await repositories.cases.getVersion(versionOne.id)).toBeUndefined();
+    expect(await repositories.cases.list()).toEqual([]);
     expect(await repositories.users.getLocal()).toEqual(
       expect.objectContaining({ id: USER_ID }),
     );
@@ -329,7 +325,7 @@ describe('case versions and bootstrap', () => {
     ).toBeUndefined();
   });
 
-  it('lists only latest matching case summaries', async () => {
+  it('lists only explicitly active matching case summaries', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);
     const beginner = createMinimalValidCase();
@@ -346,6 +342,25 @@ describe('case versions and bootstrap', () => {
     };
 
     await repositories.cases.seed([beginner, advanced]);
+    await db.put('appMeta', {
+      key: 'active-content-catalog',
+      value: {
+        packId: 'test-pack',
+        contentVersion: '1.0.0',
+        schemaVersion: 1,
+        sourceKind: 'bundled',
+        activeCases: [
+          { caseId: beginner.id, version: beginner.metadata.version },
+          { caseId: advanced.id, version: advanced.metadata.version },
+        ],
+        activeDomainIds: ['diagnostics'],
+        activeSkillIds: ['evidence-assessment'],
+        installedAt: '2026-07-13T01:00:00.000Z',
+        checksum:
+          'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+      },
+      updatedAt: '2026-07-13T01:00:00.000Z',
+    });
 
     expect(await repositories.cases.list({ level: 'advanced' })).toEqual([
       expect.objectContaining({ id: 'case-advanced', version: 3 }),
@@ -360,6 +375,36 @@ describe('case versions and bootstrap', () => {
 });
 
 describe('repository contracts', () => {
+  it('interprets legacy IndexedDB attempts without schemaVersion as v1 on get and list', async () => {
+    const db = await openTestDatabase();
+    const repositories = createIndexedDbRepositories(db);
+    const legacyAttempt = buildInProgressAttempt({
+      id: 'attempt-legacy-schema',
+      caseId: 'case-legacy-schema',
+      caseVersion: 4,
+      startedAt: '2025-01-02T03:04:05.000Z',
+      updatedAt: '2025-01-02T03:04:05.000Z',
+    });
+    const { schemaVersion: _legacySchemaVersion, ...rawLegacyAttempt } =
+      legacyAttempt;
+    void _legacySchemaVersion;
+
+    await db.put('attempts', rawLegacyAttempt as AttemptRecord);
+
+    await expect(repositories.attempts.get(legacyAttempt.id)).resolves.toEqual({
+      ...legacyAttempt,
+      schemaVersion: 1,
+    });
+    await expect(
+      repositories.attempts.list({ caseId: legacyAttempt.caseId }),
+    ).resolves.toEqual([
+      {
+        ...legacyAttempt,
+        schemaVersion: 1,
+      },
+    ]);
+  });
+
   it('creates, reads, lists, updates, and deletes persisted records', async () => {
     const db = await openTestDatabase();
     const repositories = createIndexedDbRepositories(db);

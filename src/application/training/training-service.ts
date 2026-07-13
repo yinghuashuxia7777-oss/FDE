@@ -40,6 +40,25 @@ const consumedOperations = new WeakMap<
   Map<string, Promise<TrainingState>>
 >();
 
+export function selectLatestResumeAttempt(
+  attempts: readonly AttemptRecord[],
+  caseVersion: number,
+): InProgressAttemptRecord | undefined {
+  return attempts
+    .filter(
+      (attempt): attempt is InProgressAttemptRecord =>
+        attempt.status === 'in-progress' && attempt.caseVersion === caseVersion,
+    )
+    .reduce<InProgressAttemptRecord | undefined>(
+      (latest, candidate) =>
+        latest === undefined ||
+        compareRfc3339Timestamps(candidate.updatedAt, latest.updatedAt) > 0
+          ? candidate
+          : latest,
+      undefined,
+    );
+}
+
 function findNode(fdeCase: FdeCase, nodeId: string): CaseNode {
   const node = fdeCase.nodes.find((candidate) => candidate.id === nodeId);
   if (node === undefined) {
@@ -73,6 +92,7 @@ function toInProgressAttempt(
     userId: LOCAL_USER_ID,
     caseId: state.caseId,
     caseVersion: state.caseVersion,
+    schemaVersion: state.caseContent.schemaVersion,
     status: 'in-progress',
     startedAt: state.startedAt,
     updatedAt: state.updatedAt,
@@ -352,6 +372,7 @@ function buildCompletedAttempt(
     userId: LOCAL_USER_ID,
     caseId: state.caseId,
     caseVersion: state.caseVersion,
+    schemaVersion: state.caseContent.schemaVersion,
     status: 'completed',
     startedAt: state.startedAt,
     updatedAt: completedAt,

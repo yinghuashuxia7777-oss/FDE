@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "rag-search",
+  "label": "RAG, search & enterprise knowledge",
+  "description": "Retrieval, ranking, grounding, and enterprise knowledge systems.",
+  "status": "active"
+}

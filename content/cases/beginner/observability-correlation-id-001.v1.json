@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "id": "observability-correlation-id-001",
+  "slug": "observability-correlation-id-001",
+  "title": "跨服务请求缺少关联标识",
+  "summary": "利用边缘与下游日志定位关联 ID 传播缺口，并设计低风险的可观测性验证。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["reliability"],
+  "skills": ["reliability.observability"],
+  "lifecycleStages": ["operate", "incident-response"],
+  "technicalLayers": ["observability", "http"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["diagnosability", "privacy"],
+  "behaviorPatterns": [
+    "trace-context-propagation",
+    "minimal-observability-data"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的物流平台通过网关、订单 API 和调度服务处理配送请求。",
+    "background": "客户报告偶发重复调度，但事件响应人员无法把网关请求与调度日志可靠关联。",
+    "initialIncident": "同一时间窗口有数百条请求，网关显示 request_id，订单 API 和调度服务却记录 request_id=missing。",
+    "constraints": [
+      "不得记录请求正文、地址或其他客户数据。",
+      "可以在预发布发送带合成关联 ID 的请求。",
+      "生产变更必须先通过小流量验证并可回滚。"
+    ],
+    "confirmedFacts": [
+      "服务时钟偏差小于一秒。",
+      "网关为每个请求生成唯一 X-Request-ID。",
+      "下游服务已经有结构化 request_id 字段。"
+    ]
+  },
+  "startNodeId": "observability-correlation-id-001-node-01",
+  "nodes": [
+    {
+      "id": "observability-correlation-id-001-node-01",
+      "type": "log-analysis",
+      "title": "定位传播断点",
+      "prompt": "根据证据，最合适的第一项改动是什么？",
+      "skillWeights": { "reliability.observability": 1 },
+      "evidence": [
+        {
+          "id": "observability-correlation-id-001-node-01-evidence-01",
+          "type": "log",
+          "title": "网关与订单日志",
+          "content": "gateway request_id=req-test-42 upstream_header=X-Request-ID\norders request_id=missing received_header=X-Correlation-Id"
+        },
+        {
+          "id": "observability-correlation-id-001-node-01-evidence-02",
+          "type": "config",
+          "title": "订单服务传播配置",
+          "content": "incomingCorrelationHeader: X-Correlation-Id\noutgoingCorrelationHeader: X-Correlation-Id",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "observability-correlation-id-001-node-01-option-a",
+          "label": "统一入口头名称并让订单服务把同一 ID 继续传给调度服务",
+          "explanation": "日志直接显示网关发送 X-Request-ID，而订单服务读取另一个名称；统一契约并端到端传播可修复明确断点。"
+        },
+        {
+          "id": "observability-correlation-id-001-node-01-option-b",
+          "label": "把所有服务日志级别调到 debug，希望通过时间戳人工匹配",
+          "explanation": "增加日志量不会修复标识传播，反而会增加噪声、成本和事件期间的人工关联难度。",
+          "errorType": "log-volume-without-correlation"
+        },
+        {
+          "id": "observability-correlation-id-001-node-01-option-c",
+          "label": "记录每个请求完整正文与配送地址以便人工搜索",
+          "explanation": "完整正文和地址违反隐私约束，会造成严重数据暴露；关联请求只需要非敏感的唯一标识。",
+          "errorType": "sensitive-payload-logging"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "observability-correlation-id-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较发送和接收双方对同一头部的命名契约。",
+        "secondWrong": "网关发送 X-Request-ID，订单服务却读取 X-Correlation-Id。",
+        "revealedAnswer": "应统一入口关联头并确保订单服务把同一值继续传播到调度服务，而不是增加敏感日志。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "observability-correlation-id-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "observability-correlation-id-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "observability-correlation-id-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "observability-correlation-id-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "observability-correlation-id-001-node-02",
+      "type": "configuration-review",
+      "title": "验证端到端关联",
+      "prompt": "哪种发布验证能证明修复且避免新增数据风险？",
+      "skillWeights": { "reliability.observability": 1 },
+      "evidence": [
+        {
+          "id": "observability-correlation-id-001-node-02-evidence-01",
+          "type": "log",
+          "title": "合成请求日志",
+          "content": "gateway request_id=req-test-42\norders request_id=req-test-42\ndispatch request_id=req-test-42"
+        },
+        {
+          "id": "observability-correlation-id-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "小流量指标",
+          "content": "requests=500 correlation_missing=0 log_payload_fields=0 error_rate_delta=0.0%"
+        }
+      ],
+      "options": [
+        {
+          "id": "observability-correlation-id-001-node-02-option-a",
+          "label": "用固定合成 ID 验证三层日志一致，再监控小流量缺失率和日志字段",
+          "explanation": "合成请求证明单条链路传播，小流量指标证明覆盖率与行为稳定，字段检查同时确认没有记录客户正文。"
+        },
+        {
+          "id": "observability-correlation-id-001-node-02-option-b",
+          "label": "只确认网关日志仍有 ID，就立即全量发布",
+          "explanation": "问题发生在下游传播，网关自身有 ID 不能证明订单和调度服务已经收到同一值。",
+          "errorType": "upstream-only-observability-check"
+        },
+        {
+          "id": "observability-correlation-id-001-node-02-option-c",
+          "label": "关闭日志访问控制，让所有员工共同检查关联结果",
+          "explanation": "放开访问控制会扩大日志暴露面，且与传播正确性无关；验证可以由授权人员使用合成 ID 完成。",
+          "errorType": "unrestricted-log-access"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "observability-correlation-id-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证要覆盖完整链路，并确认修复没有增加敏感日志。",
+        "secondWrong": "三层日志中的同一合成 ID 与 correlation_missing=0 是互补证据。",
+        "revealedAnswer": "应先用固定合成 ID 验证三层传播，再以小流量观察缺失率、错误率和日志字段。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "observability-correlation-id-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "网关和订单服务使用不同关联头名称，导致下游 request_id 丢失。正确修复是统一并传播同一 ID，再用合成链路和小流量指标验证。",
+    "rootCause": "跨服务的关联头契约不一致，订单服务没有读取网关生成的 X-Request-ID。",
+    "correctApproach": [
+      "统一入口头名称并把同一关联 ID 传播到所有下游服务。",
+      "使用合成 ID 和小流量缺失率验证端到端一致性与数据最小化。"
+    ],
+    "keyLessons": [
+      "更多日志不能替代稳定的关联上下文。",
+      "可观测性数据也必须遵守最小化和访问控制。"
+    ],
+    "interviewerPerspective": "观察候选人是否定位契约断点，并同时验证链路完整性、运行稳定性和隐私边界。",
+    "customerRiskPerspective": "缺乏关联会延长事件响应；记录正文或放开日志权限会制造新的隐私风险。",
+    "remediation": [
+      "定义并测试统一的关联头传播契约。",
+      "为 correlation_missing 指标建立按服务分层的告警。"
+    ],
+    "verification": [
+      "确认同一合成 ID 出现在网关、订单和调度日志。",
+      "确认小流量 correlation_missing=0 且日志不含请求正文。"
+    ],
+    "knowledgePoints": [
+      "correlation ID propagation",
+      "structured logging",
+      "observability privacy"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

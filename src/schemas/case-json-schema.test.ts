@@ -57,9 +57,9 @@ describe('FDE case JSON Schema artifact', () => {
     expect(generatedSchema.oneOf).toHaveLength(2);
   });
 
-  it('does not drift from the checked-in JSON Schema', async () => {
+  it('does not drift from the checked-in JSON Schema', () => {
     expect(readFileSync(checkedInSchemaPath, 'utf8')).toBe(
-      await serializeFdeCaseJsonSchema(),
+      serializeFdeCaseJsonSchema(),
     );
   });
 

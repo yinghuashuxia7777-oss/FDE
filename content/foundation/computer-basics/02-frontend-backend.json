@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.frontend-backend",
+  "type": "foundation",
+  "title": "前端与后端：界面、规则和数据的边界",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations", "api.integration"],
+  "level": "beginner",
+  "order": 2,
+  "estimatedMinutes": 7,
+  "content": {
+    "simpleExplanation": "前端负责用户直接看到和操作的界面，后端负责业务规则、权限判断与持久化数据；两者通过明确契约协作，关键安全规则不能只依赖前端按钮是否可见。",
+    "analogy": "前端像银行大厅的取号机和表单，后端像柜台后的账户系统。取号机可以引导流程，却不能替代柜台核验身份、余额和交易权限。",
+    "technicalExplanation": "浏览器或客户端发出 API 请求，后端验证身份、参数和业务不变量后返回响应。客户端状态可能被修改或绕过，所以授权、幂等和数据一致性必须由服务端强制执行。",
+    "example": "一个审批按钮在前端被禁用，但 Agent 编排器仍可直接调用高风险 API。真正的修复不是继续隐藏按钮，而是让后端要求一次性审批令牌并记录审计证据。",
+    "commonMistakes": "常见误区是把界面限制当成安全边界，或前后端各自猜测字段语义。还应避免只改一端就上线；契约变更需要兼容窗口、联调证据与回滚方案。"
+  },
+  "relatedCases": [
+    "zero-downtime-schema-migration-001",
+    "agent-approval-boundary-bypass-001"
+  ]
+}

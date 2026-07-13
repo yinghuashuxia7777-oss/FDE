@@ -1,26 +1,14 @@
 import type {
+  DomainDefinition,
+  SkillDefinition,
+} from '../../content/contracts';
+import type {
+  AttemptRecord,
   CaseProgressRecord,
   CaseSummary,
   MistakeRecord,
   SkillMasteryRecord,
 } from '../../repositories/contracts';
-
-export const FDE_DOMAINS = [
-  { id: 'customer-discovery', label: 'Customer discovery & requirements' },
-  { id: 'software-foundations', label: 'Software foundations & structure' },
-  { id: 'systems-networking', label: 'Terminal, systems & networking' },
-  { id: 'git-delivery', label: 'Git, collaboration & delivery' },
-  { id: 'api-integration', label: 'HTTP, API, auth & integration' },
-  { id: 'data-engineering', label: 'Data, databases & engineering' },
-  { id: 'cloud-deployment', label: 'Cloud, containers & Kubernetes' },
-  { id: 'reliability', label: 'Observability & reliability' },
-  { id: 'security-governance', label: 'Security, privacy & governance' },
-  { id: 'llm-applications', label: 'LLM foundations & AI applications' },
-  { id: 'rag-search', label: 'RAG, search & enterprise knowledge' },
-  { id: 'agents-evals', label: 'Agents, tools & evaluation' },
-  { id: 'performance-scale', label: 'Performance, cost & scale' },
-  { id: 'fde-adoption', label: 'FDE delivery, adoption & communication' },
-] as const;
 
 export type MasteryStatus =
   'Not started' | 'Weak' | 'Learning' | 'Competent' | 'Proficient';
@@ -45,20 +33,17 @@ export interface DomainSignal {
 }
 
 export function buildDomainSignals(
-  cases: readonly CaseSummary[],
+  domains: readonly DomainDefinition[],
+  skills: readonly SkillDefinition[],
   mastery: readonly SkillMasteryRecord[],
 ): DomainSignal[] {
   const masteryBySkill = new Map(
     mastery.map((record) => [record.skillId, record]),
   );
-  return FDE_DOMAINS.map((domain) => {
-    const skillIds = new Set(
-      cases
-        .filter((summary) => summary.domains.includes(domain.id))
-        .flatMap((summary) => summary.skills),
-    );
-    const records = [...skillIds]
-      .map((skillId) => masteryBySkill.get(skillId))
+  return domains.map((domain) => {
+    const records = skills
+      .filter(({ domainId }) => domainId === domain.id)
+      .map(({ id }) => masteryBySkill.get(id))
       .filter((record): record is SkillMasteryRecord => record !== undefined);
     const sampleCount = records.reduce(
       (sum, record) => sum + record.sampleCount,
@@ -171,6 +156,219 @@ export function recommendCases(
         left.rankTuple[1].localeCompare(right.rankTuple[1]) ||
         left.rankTuple[2].localeCompare(right.rankTuple[2]),
     );
+}
+
+export interface DailyTrainingPlanItem {
+  caseSummary: CaseSummary;
+  reason: string;
+  completedToday: boolean;
+  attemptId?: string;
+  score?: number;
+}
+
+export interface DailyTrainingPlan {
+  focusCase: DailyTrainingPlanItem | undefined;
+  nextCases: DailyTrainingPlanItem[];
+  completedCount: number;
+  plannedCount: number;
+  estimatedMinutes: number;
+}
+
+interface RankedDailyCase extends DailyTrainingPlanItem {
+  priority: number;
+  orderScore: number;
+}
+
+const dailyLevels = new Set(['beginner', 'intermediate', 'advanced']);
+
+function validTime(value: string): number | undefined {
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? undefined : time;
+}
+
+export function buildDailyTrainingPlan(
+  cases: readonly CaseSummary[],
+  progress: readonly CaseProgressRecord[],
+  mastery: readonly SkillMasteryRecord[],
+  mistakes: readonly MistakeRecord[],
+  todayAttempts: readonly AttemptRecord[],
+  now = new Date(),
+): DailyTrainingPlan {
+  const eligibleCases = cases
+    .filter(
+      ({ level, status }) => status === 'published' && dailyLevels.has(level),
+    )
+    .sort(
+      (left, right) =>
+        left.id.localeCompare(right.id) || right.version - left.version,
+    )
+    .filter(
+      (caseSummary, index, sorted) =>
+        index === 0 || sorted[index - 1]?.id !== caseSummary.id,
+    );
+  const eligibleById = new Map(
+    eligibleCases.map((caseSummary) => [caseSummary.id, caseSummary]),
+  );
+  const progressByCase = new Map(
+    progress.map((record) => [record.caseId, record]),
+  );
+  const masteryBySkill = new Map(
+    mastery.map((record) => [record.skillId, record]),
+  );
+  const criticalCases = new Set(
+    mistakes.filter(({ critical }) => critical).map(({ caseId }) => caseId),
+  );
+  const criticalSkills = new Set(
+    mistakes
+      .filter(({ critical }) => critical)
+      .flatMap(({ skillIds }) => skillIds),
+  );
+
+  const completedByCase = new Map<
+    string,
+    { attempt: Extract<AttemptRecord, { status: 'completed' }>; time: number }
+  >();
+  const todayKey = localDayKey(now);
+  for (const attempt of todayAttempts) {
+    if (attempt.status !== 'completed' || !eligibleById.has(attempt.caseId)) {
+      continue;
+    }
+    const time = validTime(attempt.completedAt);
+    if (time === undefined || localDayKey(new Date(time)) !== todayKey) {
+      continue;
+    }
+    const existing = completedByCase.get(attempt.caseId);
+    if (
+      existing === undefined ||
+      time > existing.time ||
+      (time === existing.time &&
+        attempt.id.localeCompare(existing.attempt.id) > 0)
+    ) {
+      completedByCase.set(attempt.caseId, { attempt, time });
+    }
+  }
+
+  const completedItems = [...completedByCase.entries()]
+    .sort(
+      ([leftId, left], [rightId, right]) =>
+        left.time - right.time || leftId.localeCompare(rightId),
+    )
+    .map(([caseId, { attempt }]): DailyTrainingPlanItem => ({
+      caseSummary: eligibleById.get(caseId)!,
+      reason: 'Completed today. Review the decision path while it is fresh.',
+      completedToday: true,
+      attemptId: attempt.id,
+      score: attempt.score,
+    }));
+  const completedCaseIds = new Set(
+    completedItems.map(({ caseSummary }) => caseSummary.id),
+  );
+
+  const rankedCases = eligibleCases
+    .filter(({ id }) => !completedCaseIds.has(id))
+    .map((caseSummary): RankedDailyCase => {
+      const record = progressByCase.get(caseSummary.id);
+      const weakSkills = caseSummary.skills
+        .map((skillId) => masteryBySkill.get(skillId))
+        .filter(
+          (signal): signal is SkillMasteryRecord =>
+            signal !== undefined && signal.sampleCount > 0 && signal.score < 40,
+        )
+        .sort((left, right) => left.score - right.score);
+      const criticalSkill = caseSummary.skills.find((skillId) =>
+        criticalSkills.has(skillId),
+      );
+      const sameCaseCritical =
+        criticalCases.has(caseSummary.id) || record?.hasCriticalError === true;
+
+      if (sameCaseCritical || criticalSkill !== undefined) {
+        return {
+          caseSummary,
+          completedToday: false,
+          priority: 0,
+          orderScore: 0,
+          reason: sameCaseCritical
+            ? 'Revisit a case with a recorded critical-risk decision.'
+            : `Transfer the critical-risk skill ${criticalSkill ?? ''} into this scenario.`,
+        };
+      }
+      if (weakSkills.length > 0) {
+        return {
+          caseSummary,
+          completedToday: false,
+          priority: 1,
+          orderScore: weakSkills[0]!.score,
+          reason: `Strengthen ${weakSkills
+            .slice(0, 2)
+            .map(({ skillId }) => skillId)
+            .join(', ')} while mastery is below 40.`,
+        };
+      }
+      if (
+        record?.latestVerdict === 'fail' ||
+        record?.latestVerdict === 'critical-risk'
+      ) {
+        return {
+          caseSummary,
+          completedToday: false,
+          priority: 2,
+          orderScore: -(validTime(record.updatedAt) ?? 0),
+          reason: 'Retry a recent failed case while the evidence is fresh.',
+        };
+      }
+      const newlyCompetent = caseSummary.skills.find((skillId) => {
+        const signal = masteryBySkill.get(skillId);
+        return (
+          signal !== undefined && signal.score >= 60 && signal.sampleCount <= 2
+        );
+      });
+      if (record === undefined && newlyCompetent !== undefined) {
+        return {
+          caseSummary,
+          completedToday: false,
+          priority: 3,
+          orderScore: 0,
+          reason: `Verify the newly learned ${newlyCompetent} skill in another scenario.`,
+        };
+      }
+      if (record === undefined || record.completedCount === 0) {
+        return {
+          caseSummary,
+          completedToday: false,
+          priority: 4,
+          orderScore: 0,
+          reason: 'Continue today with an uncompleted FDE scenario.',
+        };
+      }
+      return {
+        caseSummary,
+        completedToday: false,
+        priority: 5,
+        orderScore: validTime(record.updatedAt) ?? Number.MAX_SAFE_INTEGER,
+        reason: 'Maintain daily practice with a stable fallback case.',
+      };
+    })
+    .sort(
+      (left, right) =>
+        left.priority - right.priority ||
+        left.orderScore - right.orderScore ||
+        left.caseSummary.id.localeCompare(right.caseSummary.id),
+    );
+
+  const items: DailyTrainingPlanItem[] = [
+    ...completedItems,
+    ...rankedCases,
+  ].slice(0, 3);
+  return {
+    focusCase: items[0],
+    nextCases: items.slice(1),
+    completedCount: items.filter(({ completedToday }) => completedToday).length,
+    plannedCount: items.length,
+    estimatedMinutes: items.reduce(
+      (total, { caseSummary }) => total + caseSummary.estimatedMinutes,
+      0,
+    ),
+  };
 }
 
 function localDayKey(value: Date): string {

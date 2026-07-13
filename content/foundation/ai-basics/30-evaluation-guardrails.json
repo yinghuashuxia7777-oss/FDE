@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.evaluation-guardrails",
+  "type": "foundation",
+  "title": "评估与护栏：测量质量并限制风险",
+  "domain": "ai-basics",
+  "track": "ai-basics",
+  "skills": ["agents.evaluation", "llm.applications", "security.governance"],
+  "level": "intermediate",
+  "order": 30,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "评估用代表性任务测量系统是否有用、正确和安全；护栏在运行时阻止或降级不可接受的行为；两者互补，不能用少量演示代替。",
+    "analogy": "评估像驾照考试和定期路测，护栏像限速器、安全带与道路隔离。考试成绩说明整体能力，护栏则在具体时刻降低事故后果。",
+    "technicalExplanation": "评估集应版本化、与提示样例和训练数据隔离，并覆盖正常、边界和对抗场景。护栏可以包含输入分类、输出验证、工具授权、速率限制和人工审批。",
+    "example": "团队把评估题及标准答案放进 Prompt 示例，分数显著上升却无法代表新问题。应重建独立 holdout、记录数据血缘，并比较污染前后的真实表现。",
+    "commonMistakes": "只看平均分会掩盖高风险长尾，只靠关键词过滤也容易误杀或漏过。应按失败类型和客户风险分层，持续回放真实但脱敏的代表样本。"
+  },
+  "relatedCases": [
+    "llm-eval-dataset-leakage-001",
+    "agent-approval-boundary-bypass-001"
+  ]
+}

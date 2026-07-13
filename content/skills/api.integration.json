@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "api.integration",
+  "domainId": "api-integration",
+  "label": "API integration",
+  "description": "Design and diagnose reliable authenticated API integrations.",
+  "status": "active"
+}

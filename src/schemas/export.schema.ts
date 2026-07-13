@@ -84,6 +84,7 @@ const AttemptBaseShape = {
   userId: z.literal('local-user'),
   caseId: NonEmptyStringSchema,
   caseVersion: z.number().int().positive(),
+  schemaVersion: z.literal(1).default(1),
   startedAt: IsoTimestampSchema,
   updatedAt: IsoTimestampSchema,
   criticalErrorIds: z.array(NonEmptyStringSchema),

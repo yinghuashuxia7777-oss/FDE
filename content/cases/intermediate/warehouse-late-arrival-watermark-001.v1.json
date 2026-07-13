@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "id": "warehouse-late-arrival-watermark-001",
+  "slug": "warehouse-late-arrival-watermark-001",
+  "title": "迟到事件越过数仓水位线",
+  "summary": "调查移动端事件延迟导致的收入指标缺口，并设计可追踪水位线、幂等回补和发布语义。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["data-engineering", "reliability"],
+  "skills": ["data.engineering", "reliability.observability"],
+  "lifecycleStages": ["operate", "incident-response", "validate"],
+  "technicalLayers": ["stream-processing", "warehouse", "analytics"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["data-quality", "reporting", "customer-trust"],
+  "behaviorPatterns": [
+    "bounded-reprocessing",
+    "provisional-data-labeling",
+    "data-quality-observability"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的票务平台把移动端购买事件流入云数仓，并向合作场馆提供每小时收入看板。",
+    "background": "移动 SDK 新增离线缓存后，事件可在设备恢复网络时延迟上传；管道仍以事件时间加 2 小时水位线最终化分区。",
+    "initialIncident": "财务发现昨日移动端收入比支付处理系统少 8%，今天上午差额又部分自行缩小。",
+    "constraints": [
+      "不能把未经核对的数据直接覆盖已发布财务分区。",
+      "合作场馆需要知道哪些时段是暂定值。",
+      "回补必须可重跑且不能重复计入同一 eventId。"
+    ],
+    "confirmedFacts": [
+      "支付系统的总额与移动端最终上传事件一致。",
+      "约 8% 的移动事件在事件时间后 2 至 18 小时到达。",
+      "越过水位线的事件目前只写入 late_events 表，不会更新收入聚合。"
+    ]
+  },
+  "startNodeId": "warehouse-late-arrival-watermark-001-node-01",
+  "nodes": [
+    {
+      "id": "warehouse-late-arrival-watermark-001-node-01",
+      "type": "log-analysis",
+      "title": "界定迟到数据影响",
+      "prompt": "在修改管道前，第一项安全行动是什么？",
+      "skillWeights": {
+        "data.engineering": 1
+      },
+      "evidence": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "到达延迟分布",
+          "content": "mobile arrival_delay p50=4m p95=11h p99=17.6h; web p95=18m; finalization watermark=2h."
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-01-evidence-02",
+          "type": "config",
+          "title": "当前迟到事件处理",
+          "content": "watermark: event_time + 2h\non_late: append late_events\naggregate_update: disabled\npublished_label: final",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-01-option-a",
+          "label": "把受影响移动分区标为暂定，冻结最终发布，并按 eventId 对账 late_events",
+          "explanation": "先明确数据语义并保留原分区，按稳定事件键量化缺口，为有边界回补提供证据。",
+          "errorType": "none"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-01-option-b",
+          "label": "立即把全平台水位线统一改为 24 小时",
+          "explanation": "这可能容纳移动延迟，却让低延迟 web 数据也推迟最终化，未先评估发布 SLA 和成本。",
+          "errorType": "global-watermark-overcorrection"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-01-option-c",
+          "label": "把 late_events 直接追加到已发布聚合，不保存快照或去重",
+          "explanation": "直接追加可能重复计数并不可回滚，会破坏财务分区的可审计性。",
+          "errorType": "uncontrolled-financial-overwrite"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "warehouse-late-arrival-watermark-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先保护已发布数据与客户语义，再决定水位线或回补技术。",
+        "secondWrong": "late_events 已保留 eventId，但当前分区被标为 final，直接追加既不去重也不可审计。",
+        "revealedAnswer": "应把受影响分区标为暂定并冻结最终发布，按 eventId 对账迟到数据；验证缺口与支付系统一致后再回补。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "warehouse-late-arrival-watermark-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "合作方看到准确状态，团队获得可审计的回补范围。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "所有渠道的可用时间被无差别推迟。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "收入数据可能重复且无法还原原始发布状态。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "warehouse-late-arrival-watermark-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "补齐水位线可观测性",
+      "prompt": "哪组信号能及时区分正常迟到与管道停滞？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-02-evidence-01",
+          "type": "text",
+          "title": "现有告警",
+          "content": "The pipeline alerts only when no batch completes for 30 minutes. It does not track event-time lag, late-event ratio, or provisional partition age."
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "渠道基线",
+          "content": "mobile late_after_2h baseline=0.7%, current=8.1%; web=0.2%; ingestion processing lag remains 3 minutes."
+        }
+      ],
+      "options": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-02-option-a",
+          "label": "只把批次失败告警从 30 分钟调到 10 分钟",
+          "explanation": "批次仍按时完成，问题是事件时间与到达时间偏移；更敏感的批次告警仍看不到迟到比例。",
+          "errorType": "processing-only-observability"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-02-option-b",
+          "label": "关闭当前数据质量告警，避免回补期间产生噪声",
+          "explanation": "关闭告警会在高风险修复期移除保护，可能掩盖新的丢数或重复。",
+          "errorType": "disable-safety-monitoring"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-02-option-c",
+          "label": "按渠道监控到达延迟分位数、迟到率、水位线滞后和暂定分区年龄",
+          "explanation": "这些信号同时覆盖源端迟到、处理停滞与发布积压，并能与各渠道基线比较。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "warehouse-late-arrival-watermark-001-node-02-option-c"
+      },
+      "feedback": {
+        "firstWrong": "事件时间完整性问题不能只用批处理是否成功来判断。",
+        "secondWrong": "处理滞后只有 3 分钟，但 mobile 的 late_after_2h 从 0.7% 升到 8.1%。",
+        "revealedAnswer": "应监控渠道级到达延迟、迟到率、水位线滞后和暂定分区年龄；用基线阈值验证告警能捕获本次变化。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "warehouse-late-arrival-watermark-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "管道显示健康，数据完整性退化继续不可见。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "回补期间的数据异常失去预警。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-02-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "迟到模式与管道故障可以被及时区分和定位。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "warehouse-late-arrival-watermark-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "warehouse-late-arrival-watermark-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "执行幂等回补",
+      "prompt": "哪种回补方式能恢复正确收入并支持安全重跑？",
+      "skillWeights": {
+        "data.engineering": 1
+      },
+      "evidence": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-03-evidence-01",
+          "type": "json",
+          "title": "事件键与分区",
+          "content": "{\n  \"eventKey\": \"eventId\",\n  \"partitionKey\": \"eventDateUtc\",\n  \"lateRows\": 18420,\n  \"duplicateEventIds\": 37\n}",
+          "language": "json"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-03-evidence-02",
+          "type": "text",
+          "title": "staging 演练",
+          "content": "A merge keyed by eventId changed two synthetic partitions from 920 to 997 unique purchases. Running the same merge twice kept 997."
+        }
+      ],
+      "options": [
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-03-option-a",
+          "label": "快照目标分区，按 eventId MERGE 小范围回补，对账后原子替换并保留重跑记录",
+          "explanation": "快照提供回滚，稳定键 MERGE 保证幂等，小范围对账和原子替换保护已发布财务数据。",
+          "errorType": "none"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-03-option-b",
+          "label": "按到达时间建立新分区，让看板同时汇总事件分区与到达分区",
+          "explanation": "同一事件可能被两个分区路径计入，且会改变既有事件时间口径。",
+          "errorType": "mixed-time-semantics"
+        },
+        {
+          "id": "warehouse-late-arrival-watermark-001-node-03-option-c",
+          "label": "清空全部收入表并从原始事件执行无条件全量重载",
+          "explanation": "全量清空影响面巨大且在恢复完成前使财务数据不可用，也忽略了限定分区与快照要求。",
+          "errorType": "destructive-full-reload"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "warehouse-late-arrival-watermark-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "回补必须同时满足范围可控、可回滚、可重跑和口径不变。",
+        "secondWrong": "staging 已证明按 eventId MERGE 重跑结果稳定，并且只有已识别分区需要修复。",
+        "revealedAnswer": "应先快照，再按 eventId 对受影响分区执行幂等 MERGE，对账支付总额后原子替换；重复运行应保持相同行数与金额。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "warehouse-late-arrival-watermark-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "收入缺口被可审计地修复，重复运行不会重复计数。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "看板口径变得含糊并可能重复计数。"
+        },
+        {
+          "optionId": "warehouse-late-arrival-watermark-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "所有收入报告同时不可用，回滚路径丢失。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "移动端离线缓存让事件到达延迟超过 2 小时水位线，管道仍把缺失迟到事件的分区标为最终。正确路径是标记暂定、建立事件时间观测，并用快照与 eventId MERGE 有界回补。",
+    "rootCause": "水位线与新移动端到达分布不匹配，且迟到事件旁路没有驱动聚合修正或发布语义更新。",
+    "correctApproach": [
+      "冻结受影响分区的最终发布并按 eventId 量化迟到缺口。",
+      "按渠道建立到达延迟、迟到率和水位线指标。",
+      "快照后对限定分区执行幂等 MERGE 和财务对账。",
+      "根据渠道 SLA 设计暂定窗口与周期性最终化策略。"
+    ],
+    "keyLessons": [
+      "处理成功不等于事件时间完整。",
+      "水位线是业务完整性与时效性的显式权衡。",
+      "财务回补需要稳定键、快照、对账和可重复执行。"
+    ],
+    "interviewerPerspective": "观察候选人是否区分处理时间与事件时间，并在修复前保护发布语义和财务可审计性。",
+    "customerRiskPerspective": "错误收入数据会影响场馆决策与结算信任；明确暂定状态和可审计回补能降低业务误导。",
+    "remediation": [
+      "为不同渠道配置经验证的迟到策略与暂定状态。",
+      "实现 late_events 到聚合的幂等修正作业。",
+      "建立分区完整性和回补审计表。"
+    ],
+    "verification": [
+      "确认回补后唯一 eventId 数与支付系统对账一致。",
+      "重复运行 MERGE 并确认行数和金额不变。",
+      "确认非受影响分区哈希保持不变。",
+      "确认迟到率异常能触发渠道级告警。"
+    ],
+    "knowledgePoints": [
+      "event-time watermarking",
+      "late-arriving data",
+      "idempotent warehouse backfill",
+      "provisional analytics semantics"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

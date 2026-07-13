@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "rag-basic",
+  "type": "foundation",
+  "title": "RAG：先检索证据，再基于证据生成",
+  "domain": "rag",
+  "track": "ai-basics",
+  "skills": ["rag.search"],
+  "level": "intermediate",
+  "order": 27,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "RAG 在回答前从外部知识库检索相关内容，再让模型依据这些证据生成；它能补充最新或私有知识，但可靠性取决于检索、权限和引用链。",
+    "analogy": "RAG 像允许开卷的顾问：先从获准的资料柜找文件，再据此回答并标注出处。拿错版本、越权取件或没有引用，都会让结论失去可信度。",
+    "technicalExplanation": "典型流程包括切块、嵌入、候选召回、元数据过滤、重排、上下文组装和带引用生成。每层都应有版本、追踪 ID 和独立质量指标。",
+    "example": "政策已更新，助手却持续引用旧段落。证据显示查询命中缓存中的旧索引版本，因此应失效缓存、确认新版本传播，并用已知问题验证引用。",
+    "commonMistakes": "把所有错误归因于模型、只调 Prompt 而不看召回证据，或在生成后才做权限检查，都无法修复根因。应逐层定位并让授权在检索前生效。"
+  },
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "rag-permission-filter-gap-001"
+  ]
+}

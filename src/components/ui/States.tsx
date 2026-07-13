@@ -1,18 +1,61 @@
 import { FolderOpen, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 
+import { useI18n } from '../../i18n';
 import { Button } from './Button';
 
 interface LoadingStateProps {
+  focusTitle?: boolean;
   label?: string;
+  titleAs?: 'h1' | 'h2' | 'p';
+  titleId?: string;
 }
 
-export function LoadingState({ label = 'Loading' }: LoadingStateProps) {
+interface StateTitleProps {
+  children: ReactNode;
+  focus: boolean;
+  id?: string;
+  renderAs: 'h1' | 'h2' | 'p';
+}
+
+function StateTitle({ children, focus, id, renderAs }: StateTitleProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (focus) headingRef.current?.focus();
+  }, [focus]);
+
+  if (renderAs === 'h1') {
+    return (
+      <h1 id={id} ref={headingRef} tabIndex={focus ? -1 : undefined}>
+        {children}
+      </h1>
+    );
+  }
+  if (renderAs === 'h2') {
+    return (
+      <h2 id={id} ref={headingRef} tabIndex={focus ? -1 : undefined}>
+        {children}
+      </h2>
+    );
+  }
+  return <p id={id}>{children}</p>;
+}
+
+export function LoadingState({
+  focusTitle = false,
+  label,
+  titleAs = 'p',
+  titleId,
+}: LoadingStateProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('ui.loading');
+
   return (
     <section
       className="state-panel state-panel--loading"
       role="status"
-      aria-label={label}
+      aria-label={resolvedLabel}
       aria-live="polite"
     >
       <SpinnerGap
@@ -20,7 +63,13 @@ export function LoadingState({ label = 'Loading' }: LoadingStateProps) {
         aria-hidden="true"
         size={24}
       />
-      <p>{label}</p>
+      <StateTitle
+        focus={focusTitle}
+        renderAs={titleAs}
+        {...(titleId === undefined ? {} : { id: titleId })}
+      >
+        {resolvedLabel}
+      </StateTitle>
     </section>
   );
 }
@@ -48,20 +97,38 @@ export function EmptyState({ action, description, title }: EmptyStateProps) {
 }
 
 interface ErrorStateProps {
+  focusTitle?: boolean;
   message: string;
   onRetry?: () => void;
   title: string;
+  titleAs?: 'h1' | 'h2';
+  titleId?: string;
 }
 
-export function ErrorState({ message, onRetry, title }: ErrorStateProps) {
+export function ErrorState({
+  focusTitle = false,
+  message,
+  onRetry,
+  title,
+  titleAs = 'h2',
+  titleId,
+}: ErrorStateProps) {
+  const { t } = useI18n();
+
   return (
     <section className="state-panel state-panel--error" role="alert">
       <WarningCircle aria-hidden="true" size={24} />
-      <h2>{title}</h2>
+      <StateTitle
+        focus={focusTitle}
+        renderAs={titleAs}
+        {...(titleId === undefined ? {} : { id: titleId })}
+      >
+        {title}
+      </StateTitle>
       <p>{message}</p>
       {onRetry === undefined ? null : (
         <Button variant="secondary" onClick={onRetry}>
-          Retry
+          {t('ui.retry')}
         </Button>
       )}
     </section>

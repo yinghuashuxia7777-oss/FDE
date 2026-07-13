@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "performance.scaling",
+  "domainId": "performance-scale",
+  "label": "Performance and scaling",
+  "description": "Reason about capacity, latency, throughput, and cost.",
+  "status": "active"
+}

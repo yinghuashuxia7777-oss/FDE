@@ -47,11 +47,17 @@ interface EvaluationResult {
 }
 
 interface CaseRepository {
+  listActive(query?: CaseQuery): Promise<CaseSummary[]>;
   list(query?: CaseQuery): Promise<CaseSummary[]>;
   getVersion(caseId: string, version?: number): Promise<FdeCase | undefined>;
   seed(cases: FdeCase[]): Promise<void>;
 }
 ```
+
+`listActive` is governed only by the explicit `ActiveContentCatalog`; it never
+infers a current version. `getVersion(caseId, version)` is the historical read
+path used by debriefs, mistakes, and profile calculations. Omitting a version
+returns no result rather than selecting the highest stored version.
 
 Other repository contracts are `ProgressRepository`, `AttemptRepository`, `SkillRepository`, `SettingsRepository`, `UserRepository`, and `CoverageRepository`. `UserRepository` exposes only the fixed local profile in the MVP.
 
@@ -92,7 +98,8 @@ The reducer stores the current node, round number, hint level, revealed evidence
 
 ## Storage
 
-Database name: `fde-arena`; initial schema version: 1.
+Database name: `fde-arena`; current schema version: 2. The v1-to-v2 migration
+only adds content-pack storage and preserves every pre-existing record.
 
 Object stores:
 
@@ -104,16 +111,65 @@ Object stores:
 - `settings`: user ID
 - `coverage`: case ID
 - `appMeta`: key
+- `contentPacks`: `[packId, contentVersion]`, including the immutable Manifest,
+  Domain, Skill, and Coverage snapshot
 
-All multi-store writes use one transaction. Migrations never delete data silently. Seeding is idempotent and only inserts unseen case versions.
+Content installation writes `caseVersions`, `contentPacks`, and the active
+catalog in one transaction. It never opens `attempts`, `progress`, `mastery`,
+`mistakes`, or `settings` for writing. Migrations never delete data silently.
+The same case ID and version is idempotent only when its SHA-256 content hash is
+unchanged; a conflicting immutable version rejects the whole pack.
 
 ## Import/export
 
 The export envelope is JSON with `formatVersion: 1`, semantic `appVersion`, ISO `exportedAt`, and the user-owned payload. Import accepts local files only, limits size before parsing, validates every record, previews counts, and replaces progress data transactionally after confirmation. Case content is not trusted from user imports.
 
+## Content packs and update workflow
+
+The checked-in content tree is the only source of formal questions and
+definitions. `content/manifests/content-config.json` supplies deterministic
+release metadata; committed generated artifacts never use the current clock.
+At build time, `content:index` scans `content/cases`, `content/domains`, and
+`content/skills`, validates the coverage plan, and generates the Manifest,
+coverage report, JSON Schemas, and lazy loader map. Application pages never
+maintain imports for individual cases.
+
+The normal content-only release is:
+
+1. Add a versioned case JSON under the matching level directory. Keep every
+   published Case, Node, Option, Evidence, Domain, and Skill ID stable.
+2. Add or update Domain and Skill definitions and
+   `content/coverage/coverage-plan.json`. A meaning change gets a new ID.
+3. Select exact active case versions in
+   `content/manifests/content-config.json`; update content version and fixed
+   release timestamp. Never mutate a released `(caseId, version)`.
+4. Run `npm run content:validate`, `npm run coverage:audit`, and
+   `npm run content:index`.
+5. Run `npm run content:check` and the test/build gates, then publish the
+   generated artifacts or export the complete JSON Content Pack.
+
+Adding a Domain follows the same flow and does not change a page. Adding a new
+question type is the only content change that also extends the engine and UI.
+A future case schema change adds a sequential migration in
+`src/content/migrations`; it does not rewrite historical JSON in bulk. Future
+URL or database sources implement `ContentSource` and retain the same installer,
+repositories, and pages.
+
+At runtime, `LocalContentSource` and `JsonFileContentSource` each load one
+complete immutable `ContentPack` snapshot. `ContentInstaller` validates schema,
+migrations, hashes, IDs, references, graph safety, coverage, limits, and
+conflicts before starting its single IndexedDB transaction. Restoring bundled
+content changes only the active catalog; imported versions and user history are
+retained.
+
 ## Content quality pipeline
 
-`validate-content` checks Zod/JSON Schema, unique IDs, answers, explanations, metadata, reviewer, and references. `validate-graph` detects missing nodes, unreachable nodes, cycles without termination, and missing terminal paths. `audit-coverage` checks difficulty, domain, risk, cross-domain ratios, critical-error families, and deprecated-index leakage. `build-case-index` runs only after validation.
+`content:validate` checks Zod/JSON Schema, schema and content versions, stable and
+unique IDs, answers, option explanations, metadata, reviewers, references, and
+active/deprecated rules. Graph validation detects missing or unreachable nodes,
+dead cycles, and missing terminal paths. `coverage:audit` compares the authored
+362-case plan against actual active content. `content:index` runs only after
+validation, and `content:check` regenerates in memory and fails on byte drift.
 
 Every batch script supports `--dry-run`, `--limit`, `--input`, `--output`, and `--skip-existing` where relevant.
 
@@ -133,4 +189,3 @@ Every batch script supports `--dry-run`, `--limit`, `--input`, `--output`, and `
 - Initial IndexedDB seed target below 750 ms on a modern laptop for 24 cases.
 - Case library operations remain under 100 ms for 338 summaries.
 - No layout shift from asynchronously rendered dashboard modules.
-

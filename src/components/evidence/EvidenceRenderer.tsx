@@ -2,18 +2,19 @@
 import { useId } from 'react';
 
 import type { Evidence, EvidenceType } from '../../domain/cases/types';
+import { useI18n } from '../../i18n';
 
-const evidenceLabels: Record<EvidenceType, string> = {
-  text: 'Text evidence',
-  log: 'Log',
-  terminal: 'Terminal output',
-  http: 'HTTP exchange',
-  json: 'JSON',
-  diff: 'Diff',
-  config: 'Configuration',
-  metric: 'Metric',
-  diagram: 'Diagram description',
-  'customer-message': 'Customer message',
+const evidenceLabelKeys: Record<EvidenceType, string> = {
+  text: 'training.evidence.type.text',
+  log: 'training.evidence.type.log',
+  terminal: 'training.evidence.type.terminal',
+  http: 'training.evidence.type.http',
+  json: 'training.evidence.type.json',
+  diff: 'training.evidence.type.diff',
+  config: 'training.evidence.type.config',
+  metric: 'training.evidence.type.metric',
+  diagram: 'training.evidence.type.diagram',
+  'customer-message': 'training.evidence.type.customerMessage',
 };
 
 interface BlockProps {
@@ -22,14 +23,16 @@ interface BlockProps {
   typeLabel?: string;
 }
 
-export function CodeBlock({ content, title, typeLabel = 'Code' }: BlockProps) {
+export function CodeBlock({ content, title, typeLabel }: BlockProps) {
+  const { t } = useI18n();
   const captionId = useId();
+  const resolvedTypeLabel = typeLabel ?? t('training.evidence.code');
 
   return (
     <figure className="evidence-block" aria-label={title}>
       <figcaption id={captionId} className="evidence-caption">
         <span>{title}</span>
-        <span className="evidence-caption__type">{typeLabel}</span>
+        <span className="evidence-caption__type">{resolvedTypeLabel}</span>
       </figcaption>
       <pre
         className="evidence-scroll"
@@ -43,16 +46,24 @@ export function CodeBlock({ content, title, typeLabel = 'Code' }: BlockProps) {
   );
 }
 
-export function LogBlock({ content, title, typeLabel = 'Log' }: BlockProps) {
-  return <CodeBlock content={content} title={title} typeLabel={typeLabel} />;
+export function LogBlock({ content, title, typeLabel }: BlockProps) {
+  const { t } = useI18n();
+  return (
+    <CodeBlock
+      content={content}
+      title={title}
+      typeLabel={typeLabel ?? t('training.evidence.type.log')}
+    />
+  );
 }
 
 interface DiffLineProps {
   content: string;
   index: number;
+  labels: Record<'added' | 'context' | 'metadata' | 'removed', string>;
 }
 
-function DiffLine({ content, index }: DiffLineProps) {
+function DiffLine({ content, index, labels }: DiffLineProps) {
   const kind = /^(?:\+\+\+|---)(?:\s|$)/.test(content)
     ? 'metadata'
     : content.startsWith('+')
@@ -60,14 +71,7 @@ function DiffLine({ content, index }: DiffLineProps) {
       : content.startsWith('-')
         ? 'removed'
         : 'context';
-  const label =
-    kind === 'metadata'
-      ? 'Metadata'
-      : kind === 'added'
-        ? 'Added'
-        : kind === 'removed'
-          ? 'Removed'
-          : 'Context';
+  const label = labels[kind];
 
   return (
     <span
@@ -82,13 +86,22 @@ function DiffLine({ content, index }: DiffLineProps) {
 }
 
 export function DiffBlock({ content, title }: Omit<BlockProps, 'typeLabel'>) {
+  const { t } = useI18n();
   const captionId = useId();
+  const labels = {
+    metadata: t('training.evidence.diff.metadata'),
+    added: t('training.evidence.diff.added'),
+    removed: t('training.evidence.diff.removed'),
+    context: t('training.evidence.diff.context'),
+  };
 
   return (
     <figure className="evidence-block" aria-label={title}>
       <figcaption id={captionId} className="evidence-caption">
         <span>{title}</span>
-        <span className="evidence-caption__type">Diff</span>
+        <span className="evidence-caption__type">
+          {t('training.evidence.type.diff')}
+        </span>
       </figcaption>
       <pre
         className="evidence-scroll evidence-scroll--diff"
@@ -97,9 +110,14 @@ export function DiffBlock({ content, title }: Omit<BlockProps, 'typeLabel'>) {
         tabIndex={0}
       >
         <code>
-          {content
-            .split('\n')
-            .map((line, index) => DiffLine({ content: line, index }))}
+          {content.split('\n').map((line, index) => (
+            <DiffLine
+              key={`${String(index)}-${line}`}
+              content={line}
+              index={index}
+              labels={labels}
+            />
+          ))}
         </code>
       </pre>
     </figure>
@@ -123,8 +141,9 @@ interface EvidenceRendererProps {
 }
 
 export function EvidenceRenderer({ evidence }: EvidenceRendererProps) {
-  const title = evidence.title ?? evidenceLabels[evidence.type];
-  const typeLabel = evidenceLabels[evidence.type];
+  const { t } = useI18n();
+  const typeLabel = t(evidenceLabelKeys[evidence.type]);
+  const title = evidence.title ?? t('training.evidence.untitled');
 
   switch (evidence.type) {
     case 'log':

@@ -6,6 +6,7 @@ import type {
   CaseProgressRecord,
   CaseVersionRecord,
   CoverageRecord,
+  InstalledContentPackRecord,
   SkillMasteryRecord,
   StoredMistakeRecord,
   UserSettings,
@@ -13,7 +14,7 @@ import type {
 import { applyMigrations } from './migrations';
 
 export const DATABASE_NAME = 'fde-arena';
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 
 export interface FdeArenaDatabase extends DBSchema {
   caseVersions: {
@@ -76,6 +77,14 @@ export interface FdeArenaDatabase extends DBSchema {
   appMeta: {
     key: string;
     value: AppMetaRecord;
+  };
+  contentPacks: {
+    key: [string, string];
+    value: InstalledContentPackRecord;
+    indexes: {
+      'by-installed-at': string;
+      'by-source': InstalledContentPackRecord['sourceKind'];
+    };
   };
 }
 

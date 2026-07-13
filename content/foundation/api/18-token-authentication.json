@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "api.token-authentication",
+  "type": "foundation",
+  "title": "API 令牌：身份、权限与最小暴露",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "beginner",
+  "order": 18,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "API 令牌是调用者向服务证明身份或授权的凭据；令牌通常有有效期、受众和权限范围，拿到令牌不等于可以访问所有资源。",
+    "analogy": "令牌像写有姓名、有效期和可进入区域的访客证。门卫不仅看证件真假，还会检查你要去的楼层是否在允许范围内。",
+    "technicalExplanation": "OAuth 访问令牌可能包含 issuer、audience、expiry 和 scope 等声明。服务端必须验证签名与声明，并按资源执行授权；客户端则应安全存储、最小权限申请。",
+    "example": "旧接口接受 read:orders，新接口要求 read:shipments。令牌有效但缺少新 scope，响应为 403。修复是更新授权申请与同意流程，而不是记录完整令牌。",
+    "commonMistakes": "把令牌写进源码、日志或工单会造成凭据泄露；申请通配权限则违背最小权限。排障只应记录不可逆摘要和必要声明，不复制秘密本体。"
+  },
+  "relatedCases": [
+    "api-oauth-scope-mismatch-001",
+    "security-log-pii-exposure-001"
+  ]
+}

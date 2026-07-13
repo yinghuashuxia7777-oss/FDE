@@ -41,6 +41,137 @@ afterEach(() => {
 });
 
 describe('content CLI entrypoints', () => {
+  it('validates and audits the complete bundled content snapshot by default', () => {
+    const validation = runCli('scripts/validate-content.ts', ['--dry-run']);
+    expect(validation.status).toBe(0);
+    expect(JSON.parse(validation.stdout)).toMatchObject({
+      ok: true,
+      validCases: 27,
+      validDomains: 15,
+      validSkills: 15,
+    });
+
+    const quality = runCli('scripts/audit-content-quality.ts', ['--dry-run']);
+    expect(quality.status).toBe(0);
+    expect(JSON.parse(quality.stdout)).toMatchObject({
+      ok: true,
+      casesChecked: 27,
+      validationIssueCount: 0,
+      qualityIssueCount: 0,
+      issues: [],
+    });
+
+    const audit = runCli('scripts/audit-coverage.ts', ['--dry-run']);
+    expect(audit.status).toBe(0);
+    expect(JSON.parse(audit.stdout)).toMatchObject({
+      ok: true,
+      coverage: {
+        schemaVersion: 1,
+        targetCaseCount: 362,
+        publishedCases: 24,
+      },
+    });
+  });
+
+  it('keeps bounded complete validation and index dry-runs internally consistent', () => {
+    const validation = runCli('scripts/validate-content.ts', [
+      '--dry-run',
+      '--limit',
+      '10',
+    ]);
+    expect(validation.status).toBe(0);
+    expect(validation.stderr).toBe('');
+    expect(JSON.parse(validation.stdout)).toMatchObject({
+      ok: true,
+      validCases: 10,
+    });
+
+    const index = runCli('scripts/build-case-index.ts', [
+      '--dry-run',
+      '--limit',
+      '10',
+    ]);
+    expect(index.status).toBe(0);
+    expect(index.stderr).toBe('');
+    expect(JSON.parse(index.stdout)).toMatchObject({
+      ok: true,
+      sampledCases: 10,
+    });
+  });
+
+  it('scopes quality limits and writes the structured report', () => {
+    const root = temporaryDirectory();
+    const output = resolve(root, 'quality-report.json');
+    const dryRunOutput = resolve(root, 'dry-run-quality-report.json');
+
+    const result = runCli('scripts/audit-content-quality.ts', [
+      '--limit',
+      '1',
+      '--output',
+      projectPath(output),
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: true,
+      casesChecked: 1,
+      validationIssueCount: 0,
+      qualityIssueCount: 0,
+      issues: [],
+    });
+    expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual(
+      JSON.parse(result.stdout),
+    );
+
+    const dryRun = runCli('scripts/audit-content-quality.ts', [
+      '--limit',
+      '1',
+      '--output',
+      projectPath(dryRunOutput),
+      '--dry-run',
+    ]);
+    expect(dryRun.status).toBe(0);
+    expect(existsSync(dryRunOutput)).toBe(false);
+  });
+
+  it('combines selected-case reference and quality issues on stderr', () => {
+    const root = temporaryDirectory();
+    const input = resolve(root, 'cases');
+    mkdirSync(input);
+    const candidate = createMinimalValidCase();
+    candidate.id = 'quality-gate-failure';
+    candidate.slug = candidate.id;
+    writeFileSync(
+      resolve(input, 'quality-gate-failure.json'),
+      JSON.stringify(candidate),
+      'utf8',
+    );
+
+    const result = runCli('scripts/audit-content-quality.ts', [
+      '--input',
+      projectPath(input),
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    const report = JSON.parse(result.stderr) as {
+      validationIssueCount: number;
+      qualityIssueCount: number;
+      issues: { code: string }[];
+    };
+    expect(report.validationIssueCount).toBeGreaterThan(0);
+    expect(report.qualityIssueCount).toBeGreaterThan(0);
+    expect(report.issues.map(({ code }) => code)).toEqual(
+      expect.arrayContaining([
+        'missing_domain_reference',
+        'missing_skill_reference',
+        'insufficient_decision_nodes',
+        'insufficient_node_evidence',
+      ]),
+    );
+  });
+
   it('returns structured stderr and a non-zero exit for invalid arguments', () => {
     const result = runCli('scripts/validate-content.ts', ['--unknown']);
 
@@ -67,6 +198,19 @@ describe('content CLI entrypoints', () => {
     expect(result.stderr).toMatch(/^\{/);
     expect(JSON.parse(result.stderr)).toMatchObject({
       ok: false,
+      issues: [expect.objectContaining({ code: 'invalid_json' })],
+    });
+
+    const quality = runCli('scripts/audit-content-quality.ts', [
+      '--input',
+      projectPath(input),
+    ]);
+    expect(quality.status).toBe(1);
+    expect(JSON.parse(quality.stderr)).toMatchObject({
+      ok: false,
+      casesChecked: 0,
+      validationIssueCount: 1,
+      qualityIssueCount: 0,
       issues: [expect.objectContaining({ code: 'invalid_json' })],
     });
   });

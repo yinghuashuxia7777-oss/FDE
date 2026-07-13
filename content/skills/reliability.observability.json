@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "reliability.observability",
+  "domainId": "reliability",
+  "label": "Reliability and observability",
+  "description": "Use telemetry and resilience patterns to operate reliable services.",
+  "status": "active"
+}

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 
 import {
+  bootstrapDefaultRepositories,
   createRetryableRepositoryGetter,
   ProductDataProvider,
   type ProductRepositories,
@@ -19,6 +20,17 @@ function RepositoryProbe() {
 }
 
 describe('product repository runtime', () => {
+  it('bootstraps through the content manager instead of a generated case seed list', async () => {
+    const ensureBundledInitialized = vi.fn().mockResolvedValue(undefined);
+    const repositories = {
+      contentManagement: { ensureBundledInitialized },
+    } as unknown as ProductRepositories;
+
+    await bootstrapDefaultRepositories(repositories);
+
+    expect(ensureBundledInitialized).toHaveBeenCalledOnce();
+  });
+
   it('reopens after a failed default-style factory and bootstraps once on success', async () => {
     const repositories = {} as ProductRepositories;
     const factory = vi

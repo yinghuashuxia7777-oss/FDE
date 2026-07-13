@@ -1,6 +1,8 @@
 import type { IDBPDatabase } from 'idb';
 
 import type { FdeCase } from '../domain/cases/types';
+import { canonicalizeContent } from '../content/canonicalize';
+import { sha256Content } from '../content/hash';
 import {
   LOCAL_USER_ID,
   type AppMetaRecord,
@@ -21,29 +23,18 @@ export class CaseVersionConflictError extends Error {
   }
 }
 
-function normalizeJson(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(normalizeJson);
-  }
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, entry]) => entry !== undefined)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entry]) => [key, normalizeJson(entry)]),
-    );
-  }
-  return value;
-}
-
 export function canonicalJson(value: unknown): string {
-  return JSON.stringify(normalizeJson(value));
+  return canonicalizeContent(value);
 }
 
-function toCaseVersionRecord(content: FdeCase): CaseVersionRecord {
+export async function createCaseVersionRecord(
+  content: FdeCase,
+): Promise<CaseVersionRecord> {
   return {
     caseId: content.id,
     version: content.metadata.version,
+    schemaVersion: content.schemaVersion,
+    contentHash: await sha256Content(content),
     status: content.status,
     level: content.level,
     canonicalContent: canonicalJson(content),
@@ -55,10 +46,10 @@ export async function seedCaseVersions(
   database: IDBPDatabase<FdeArenaDatabase>,
   cases: readonly FdeCase[],
 ): Promise<void> {
+  const records = await Promise.all(cases.map(createCaseVersionRecord));
   const transaction = database.transaction('caseVersions', 'readwrite');
   try {
-    for (const fdeCase of cases) {
-      const record = toCaseVersionRecord(fdeCase);
+    for (const record of records) {
       const existing = await transaction.store.get([
         record.caseId,
         record.version,
@@ -91,13 +82,13 @@ export async function bootstrapDatabase(
   database: IDBPDatabase<FdeArenaDatabase>,
   cases: readonly FdeCase[],
 ): Promise<void> {
+  const records = await Promise.all(cases.map(createCaseVersionRecord));
   const transaction = database.transaction(
     ['caseVersions', 'appMeta'],
     'readwrite',
   );
   try {
-    for (const fdeCase of cases) {
-      const record = toCaseVersionRecord(fdeCase);
+    for (const record of records) {
       const existing = await transaction
         .objectStore('caseVersions')
         .get([record.caseId, record.version]);

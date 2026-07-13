@@ -92,6 +92,7 @@ function createTrainingCase(): FdeCase {
     { key: 'critical', nextNodeId: null },
   ];
   return {
+    schemaVersion: 1,
     id: 'case-training',
     slug: 'case-training',
     title: 'Training case',
@@ -138,7 +139,10 @@ function createTrainingCase(): FdeCase {
       version: 7,
       sourceType: 'synthetic',
       createdAt: NOW,
+      reviewedAt: null,
+      applicableVersions: [],
       author: 'FDE Arena',
+      reviewer: null,
     },
   };
 }
@@ -613,6 +617,7 @@ describe('training application service', () => {
         userId: 'local-user',
         caseId: fdeCase.id,
         caseVersion: 7,
+        schemaVersion: 1,
         status: 'in-progress',
         currentNodeId: 'node-1',
         roundHistory: [],
@@ -927,12 +932,14 @@ describe('training application service', () => {
         score: 80,
         verdict: 'critical-risk',
         caseVersion: 7,
+        schemaVersion: 1,
       },
     });
     expect(harness.snapshots).toHaveLength(1);
     expect(harness.snapshots[0]).toMatchObject({
       attempt: {
         status: 'completed',
+        schemaVersion: 1,
         score: 80,
         verdict: 'critical-risk',
         criticalErrorIds: ['danger'],

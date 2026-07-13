@@ -31,8 +31,9 @@ export class AttemptCheckpointConflictError extends Error {
 export class IndexedDbAttemptRepository implements AttemptRepository {
   constructor(private readonly database: IDBPDatabase<FdeArenaDatabase>) {}
 
-  get(id: string): Promise<AttemptRecord | undefined> {
-    return this.database.get('attempts', id);
+  async get(id: string): Promise<AttemptRecord | undefined> {
+    const attempt = await this.database.get('attempts', id);
+    return attempt === undefined ? undefined : normalizeAttemptRecord(attempt);
   }
 
   async list(query: AttemptQuery = {}): Promise<AttemptRecord[]> {
@@ -73,6 +74,7 @@ export class IndexedDbAttemptRepository implements AttemptRepository {
     }
 
     return attempts
+      .map((attempt) => normalizeAttemptRecord(attempt))
       .filter(
         (attempt) =>
           (query.userId === undefined || attempt.userId === query.userId) &&

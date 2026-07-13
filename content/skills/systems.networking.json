@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "systems.networking",
+  "domainId": "systems-networking",
+  "label": "Systems and networking",
+  "description": "Diagnose operating-system, runtime, and network behavior.",
+  "status": "active"
+}

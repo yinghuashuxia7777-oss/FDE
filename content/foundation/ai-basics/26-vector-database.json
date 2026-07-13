@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.vector-database",
+  "type": "foundation",
+  "title": "向量数据库：语义检索的索引与过滤层",
+  "domain": "ai-basics",
+  "track": "ai-basics",
+  "skills": ["rag.search", "reliability.observability"],
+  "level": "intermediate",
+  "order": 26,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "向量数据库保存 Embedding 和关联元数据，并快速找出相近内容；生产系统还要管理版本、权限过滤、删除传播、索引延迟和多区域一致性。",
+    "analogy": "它像带主题坐标的智能档案馆：能迅速找到相似资料，但档案员仍要核对访问级别、发布日期和撤回状态，不能只按相似度交付。",
+    "technicalExplanation": "近似最近邻索引用速度和内存换取召回率，元数据过滤缩小合法候选集。写入与查询路径可能异步，索引版本和区域复制状态必须可观测。",
+    "example": "权限组变更已写入主数据库，但某区域向量索引尚未同步，用户仍检索到旧候选。系统应失败关闭敏感查询，并暴露索引版本与传播延迟。",
+    "commonMistakes": "只监控查询延迟而不监控召回质量、过滤命中和索引新鲜度，容易得到快速但错误的答案。删除原文也不代表所有向量副本已立即消失。"
+  },
+  "relatedCases": [
+    "multi-region-rag-consistency-001",
+    "rag-permission-filter-gap-001"
+  ]
+}

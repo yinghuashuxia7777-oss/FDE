@@ -9,6 +9,8 @@ import {
 } from 'react-router-dom';
 
 import { SkipLink } from '../components/layout/ApplicationShell';
+import { LanguageSwitcher } from '../components/layout/LanguageSwitcher';
+import { localizeUiError, useI18n } from '../i18n';
 
 export function RouteFrame() {
   const location = useLocation();
@@ -37,6 +39,8 @@ export function PlaceholderPage({
   eyebrow,
   title,
 }: PlaceholderPageProps) {
+  const { t } = useI18n();
+
   return (
     <section className="page-placeholder" aria-labelledby="page-title">
       <div className="page-intro">
@@ -48,27 +52,31 @@ export function PlaceholderPage({
       </div>
       <div
         className="placeholder-console"
-        aria-label={`${title} workspace status`}
+        aria-label={t('routes.placeholder.statusLabel', { title })}
       >
-        <span className="placeholder-console__label">Workspace channel</span>
-        <span>Ready for local training data</span>
+        <span className="placeholder-console__label">
+          {t('routes.placeholder.channel')}
+        </span>
+        <span>{t('routes.placeholder.ready')}</span>
       </div>
     </section>
   );
 }
 
 export function NotFoundPage() {
+  const { t } = useI18n();
+
   return (
     <section className="page-placeholder" aria-labelledby="page-title">
       <div className="page-intro">
-        <p className="eyebrow">Route 404</p>
+        <p className="eyebrow">{t('routes.notFound.eyebrow')}</p>
         <h1 id="page-title" tabIndex={-1}>
-          Page not found
+          {t('routes.notFound.title')}
         </h1>
-        <p>The requested workspace does not exist in this local build.</p>
+        <p>{t('routes.notFound.description')}</p>
       </div>
       <Link className="button button--primary" to="/">
-        Return to dashboard
+        {t('routes.returnToDashboard')}
       </Link>
     </section>
   );
@@ -76,18 +84,25 @@ export function NotFoundPage() {
 
 export function RouterErrorPage() {
   const error = useRouteError();
+  const { language, t } = useI18n();
   const message = isRouteErrorResponse(error)
-    ? `${String(error.status)} ${error.statusText}`
-    : 'The workspace could not be rendered.';
+    ? t('routes.error.http', {
+        status: error.status,
+        statusText: (() => {
+          const value = localizeUiError(language, error.statusText, '');
+          return value === '' ? '' : ` ${value}`;
+        })(),
+      })
+    : t('routes.error.fallback');
 
   return (
     <main className="standalone-state" aria-labelledby="router-error-title">
       <section className="state-panel state-panel--error" role="alert">
-        <p className="eyebrow">Application error</p>
-        <h1 id="router-error-title">Workspace unavailable</h1>
+        <p className="eyebrow">{t('routes.error.eyebrow')}</p>
+        <h1 id="router-error-title">{t('routes.error.title')}</h1>
         <p>{message}</p>
         <a className="button button--secondary" href="#/">
-          Return to dashboard
+          {t('routes.returnToDashboard')}
         </a>
       </section>
     </main>
@@ -95,15 +110,22 @@ export function RouterErrorPage() {
 }
 
 export function TrainingShell() {
+  const { t } = useI18n();
+
   return (
     <div className="training-shell">
       <SkipLink />
       <header className="training-bar">
         <Link className="training-exit" to="/cases">
           <ArrowLeft aria-hidden="true" size={20} />
-          Exit training
+          {t('routes.training.exit')}
         </Link>
-        <span className="training-bar__mode">Focused decision mode</span>
+        <div className="context-bar__identity training-bar__controls">
+          <span className="training-bar__mode">
+            {t('routes.training.mode')}
+          </span>
+          <LanguageSwitcher compact />
+        </div>
       </header>
       <main
         id="main-content"
@@ -111,16 +133,27 @@ export function TrainingShell() {
         aria-labelledby="page-title"
         tabIndex={-1}
       >
-        <section className="page-placeholder">
-          <div className="page-intro">
-            <p className="eyebrow">Active case</p>
-            <h1 id="page-title" tabIndex={-1}>
-              Training
-            </h1>
-            <p>Scene, evidence, and decision tools load here.</p>
-          </div>
-        </section>
+        <Outlet />
       </main>
     </div>
+  );
+}
+
+export function TrainingLandingPage() {
+  const { t } = useI18n();
+
+  return (
+    <section className="page-placeholder" aria-labelledby="page-title">
+      <div className="page-intro">
+        <p className="eyebrow">{t('routes.training.mode')}</p>
+        <h1 id="page-title" tabIndex={-1}>
+          {t('routes.training.title')}
+        </h1>
+        <p>{t('routes.training.description')}</p>
+      </div>
+      <Link className="button button--primary" to="/cases">
+        {t('routes.training.openCases')}
+      </Link>
+    </section>
   );
 }

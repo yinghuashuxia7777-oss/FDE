@@ -1,4 +1,5 @@
 import {
+  BookOpenText,
   ChartPolar,
   FolderOpen,
   Gear,
@@ -10,11 +11,14 @@ import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { useI18n } from '../../i18n';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileNavigation } from './MobileNavigation';
 import { ThemeSelector } from './ThemeProvider';
 import { useMediaQuery } from './useMediaQuery';
 
 export function SkipLink() {
+  const { t } = useI18n();
   const focusMain = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     document.getElementById('main-content')?.focus();
@@ -22,21 +26,33 @@ export function SkipLink() {
 
   return (
     <a className="skip-link" href="#main-content" onClick={focusMain}>
-      Skip to main content
+      {t('shell.skipToMain')}
     </a>
   );
 }
 
 const desktopDestinations = [
-  { to: '/', label: 'Dashboard', Icon: House, end: true },
-  { to: '/cases', label: 'Cases', Icon: FolderOpen, end: false },
-  { to: '/skills', label: 'Skills', Icon: ChartPolar, end: false },
-  { to: '/mistakes', label: 'Mistakes', Icon: WarningCircle, end: false },
-  { to: '/profile', label: 'Profile', Icon: UserCircle, end: false },
-  { to: '/settings', label: 'Settings', Icon: Gear, end: false },
+  { to: '/', labelKey: 'nav.dashboard', Icon: House, end: true },
+  {
+    to: '/foundation',
+    labelKey: 'nav.foundation',
+    Icon: BookOpenText,
+    end: false,
+  },
+  { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen, end: false },
+  { to: '/skills', labelKey: 'nav.skills', Icon: ChartPolar, end: false },
+  {
+    to: '/mistakes',
+    labelKey: 'nav.mistakes',
+    Icon: WarningCircle,
+    end: false,
+  },
+  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle, end: false },
+  { to: '/settings', labelKey: 'nav.settings', Icon: Gear, end: false },
 ] as const;
 
 export function ApplicationShell() {
+  const { t } = useI18n();
   const desktop = useMediaQuery('(min-width: 64rem)');
   const mobileDrawerOpenRef = useRef(false);
   const handleDrawerOpenChange = useCallback((open: boolean) => {
@@ -54,27 +70,37 @@ export function ApplicationShell() {
     <div className="application-shell">
       <SkipLink />
       {desktop ? (
-        <aside className="desktop-sidebar" aria-label="Application sidebar">
-          <NavLink className="brand-lockup" to="/" aria-label="FDE Arena home">
+        <aside
+          className="desktop-sidebar"
+          aria-label={t('shell.applicationSidebar')}
+        >
+          <NavLink
+            className="brand-lockup"
+            to="/"
+            aria-label={t('shell.homeLabel')}
+          >
             <span className="brand-lockup__mark" aria-hidden="true">
-              FDE
+              {t('shell.brandMark')}
             </span>
             <span>
-              <strong>Arena</strong>
-              <small>Field decision lab</small>
+              <strong>{t('shell.brandProduct')}</strong>
+              <small>{t('shell.tagline')}</small>
             </span>
           </NavLink>
-          <nav className="desktop-navigation" aria-label="Primary navigation">
-            {desktopDestinations.map(({ to, label, Icon, end }) => (
+          <nav
+            className="desktop-navigation"
+            aria-label={t('shell.primaryNavigation')}
+          >
+            {desktopDestinations.map(({ to, labelKey, Icon, end }) => (
               <NavLink className="nav-link" end={end} key={to} to={to}>
                 <Icon aria-hidden="true" size={20} />
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </NavLink>
             ))}
           </nav>
           <div className="sidebar-status" role="status">
             <span className="status-dot" aria-hidden="true" />
-            Local workspace ready
+            {t('shell.localReady')}
           </div>
         </aside>
       ) : null}
@@ -82,10 +108,15 @@ export function ApplicationShell() {
       <div className="workspace-column">
         <header className="context-bar" data-testid="context-bar">
           <div className="context-bar__identity">
-            <span className="context-bar__brand">FDE Arena</span>
-            <span className="context-bar__channel">Local / content ready</span>
+            <span className="context-bar__brand">{t('shell.brandName')}</span>
+            <span className="context-bar__channel">
+              {t('shell.contentReady')}
+            </span>
           </div>
-          <ThemeSelector compact />
+          <div className="context-bar__identity context-bar__controls">
+            <LanguageSwitcher compact />
+            <ThemeSelector compact />
+          </div>
         </header>
         <main
           id="main-content"

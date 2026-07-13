@@ -107,4 +107,56 @@ describe('readContentSources', () => {
     expect(sources.map(({ file }) => basename(file))).toEqual(['a.json']);
     expect(read).toHaveBeenCalledTimes(1);
   });
+
+  it('reads one complete content snapshot from the fixed project directories', async () => {
+    const module = await import('./files');
+    expect(module).toHaveProperty('readContentBundleSources');
+    const readContentBundleSources = Reflect.get(
+      module,
+      'readContentBundleSources',
+    ) as (root: string) => {
+      config: { file: string };
+      cases: readonly { file: string }[];
+      domains: readonly { file: string }[];
+      skills: readonly { file: string }[];
+      coverage: { file: string };
+    };
+    const root = temporaryDirectory('.tmp-content-snapshot-');
+    [
+      'content/cases/beginner',
+      'content/domains',
+      'content/skills',
+      'content/coverage',
+      'content/manifests',
+    ].forEach((directory) =>
+      mkdirSync(resolve(root, directory), { recursive: true }),
+    );
+    writeFileSync(resolve(root, 'content/cases/beginner/a.json'), '{}', 'utf8');
+    writeFileSync(resolve(root, 'content/domains/a.json'), '{}', 'utf8');
+    writeFileSync(resolve(root, 'content/skills/a.json'), '{}', 'utf8');
+    writeFileSync(
+      resolve(root, 'content/coverage/coverage-plan.json'),
+      '{}',
+      'utf8',
+    );
+    writeFileSync(
+      resolve(root, 'content/manifests/content-config.json'),
+      '{}',
+      'utf8',
+    );
+
+    const snapshot = readContentBundleSources(root);
+
+    expect(snapshot.config.file).toBe('content/manifests/content-config.json');
+    expect(snapshot.coverage.file).toBe('content/coverage/coverage-plan.json');
+    expect(snapshot.cases.map(({ file }) => file)).toEqual([
+      'content/cases/beginner/a.json',
+    ]);
+    expect(snapshot.domains.map(({ file }) => file)).toEqual([
+      'content/domains/a.json',
+    ]);
+    expect(snapshot.skills.map(({ file }) => file)).toEqual([
+      'content/skills/a.json',
+    ]);
+  });
 });

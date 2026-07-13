@@ -1,4 +1,5 @@
 import {
+  BookOpenText,
   ChartPolar,
   Crosshair,
   DotsThree,
@@ -12,10 +13,13 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
+import { useI18n } from '../../i18n';
+
 const drawerDestinations = [
-  { to: '/mistakes', label: 'Mistakes', Icon: WarningCircle },
-  { to: '/profile', label: 'Profile', Icon: UserCircle },
-  { to: '/settings', label: 'Settings', Icon: Gear },
+  { to: '/foundation', labelKey: 'nav.foundation', Icon: BookOpenText },
+  { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
+  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
+  { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
 ] as const;
 
 const drawerId = 'more-destinations-drawer';
@@ -57,6 +61,7 @@ function makeBackgroundInert() {
 }
 
 export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -128,22 +133,25 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
 
   return (
     <>
-      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+      <nav
+        className="mobile-bottom-nav"
+        aria-label={t('shell.mobileNavigation')}
+      >
         <NavLink className="mobile-nav-link" end to="/">
           <House aria-hidden="true" size={21} />
-          <span>Home</span>
+          <span>{t('nav.home')}</span>
         </NavLink>
         <NavLink className="mobile-nav-link" to="/cases">
           <FolderOpen aria-hidden="true" size={21} />
-          <span>Cases</span>
+          <span>{t('nav.cases')}</span>
         </NavLink>
         <NavLink className="mobile-nav-link" to="/training">
           <Crosshair aria-hidden="true" size={21} />
-          <span>Training</span>
+          <span>{t('nav.training')}</span>
         </NavLink>
         <NavLink className="mobile-nav-link" to="/skills">
           <ChartPolar aria-hidden="true" size={21} />
-          <span>Skills</span>
+          <span>{t('nav.skills')}</span>
         </NavLink>
         <button
           ref={triggerRef}
@@ -159,7 +167,7 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
           }}
         >
           <DotsThree aria-hidden="true" size={21} />
-          <span>More</span>
+          <span>{t('nav.more')}</span>
         </button>
       </nav>
 
@@ -168,7 +176,7 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
           <button
             className="drawer-scrim"
             type="button"
-            aria-label="Dismiss more destinations"
+            aria-label={t('shell.dismissMoreDestinations')}
             tabIndex={-1}
             onClick={closeDrawer}
           />
@@ -182,14 +190,16 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
           >
             <div className="mobile-drawer__header">
               <div>
-                <p className="eyebrow">Navigation</p>
-                <h2 id="more-destinations-title">More destinations</h2>
+                <p className="eyebrow">{t('shell.navigationEyebrow')}</p>
+                <h2 id="more-destinations-title">
+                  {t('shell.moreDestinations')}
+                </h2>
               </div>
               <button
                 ref={closeRef}
                 className="icon-button"
                 type="button"
-                aria-label="Close more destinations"
+                aria-label={t('shell.closeMoreDestinations')}
                 onClick={closeDrawer}
               >
                 <X aria-hidden="true" size={22} />
@@ -197,9 +207,9 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
             </div>
             <nav
               className="drawer-navigation"
-              aria-label="Secondary navigation"
+              aria-label={t('shell.secondaryNavigation')}
             >
-              {drawerDestinations.map(({ to, label, Icon }) => (
+              {drawerDestinations.map(({ to, labelKey, Icon }) => (
                 <NavLink
                   className="nav-link"
                   key={to}
@@ -207,7 +217,7 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
                   onClick={followDrawerLink}
                 >
                   <Icon aria-hidden="true" size={20} />
-                  <span>{label}</span>
+                  <span>{t(labelKey)}</span>
                 </NavLink>
               ))}
             </nav>

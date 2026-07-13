@@ -8,6 +8,8 @@ import type {
   CaseVersionRecord,
 } from '../contracts';
 import type { FdeArenaDatabase } from '../../storage/database';
+import { ACTIVE_CONTENT_CATALOG_META_KEY } from '../../content/contracts';
+import { ActiveContentCatalogSchema } from '../../content/schemas';
 import { seedCaseVersions } from '../../storage/seed';
 
 function toSummary(record: CaseVersionRecord): CaseSummary {
@@ -33,17 +35,27 @@ function toSummary(record: CaseVersionRecord): CaseSummary {
 export class IndexedDbCaseRepository implements CaseRepository {
   constructor(private readonly database: IDBPDatabase<FdeArenaDatabase>) {}
 
-  async list(query: CaseQuery = {}): Promise<CaseSummary[]> {
-    const records = await this.database.getAll('caseVersions');
-    const latestByCase = new Map<string, CaseVersionRecord>();
-    for (const record of records) {
-      const previous = latestByCase.get(record.caseId);
-      if (previous === undefined || previous.version < record.version) {
-        latestByCase.set(record.caseId, record);
-      }
-    }
+  async listActive(query: CaseQuery = {}): Promise<CaseSummary[]> {
+    const catalogRecord = await this.database.get(
+      'appMeta',
+      ACTIVE_CONTENT_CATALOG_META_KEY,
+    );
+    if (catalogRecord === undefined) return [];
+    const catalog = ActiveContentCatalogSchema.parse(catalogRecord.value);
+    const records = await Promise.all(
+      catalog.activeCases.map(async ({ caseId, version }) => {
+        const record = await this.database.get('caseVersions', [
+          caseId,
+          version,
+        ]);
+        if (record === undefined) {
+          throw new Error(`Active case ${caseId}@${version} is not installed.`);
+        }
+        return record;
+      }),
+    );
 
-    return [...latestByCase.values()]
+    return records
       .filter(
         ({ content }) =>
           (query.level === undefined || content.level === query.level) &&
@@ -55,6 +67,10 @@ export class IndexedDbCaseRepository implements CaseRepository {
       .map(toSummary);
   }
 
+  list(query: CaseQuery = {}): Promise<CaseSummary[]> {
+    return this.listActive(query);
+  }
+
   async getVersion(
     caseId: string,
     version?: number,
@@ -64,18 +80,7 @@ export class IndexedDbCaseRepository implements CaseRepository {
         ?.content;
     }
 
-    const versions = await this.database.getAllFromIndex(
-      'caseVersions',
-      'by-case',
-      caseId,
-    );
-    return versions.reduce<CaseVersionRecord | undefined>(
-      (latest, current) =>
-        latest === undefined || current.version > latest.version
-          ? current
-          : latest,
-      undefined,
-    )?.content;
+    return undefined;
   }
 
   seed(cases: readonly FdeCase[]): Promise<void> {

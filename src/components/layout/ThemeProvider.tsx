@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
+import { useI18n } from '../../i18n';
 import { ThemeContext, type ThemePreference, useTheme } from './theme-context';
 
 interface ThemeProviderProps {
@@ -56,6 +57,7 @@ interface ThemeSelectorProps {
 
 export function ThemeSelector({ compact = false }: ThemeSelectorProps) {
   const { theme, setTheme } = useTheme();
+  const { t } = useI18n();
 
   return (
     <label
@@ -63,16 +65,16 @@ export function ThemeSelector({ compact = false }: ThemeSelectorProps) {
         compact ? 'theme-selector theme-selector--compact' : 'theme-selector'
       }
     >
-      <span>Theme</span>
+      <span>{t('theme.label')}</span>
       <select
         value={theme}
         onChange={(event) => {
           setTheme(event.target.value as ThemePreference);
         }}
       >
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="system">System</option>
+        <option value="light">{t('theme.light')}</option>
+        <option value="dark">{t('theme.dark')}</option>
+        <option value="system">{t('theme.system')}</option>
       </select>
     </label>
   );

@@ -2,6 +2,7 @@ import type { FdeCase } from '../../domain/cases/types';
 
 export function createMinimalValidCase(): FdeCase {
   return {
+    schemaVersion: 1,
     id: 'case-minimal',
     slug: 'minimal-diagnostic-case',
     title: 'Minimal diagnostic case',
@@ -104,7 +105,10 @@ export function createMinimalValidCase(): FdeCase {
       version: 1,
       sourceType: 'synthetic',
       createdAt: '2026-07-13T00:00:00.000Z',
+      reviewedAt: null,
+      applicableVersions: [],
       author: 'FDE Arena',
+      reviewer: null,
     },
   };
 }

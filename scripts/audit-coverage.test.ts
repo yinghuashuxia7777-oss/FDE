@@ -103,4 +103,29 @@ describe('auditCoverage', () => {
       criticalErrors: { 'unsupported-action': 5 },
     });
   });
+
+  it('compares the long-term plan against explicitly active case versions', () => {
+    const active = publishedCase('case-active', ['one']);
+    const inactive = publishedCase('case-inactive', ['two']);
+    const report = auditCoverage([inactive, active], [], {
+      activeCases: [{ caseId: active.id, version: active.metadata.version }],
+      plan: {
+        schemaVersion: 1,
+        targetCaseCount: 3,
+        domains: [
+          { domainId: 'one', targetCaseCount: 2 },
+          { domainId: 'two', targetCaseCount: 1 },
+        ],
+      },
+    });
+
+    expect(report).toMatchObject({
+      schemaVersion: 1,
+      targetCaseCount: 3,
+      publishedCases: 1,
+      counts: { domains: { one: 1 } },
+      plannedDomainCaseCounts: { one: 2, two: 1 },
+      remainingCaseCount: 2,
+    });
+  });
 });

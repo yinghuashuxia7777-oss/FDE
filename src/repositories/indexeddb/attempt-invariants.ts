@@ -3,6 +3,7 @@ import type {
   AttemptRoundRecord,
   CompletedAttemptRecord,
 } from '../contracts';
+import { ATTEMPT_SCHEMA_VERSION } from '../contracts';
 import type { Verdict } from '../../domain/scoring/case-score';
 import {
   compareRfc3339Timestamps,
@@ -68,6 +69,21 @@ function hasCompletionField(attempt: AttemptRecord, key: string): boolean {
 }
 
 export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
+  const rawSchemaVersion: unknown = attempt.schemaVersion;
+  if (
+    rawSchemaVersion !== undefined &&
+    rawSchemaVersion !== ATTEMPT_SCHEMA_VERSION
+  ) {
+    const receivedVersion =
+      typeof rawSchemaVersion === 'number' ||
+      typeof rawSchemaVersion === 'string'
+        ? String(rawSchemaVersion)
+        : 'invalid';
+    throw new AttemptInvariantError(
+      `Attempt schemaVersion ${receivedVersion} is not supported.`,
+    );
+  }
+  const schemaVersion = ATTEMPT_SCHEMA_VERSION;
   const startedAt = normalizeTimestamp(attempt.startedAt, 'startedAt');
   const updatedAt = normalizeTimestamp(attempt.updatedAt, 'updatedAt');
   const roundHistory = normalizeRoundHistory(attempt.roundHistory);
@@ -99,6 +115,7 @@ export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
     }
     const completed: CompletedAttemptRecord = {
       ...attempt,
+      schemaVersion,
       startedAt,
       updatedAt,
       completedAt,
@@ -121,6 +138,7 @@ export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
     }
     return {
       ...attempt,
+      schemaVersion,
       startedAt,
       updatedAt,
       roundHistory,
@@ -142,6 +160,7 @@ export function normalizeAttemptRecord(attempt: AttemptRecord): AttemptRecord {
     }
     return {
       ...attempt,
+      schemaVersion,
       startedAt,
       updatedAt,
       roundHistory,

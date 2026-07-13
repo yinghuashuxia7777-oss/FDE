@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "network.tcp",
+  "type": "foundation",
+  "title": "TCP：可靠字节流与连接状态",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["systems.networking"],
+  "level": "beginner",
+  "order": 14,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "TCP 在两端之间建立连接，按序传送字节并对丢失数据重传；它能保证传输机制，却不能保证上层 API 的业务操作只执行一次。",
+    "analogy": "TCP 像有回执的连续快递：包裹丢失会补发并按编号排序，但快递系统不知道包裹里的付款指令是否已经被商家处理过。",
+    "technicalExplanation": "连接经历握手、数据传输与关闭，受到路由、防火墙、超时和拥塞影响。应用超时可能发生在请求已到达服务端、但响应尚未返回的阶段。",
+    "example": "客户端等待写入 API 响应时超时，并不证明服务端没有落库。若直接重试可能产生重复记录，所以还需要幂等键和服务端结果查询机制。",
+    "commonMistakes": "把 TCP 连接成功等同于应用成功，或把客户端超时等同于服务器未执行，都会导致错误结论。诊断要把连接证据与应用日志、业务状态关联。"
+  },
+  "relatedCases": ["dns-private-endpoint-001"]
+}

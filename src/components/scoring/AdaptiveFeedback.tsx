@@ -1,5 +1,6 @@
 import type { TrainingFeedback } from '../../application/training';
 import type { CaseNode } from '../../domain/cases/types';
+import { useI18n } from '../../i18n';
 
 interface AdaptiveFeedbackProps {
   feedback: TrainingFeedback | null;
@@ -11,23 +12,33 @@ interface ErrorTypeListProps {
 }
 
 function ErrorTypeList({ errorTypes }: ErrorTypeListProps) {
+  const { t } = useI18n();
+
   if (errorTypes.length === 0) {
-    return <p>No error classification recorded.</p>;
+    return <p>{t('training.feedback.noErrorClassification')}</p>;
   }
 
   return (
     <div>
-      <strong>Error types</strong>
-      <ul aria-label="Error types">
-        {errorTypes.map((errorType, index) => (
-          <li key={`${errorType}-${String(index)}`}>{errorType}</li>
-        ))}
+      <strong>{t('training.feedback.errorTypes')}</strong>
+      <ul aria-label={t('training.feedback.errorTypes')}>
+        {errorTypes.map((errorType, index) => {
+          const key = `training.errorType.${errorType}`;
+          const translated = t(key);
+          return (
+            <li key={`${errorType}-${String(index)}`}>
+              {translated === key ? t('training.errorType.other') : translated}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
 
 export function AdaptiveFeedback({ feedback, node }: AdaptiveFeedbackProps) {
+  const { t } = useI18n();
+
   if (feedback === null) {
     return null;
   }
@@ -41,15 +52,15 @@ export function AdaptiveFeedback({ feedback, node }: AdaptiveFeedbackProps) {
         className="adaptive-feedback"
         data-feedback-kind="revealedAnswer"
         role="status"
-        aria-label="Answer revealed"
+        aria-label={t('training.feedback.answerRevealed')}
         aria-live="polite"
       >
-        <h3>Answer revealed</h3>
+        <h3>{t('training.feedback.answerRevealed')}</h3>
         <p>{node.feedback.revealedAnswer}</p>
         <ErrorTypeList errorTypes={feedback.errorTypes} />
         <div>
-          <strong>Option explanations</strong>
-          <ul aria-label="Option explanations">
+          <strong>{t('training.feedback.optionExplanations')}</strong>
+          <ul aria-label={t('training.feedback.optionExplanations')}>
             {node.options.map((option) => (
               <li key={option.id}>
                 <strong>{option.label}</strong>
@@ -68,20 +79,20 @@ export function AdaptiveFeedback({ feedback, node }: AdaptiveFeedbackProps) {
         className="adaptive-feedback"
         data-feedback-kind="reveal-withheld"
         role="status"
-        aria-label="Answer remains hidden"
+        aria-label={t('training.feedback.answerHidden')}
         aria-live="polite"
       >
-        <h3>Answer remains hidden</h3>
-        <p>
-          Reveal confirmation is incomplete. The authored answer is not shown.
-        </p>
+        <h3>{t('training.feedback.answerHidden')}</h3>
+        <p>{t('training.feedback.revealIncomplete')}</p>
         <ErrorTypeList errorTypes={feedback.errorTypes} />
       </section>
     );
   }
 
   const isSecondHint = feedback.kind === 'secondWrong';
-  const label = isSecondHint ? 'Second hint' : 'First hint';
+  const label = isSecondHint
+    ? t('training.feedback.secondHint')
+    : t('training.feedback.firstHint');
 
   return (
     <section

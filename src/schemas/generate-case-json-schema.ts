@@ -1,6 +1,6 @@
-import { format } from 'prettier';
 import { z } from 'zod';
 
+import { canonicalizeContent } from '../content/canonicalize';
 import { FdeCaseSchema } from './case.schema.ts';
 
 export function generateFdeCaseJsonSchema() {
@@ -12,8 +12,10 @@ export function generateFdeCaseJsonSchema() {
   };
 }
 
-export function serializeFdeCaseJsonSchema(): Promise<string> {
-  return format(JSON.stringify(generateFdeCaseJsonSchema()), {
-    parser: 'json',
-  });
+export function serializeFdeCaseJsonSchema(): string {
+  return `${JSON.stringify(
+    JSON.parse(canonicalizeContent(generateFdeCaseJsonSchema())) as unknown,
+    null,
+    2,
+  )}\n`;
 }

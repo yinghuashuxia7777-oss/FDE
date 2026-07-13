@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "data.engineering",
+  "domainId": "data-engineering",
+  "label": "Data engineering",
+  "description": "Build and diagnose reliable data systems and pipelines.",
+  "status": "active"
+}

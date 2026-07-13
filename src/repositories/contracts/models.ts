@@ -10,8 +10,16 @@ import type {
 } from '../../domain/cases/types';
 import type { AttemptNumber } from '../../domain/scoring/score-node';
 import type { Verdict } from '../../domain/scoring/case-score';
+import type {
+  ContentManifest,
+  ContentSourceKind,
+  CoveragePlan,
+  DomainDefinition,
+  SkillDefinition,
+} from '../../content/contracts';
 
 export const LOCAL_USER_ID = 'local-user' as const;
+export const ATTEMPT_SCHEMA_VERSION = 1 as const;
 
 export interface CaseSummary {
   id: string;
@@ -52,6 +60,7 @@ interface AttemptRecordBase {
   userId: string;
   caseId: string;
   caseVersion: number;
+  schemaVersion: typeof ATTEMPT_SCHEMA_VERSION;
   startedAt: string;
   updatedAt: string;
   criticalErrorIds: string[];
@@ -176,10 +185,25 @@ export interface ProgressSnapshot {
 export interface CaseVersionRecord {
   caseId: string;
   version: number;
+  schemaVersion: number;
+  contentHash: string;
   status: CaseStatus;
   level: CaseLevel;
   canonicalContent: string;
   content: FdeCase;
+}
+
+export interface InstalledContentPackRecord {
+  packId: string;
+  contentVersion: string;
+  schemaVersion: number;
+  sourceKind: ContentSourceKind;
+  manifest: ContentManifest;
+  domains: DomainDefinition[];
+  skills: SkillDefinition[];
+  coverage: CoveragePlan;
+  installedAt: string;
+  checksum: string;
 }
 
 export interface StoredMistakeRecord extends MistakeRecord {

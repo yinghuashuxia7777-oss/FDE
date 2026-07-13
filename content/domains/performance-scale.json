@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "performance-scale",
+  "label": "Performance, cost & scale",
+  "description": "Capacity, latency, throughput, cost, and scaling tradeoffs.",
+  "status": "active"
+}

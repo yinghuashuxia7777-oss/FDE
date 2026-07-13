@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 
 import type { Evidence, EvidenceType } from '../../domain/cases/types';
+import { I18nProvider } from '../../i18n';
 import { DiffBlock, EvidenceRenderer } from './EvidenceRenderer';
 
 function evidence(type: EvidenceType, content = 'signal payload'): Evidence {
@@ -62,6 +63,28 @@ describe('evidence components', () => {
     expect(within(region).getAllByText('Removed')).toHaveLength(1);
     expect(within(region).getAllByText('Added')).toHaveLength(2);
     expect(within(region).getByText('+++counter;')).toBeInTheDocument();
+  });
+
+  it('uses an untitled fallback without repeating the evidence type', () => {
+    render(
+      <I18nProvider initialLanguage="zh-CN">
+        <EvidenceRenderer
+          evidence={{
+            id: 'evidence-untitled',
+            type: 'text',
+            content: 'signal payload',
+          }}
+        />
+      </I18nProvider>,
+    );
+
+    const figure = screen.getByRole('figure', { name: '未命名' });
+    expect(within(figure).getByText('未命名')).toBeVisible();
+    expect(
+      within(figure).getAllByText('文本证据', {
+        selector: '.evidence-caption__type',
+      }),
+    ).toHaveLength(1);
   });
 
   it.each<EvidenceType>([

@@ -1,4 +1,5 @@
 export interface SupportedCliOptions {
+  check?: boolean;
   dryRun?: boolean;
   limit?: boolean;
   input?: boolean;
@@ -7,6 +8,7 @@ export interface SupportedCliOptions {
 }
 
 export interface CliOptions {
+  check: boolean;
   dryRun: boolean;
   limit?: number;
   input?: string;
@@ -15,6 +17,7 @@ export interface CliOptions {
 }
 
 const optionNames = {
+  '--check': 'check',
   '--dry-run': 'dryRun',
   '--limit': 'limit',
   '--input': 'input',
@@ -26,11 +29,16 @@ export function parseCliArgs(
   args: readonly string[],
   supported: SupportedCliOptions,
 ): CliOptions {
-  const result: CliOptions = { dryRun: false, skipExisting: false };
+  const result: CliOptions = {
+    check: false,
+    dryRun: false,
+    skipExisting: false,
+  };
   const seen = new Set<string>();
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
+    if (argument === undefined) continue;
     const option = optionNames[argument as keyof typeof optionNames];
 
     if (option === undefined) {
@@ -44,7 +52,11 @@ export function parseCliArgs(
     }
     seen.add(argument);
 
-    if (option === 'dryRun' || option === 'skipExisting') {
+    if (
+      option === 'check' ||
+      option === 'dryRun' ||
+      option === 'skipExisting'
+    ) {
       result[option] = true;
       continue;
     }

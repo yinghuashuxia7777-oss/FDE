@@ -38,6 +38,7 @@ function completedBundle(): LocalDataBundle {
     userId: 'local-user' as const,
     caseId: 'case-one',
     caseVersion: 1,
+    schemaVersion: 1 as const,
     status: 'completed' as const,
     startedAt: '2026-07-13T00:00:00.000Z',
     updatedAt: '2026-07-13T00:10:00.000Z',
@@ -112,6 +113,7 @@ function completedOrderingMistakeBundle(): LocalDataBundle {
     userId: 'local-user' as const,
     caseId: 'case-ordering',
     caseVersion: 1,
+    schemaVersion: 1 as const,
     status: 'completed' as const,
     startedAt: '2026-07-13T00:00:00.000Z',
     updatedAt: '2026-07-13T00:10:00.000Z',
@@ -178,6 +180,30 @@ function completedOrderingMistakeBundle(): LocalDataBundle {
 }
 
 describe('progress portability', () => {
+  it('imports legacy attempts without schemaVersion as v1 and exports the normalized history', async () => {
+    databaseName = 'fde-arena-portability-legacy-attempt-schema';
+    database = await openFdeArenaDatabase({ name: databaseName });
+    const repositories = createIndexedDbRepositories(database);
+    const legacyBundle = structuredClone(completedBundle()) as unknown as {
+      attempts: Record<string, unknown>[];
+    } & Omit<LocalDataBundle, 'attempts'>;
+    delete legacyBundle.attempts[0]!.schemaVersion;
+
+    await repositories.progress.replaceUserData(
+      legacyBundle as unknown as LocalDataBundle,
+    );
+
+    const exported = await repositories.progress.exportUserData('local-user');
+    expect(exported.attempts[0]).toMatchObject({
+      id: 'attempt-complete',
+      caseId: 'case-one',
+      caseVersion: 1,
+      schemaVersion: 1,
+      completedAt: '2026-07-13T00:10:00.000Z',
+      score: 90,
+    });
+  });
+
   it('round-trips mistakes whose evaluator uses the training fallback error type', async () => {
     databaseName = 'fde-arena-portability-fallback-error';
     database = await openFdeArenaDatabase({ name: databaseName });
@@ -211,6 +237,9 @@ describe('progress portability', () => {
     const installedCase = {
       caseId: 'installed-case',
       version: 1,
+      schemaVersion: 1,
+      contentHash:
+        'sha256:0000000000000000000000000000000000000000000000000000000000000000',
       status: 'draft' as const,
       level: 'beginner' as const,
       canonicalContent: '{}',
@@ -367,6 +396,7 @@ describe('progress portability', () => {
           userId: 'local-user',
           caseId: 'case-one',
           caseVersion: 1,
+          schemaVersion: 1,
           status: 'in-progress',
           startedAt: '2026-07-13T02:00:00+08:00',
           updatedAt: '2026-07-13T01:00:00+08:00',

@@ -129,6 +129,8 @@ describe('TrainingLayout', () => {
     ).toBeTruthy();
 
     const questionDisclosure = screen.getByText('Question').closest('details');
+    const evidenceDisclosure = screen.getByText('Evidence').closest('details');
+    expect(evidenceDisclosure).toHaveAttribute('open');
     expect(questionDisclosure).toHaveAttribute('open');
   });
 });

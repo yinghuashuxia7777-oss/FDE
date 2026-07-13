@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "data-engineering",
+  "label": "Data, databases & engineering",
+  "description": "Data modeling, pipelines, databases, and data quality.",
+  "status": "active"
+}

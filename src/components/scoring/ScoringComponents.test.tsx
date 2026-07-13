@@ -5,6 +5,7 @@ import type {
   ChoiceCaseNode,
   ConsequenceDelta,
 } from '../../domain/cases/types';
+import { I18nProvider } from '../../i18n';
 import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import { AdaptiveFeedback } from './AdaptiveFeedback';
 import { ConsequenceMeter } from './ConsequenceMeter';
@@ -67,6 +68,24 @@ describe('AdaptiveFeedback', () => {
     for (const option of node.options) {
       expect(region).not.toHaveTextContent(option.explanation);
     }
+  });
+
+  it('does not expose an unregistered internal error slug in Chinese feedback', () => {
+    const node = nodeFixture();
+    render(
+      <I18nProvider initialLanguage="zh-CN">
+        <AdaptiveFeedback
+          node={node}
+          feedback={feedback('firstWrong', {
+            errorTypes: ['continue-known-unauthorized-actions'],
+          })}
+        />
+      </I18nProvider>,
+    );
+
+    const region = screen.getByRole('status', { name: '第一次提示' });
+    expect(region).toHaveTextContent('其他决策错误');
+    expect(region).not.toHaveTextContent('continue-known-unauthorized-actions');
   });
 
   it('keeps the answer and option explanations hidden after the second wrong answer', () => {

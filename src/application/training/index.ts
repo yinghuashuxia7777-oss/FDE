@@ -2,6 +2,7 @@ export {
   completeAttempt,
   createTrainingSession,
   resumeAttempt,
+  selectLatestResumeAttempt,
   submitNode,
 } from './training-service';
 export { trainingReducer } from './training-reducer';

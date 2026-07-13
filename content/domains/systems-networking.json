@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "systems-networking",
+  "label": "Terminal, systems & networking",
+  "description": "Operating systems, terminals, networks, and runtime diagnostics.",
+  "status": "active"
+}

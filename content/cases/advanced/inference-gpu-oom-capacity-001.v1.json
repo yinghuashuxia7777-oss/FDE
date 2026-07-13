@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "id": "inference-gpu-oom-capacity-001",
+  "slug": "inference-gpu-oom-capacity-001",
+  "title": "推理服务在长上下文流量下 GPU OOM",
+  "summary": "从模型内存、请求组合、调度和可靠性信号定位 GPU OOM，并建立有余量的容量与降级策略。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "fine-tuning-inference",
+    "performance-scale",
+    "cloud-deployment",
+    "reliability"
+  ],
+  "skills": [
+    "tuning.inference-deployment",
+    "performance.scaling",
+    "cloud.deployment",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["design", "deploy", "operate", "incident-response"],
+  "technicalLayers": [
+    "inference-runtime",
+    "gpu-capacity",
+    "kubernetes",
+    "observability"
+  ],
+  "environments": ["production", "staging"],
+  "riskTypes": ["availability", "performance", "cost", "customer-trust"],
+  "behaviorPatterns": [
+    "memory-budgeting",
+    "capacity-headroom",
+    "graceful-load-shedding"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的研发知识平台托管长上下文模型，为工程师总结大型设计文档。",
+    "background": "团队把最大上下文从 8k 提高到 32k，并把每实例并发从 4 调到 10；模型权重和镜像未变化。",
+    "initialIncident": "高峰期 GPU worker 周期性 OOM 重启，队列积压，短请求也出现超时。",
+    "constraints": [
+      "不能通过静默截断用户输入来隐藏问题。",
+      "必须保留上一版 8k/并发 4 配置作为快速回滚。",
+      "容量方案需要至少 20% 显存余量并能在过载时明确拒绝。"
+    ],
+    "confirmedFacts": [
+      "模型权重占用稳定为 24 GiB。",
+      "OOM 只在多个 20k 以上请求并发时出现。",
+      "40 GiB 与 80 GiB GPU 节点都被同一 Deployment 无差别调度。"
+    ]
+  },
+  "startNodeId": "inference-gpu-oom-capacity-001-node-01",
+  "nodes": [
+    {
+      "id": "inference-gpu-oom-capacity-001-node-01",
+      "type": "log-analysis",
+      "title": "定位显存增长来源",
+      "prompt": "哪项结论和立即处置最符合运行时证据？",
+      "skillWeights": {
+        "tuning.inference-deployment": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-01-evidence-01",
+          "type": "log",
+          "title": "OOM 前运行时日志",
+          "content": "weights=24.0GiB kv_cache=14.8GiB workspace=2.1GiB active_sequences=7 max_prompt_tokens=28740 device_total=40GiB\nCUDA out of memory allocating 1.2GiB",
+          "language": "text"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-01-evidence-02",
+          "type": "metric",
+          "title": "版本对照",
+          "content": "8k/concurrency4 OOM=0 per day, p95=2.1s\n32k/concurrency10 OOM=46 per hour, p95=9.8s\nmodel digest identical."
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-01-option-a",
+          "label": "回滚到已知 8k/并发 4，并按上下文长度建立 KV cache 内存预算再测试",
+          "explanation": "权重未变而 KV cache 随长上下文和并发增长，回滚配置可立即恢复并保留针对性容量分析。",
+          "errorType": "none"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-01-option-b",
+          "label": "重新下载相同模型权重，认为文件损坏导致 OOM",
+          "explanation": "模型 digest 与权重占用稳定，OOM 与长上下文并发强相关，重下载不改变内存需求。",
+          "errorType": "wrong-artifact-diagnosis"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-01-option-c",
+          "label": "让 worker OOM 后无限自动重启，并继续接受相同并发",
+          "explanation": "无限重启会形成抖动、重复计算和队列放大，让短请求也持续超时。",
+          "errorType": "restart-loop-without-load-control"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-gpu-oom-capacity-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "区分固定模型权重与随序列长度、并发增长的 KV cache。",
+        "secondWrong": "日志中 weights=24GiB 稳定，但 kv_cache=14.8GiB 且仍需 1.2GiB workspace。",
+        "revealedAnswer": "应先回滚已知健康配置，再按上下文与并发建立 KV cache 预算；通过长短请求混合压测验证至少 20% 余量。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-gpu-oom-capacity-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "OOM 放大停止，团队获得稳定基线与内存预算起点。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "恢复被延迟，显存预算问题没有变化。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "集群进入重启风暴，所有请求类别受影响。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "inference-gpu-oom-capacity-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "建立容量与准入模型",
+      "prompt": "哪种容量方法能支持长上下文而不依赖平均请求？",
+      "skillWeights": {
+        "performance.scaling": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "混合负载测量",
+          "content": "40GiB GPU safe profiles with 20% reserve:\n4x8k or 2x20k or 1x32k\n80GiB GPU: 10x8k or 5x20k or 2x32k\nproduction mix: 8k=60%, 20k=30%, 32k=10%."
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-02-evidence-02",
+          "type": "text",
+          "title": "调度能力",
+          "content": "Gateway can assign token-cost units, queue by profile, reject above a bounded wait, and expose an explicit retry-after response."
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-02-option-a",
+          "label": "按平均 11k token 计算每实例并发，所有请求共享一个固定上限",
+          "explanation": "平均值掩盖同时到达的 32k 尾部，请求组合仍可能超出 KV cache 预算。",
+          "errorType": "average-based-capacity"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-02-option-b",
+          "label": "把可用显存目标设为 100%，以提高 GPU 利用率",
+          "explanation": "没有 workspace 和波动余量会让任何估算误差触发 OOM，违反至少 20% 余量约束。",
+          "errorType": "zero-memory-headroom"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-02-option-c",
+          "label": "按 token-cost 准入和 GPU profile 调度，保留 20% 余量并对超时排队明确拒绝",
+          "explanation": "请求级成本捕获长上下文尾部，profile 区分 GPU 容量，有限队列与 retry-after 防止过载放大。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-gpu-oom-capacity-001-node-02-option-c"
+      },
+      "feedback": {
+        "firstWrong": "显存容量取决于并发请求组合的 token 成本，而不是总体平均。",
+        "secondWrong": "测量已经给出各 GPU 的安全组合，网关也支持成本单位与有界拒绝。",
+        "revealedAnswer": "应按 token-cost 和 GPU profile 做准入，预留至少 20% 显存，队列超过等待上限时明确返回 retry-after。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-gpu-oom-capacity-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "尾部请求组合继续突破显存上限。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "容量稍有波动即导致全实例崩溃。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-02-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "长短请求在可证明的显存预算内排队和执行。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "inference-gpu-oom-capacity-001-node-03",
+      "type": "configuration-review",
+      "title": "匹配 GPU 节点与运行时配置",
+      "prompt": "哪种 Kubernetes 发布能避免 80 GiB 配置落到 40 GiB 节点？",
+      "skillWeights": {
+        "cloud.deployment": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-03-evidence-01",
+          "type": "config",
+          "title": "当前 Deployment",
+          "content": "resources.limits.vendor.com/gpu: 1\nnodeSelector: gpu=true\nruntime_profile: high-memory\nimage: inference@sha256:synthetic-v7",
+          "language": "yaml"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-03-evidence-02",
+          "type": "terminal",
+          "title": "节点清单",
+          "content": "gpu-a class=40GiB allocatable=1\ngpu-b class=40GiB allocatable=1\ngpu-c class=80GiB allocatable=1\nscheduler sees all as gpu=true",
+          "language": "text"
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-03-option-a",
+          "label": "按显存级别标记节点，拆分运行时 profile 与 Deployment，先 canary 再按容量扩大",
+          "explanation": "显式资源级别让高内存 profile 只落到匹配节点，独立 canary 和版本配置提供验证与回滚。",
+          "errorType": "none"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-03-option-b",
+          "label": "保留 gpu=true，并让应用启动后自行探测再调整并发",
+          "explanation": "启动后调整可能已加载不适合的 profile，也难以为调度器预留正确容量和隔离队列。",
+          "errorType": "runtime-only-resource-discovery"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-03-option-c",
+          "label": "强制删除全部旧 Pod，让高内存配置同时重新调度",
+          "explanation": "当前选择器不区分显存，强制全量替换会把已知风险一次扩到所有副本并移除健康基线。",
+          "errorType": "unsafe-all-at-once-reschedule"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-gpu-oom-capacity-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "调度器必须在 Pod 启动前知道影响容量的 GPU 级别。",
+        "secondWrong": "当前唯一标签 gpu=true 把 40GiB 与 80GiB 节点视为同一资源。",
+        "revealedAnswer": "应标记显存级别并拆分对应 Deployment/profile，先在匹配节点 canary；验证显存余量、延迟和回滚后再扩大。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-gpu-oom-capacity-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "调度约束与真实显存预算一致，配置不会跨级漂移。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "调度仍无法提前防止错误 profile 落点。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "所有实例可能同时落到不匹配 GPU 并 OOM。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "inference-gpu-oom-capacity-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "inference-gpu-oom-capacity-001-node-04",
+      "type": "architecture-tradeoff",
+      "title": "设计过载保护与事件信号",
+      "prompt": "恢复发布后，哪组机制能阻止 OOM 再次演变为重启风暴？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-04-evidence-01",
+          "type": "metric",
+          "title": "故障放大链",
+          "content": "queue_age p95 4s -> 82s; OOM restarts 0 -> 46/h; client retry multiplier 1.0 -> 3.7; readiness stayed true until process exit."
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-04-evidence-02",
+          "type": "text",
+          "title": "可用控制",
+          "content": "The gateway supports admission rejection, per-profile queue limits, retry-after, and a fallback to a smaller-context summarization mode with explicit user consent."
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-gpu-oom-capacity-001-node-04-option-a",
+          "label": "只增加 Pod 重启次数告警，保持所有请求无限排队",
+          "explanation": "重启告警发生在容量失控之后，无限队列和客户端重试仍会放大负载。",
+          "errorType": "late-signal-only"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-04-option-b",
+          "label": "按 profile 限队列和准入，监控显存余量、token 负载、队列年龄与 OOM，并提供明确降级",
+          "explanation": "前置准入阻止超预算请求进入，完整 SLI 能在 OOM 前告警，用户同意的降级保留可解释性。",
+          "errorType": "none"
+        },
+        {
+          "id": "inference-gpu-oom-capacity-001-node-04-option-c",
+          "label": "对 OOM 失败请求在客户端无上限立即重试",
+          "explanation": "无上限重试会在容量不足时成倍增加负载，正是故障放大链中的关键因素。",
+          "errorType": "unbounded-overload-retry"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-gpu-oom-capacity-001-node-04-option-b"
+      },
+      "feedback": {
+        "firstWrong": "可靠性控制应在显存耗尽之前限制进入系统的工作量。",
+        "secondWrong": "故障数据同时显示队列、OOM 和客户端重试放大，必须共同治理。",
+        "revealedAnswer": "应实施 profile 级准入与队列上限，监控显存/token/队列/OOM，返回 retry-after，并仅在用户同意时透明降级。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-gpu-oom-capacity-001-node-04-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-04-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "团队更早看到崩溃，但无法阻止重启风暴。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-04-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "过载被有界拒绝或透明降级，不再扩散为集群抖动。"
+        },
+        {
+          "optionId": "inference-gpu-oom-capacity-001-node-04-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "失败请求形成重试风暴并挤压健康流量。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "最大上下文与并发同时提高，使 KV cache 在 40 GiB GPU 上耗尽；统一 GPU 标签、无限队列和重试又放大成重启风暴。正确路径是回滚、token 预算、显存级调度和前置过载保护。",
+    "rootCause": "容量计划使用固定并发而非请求 token 组合，且调度未区分 GPU 显存级别，系统也缺少有界准入和队列。",
+    "correctApproach": [
+      "回滚健康上下文与并发配置并保留模型制品。",
+      "通过混合负载测量建立 token-cost 与 20% 余量模型。",
+      "按 GPU 显存级别拆分 Deployment 和运行时 profile。",
+      "实施准入、有限队列、retry-after 与透明降级。"
+    ],
+    "keyLessons": [
+      "KV cache 随上下文与并发增长，模型权重只是显存预算的一部分。",
+      "GPU 数量标签不能表达显存容量差异。",
+      "重启不是过载控制，准入和负反馈才是。"
+    ],
+    "interviewerPerspective": "观察候选人是否连接模型运行时内存、容量尾部、Kubernetes 调度和可靠性负反馈。",
+    "customerRiskPerspective": "OOM 会让长短请求共同超时，并侵蚀对平台容量承诺的信任；明确拒绝比静默崩溃更可管理。",
+    "remediation": [
+      "建立按模型、上下文和并发测量的显存 profile。",
+      "为 GPU 节点和 Deployment 增加容量级标签与约束。",
+      "在网关部署 token 成本准入和有界队列。"
+    ],
+    "verification": [
+      "混合压测下确认每实例显存余量不低于 20%。",
+      "确认高内存 profile 不会调度到 40 GiB 节点。",
+      "过载测试中确认请求被有界拒绝而 Pod 不重启。",
+      "演练回滚到 8k/并发 4 并确认延迟恢复。"
+    ],
+    "knowledgePoints": [
+      "KV cache capacity",
+      "token-based admission control",
+      "GPU-aware scheduling",
+      "inference load shedding"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

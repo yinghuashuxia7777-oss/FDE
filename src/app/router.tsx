@@ -1,13 +1,36 @@
-import { createHashRouter } from 'react-router-dom';
+/* eslint-disable react-refresh/only-export-components */
+import { createHashRouter, useParams } from 'react-router-dom';
 
 import { ApplicationShell } from '../components/layout/ApplicationShell';
 import {
+  TrainingLandingPage,
   NotFoundPage,
-  PlaceholderPage,
   RouteFrame,
   RouterErrorPage,
   TrainingShell,
 } from './route-pages';
+import { DashboardPage } from '../pages/dashboard';
+import { CaseLibraryPage } from '../pages/cases';
+import { SkillsPage } from '../pages/skills';
+import { MistakesPage } from '../pages/mistakes';
+import { ProfilePage } from '../pages/profile';
+import { SettingsPage } from '../pages/settings';
+import { DebriefPage } from '../pages/debrief';
+import {
+  FoundationDetailPage,
+  FoundationLibraryPage,
+} from '../pages/foundation';
+import { TrainingRoutePage } from '../pages/training';
+
+function DebriefRoute() {
+  const { attemptId = '' } = useParams<{ attemptId: string }>();
+  return <DebriefPage attemptId={attemptId} />;
+}
+
+function FoundationDetailRoute() {
+  const { foundationId = '' } = useParams<{ foundationId: string }>();
+  return <FoundationDetailPage foundationId={foundationId} />;
+}
 
 export function createAppRouter() {
   return createHashRouter([
@@ -17,72 +40,49 @@ export function createAppRouter() {
       errorElement: <RouterErrorPage />,
       children: [
         {
-          path: 'training/:caseId?',
+          path: 'training',
           element: <TrainingShell />,
+          children: [
+            { index: true, element: <TrainingLandingPage /> },
+            { path: ':caseId', element: <TrainingRoutePage /> },
+          ],
         },
         {
           element: <ApplicationShell />,
           children: [
             {
               index: true,
-              element: (
-                <PlaceholderPage
-                  eyebrow="Operational overview"
-                  title="Dashboard"
-                  description="Resume a case, inspect capability signals, and act on critical risks."
-                />
-              ),
+              element: <DashboardPage />,
             },
             {
               path: 'cases',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Scenario inventory"
-                  title="Cases"
-                  description="Filter customer incidents by skill, risk, level, and prior result."
-                />
-              ),
+              element: <CaseLibraryPage />,
+            },
+            {
+              path: 'foundation',
+              element: <FoundationLibraryPage />,
+            },
+            {
+              path: 'foundation/:foundationId',
+              element: <FoundationDetailRoute />,
             },
             {
               path: 'skills',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Capability signals"
-                  title="Skills"
-                  description="Trace mastery across fourteen field development domains."
-                />
-              ),
+              element: <SkillsPage />,
             },
             {
               path: 'mistakes',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Decision audit"
-                  title="Mistakes"
-                  description="Review evidence gaps, priority errors, and critical choices."
-                />
-              ),
+              element: <MistakesPage />,
             },
             {
               path: 'profile',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Readiness record"
-                  title="Profile"
-                  description="Inspect field judgment, communication, and interview readiness."
-                />
-              ),
+              element: <ProfilePage />,
             },
             {
               path: 'settings',
-              element: (
-                <PlaceholderPage
-                  eyebrow="Local workspace"
-                  title="Settings"
-                  description="Control theme, local data, and content version information."
-                />
-              ),
+              element: <SettingsPage />,
             },
+            { path: 'debrief/:attemptId', element: <DebriefRoute /> },
             { path: '*', element: <NotFoundPage /> },
           ],
         },

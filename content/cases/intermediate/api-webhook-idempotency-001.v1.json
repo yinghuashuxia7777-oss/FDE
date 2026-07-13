@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "id": "api-webhook-idempotency-001",
+  "slug": "api-webhook-idempotency-001",
+  "title": "Webhook 重投造成重复履约",
+  "summary": "诊断 Webhook 接收端因响应超时触发的重复事件，并建立签名验证、幂等账本与可恢复处理。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["api-integration", "reliability"],
+  "skills": ["api.integration", "reliability.observability"],
+  "lifecycleStages": ["operate", "incident-response", "validate"],
+  "technicalLayers": ["webhook", "queue", "database"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["data-integrity", "financial", "availability"],
+  "behaviorPatterns": [
+    "idempotent-consumer",
+    "durable-before-ack",
+    "targeted-reconciliation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的订阅平台接收支付供应商 Webhook，并在成功付款后创建履约任务。",
+    "background": "接收端最近加入同步库存查询，平均响应时间从 400ms 增至 6 秒；供应商在 5 秒未收到 2xx 时重投相同 eventId。",
+    "initialIncident": "同一付款出现两条履约任务，部分客户收到重复发货通知。",
+    "constraints": [
+      "不能关闭签名验证。",
+      "不能删除整个时间窗内的订单或履约记录。",
+      "修复必须允许供应商安全重放已知 eventId。"
+    ],
+    "confirmedFacts": [
+      "重复请求具有相同 eventId 和有效签名。",
+      "两次请求都在接收端完成了履约写入。",
+      "当前数据库没有 eventId 唯一约束或处理状态账本。"
+    ]
+  },
+  "startNodeId": "api-webhook-idempotency-001-node-01",
+  "nodes": [
+    {
+      "id": "api-webhook-idempotency-001-node-01",
+      "type": "log-analysis",
+      "title": "识别重投与重复副作用",
+      "prompt": "第一项修复应落在哪个边界？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "api-webhook-idempotency-001-node-01-evidence-01",
+          "type": "http",
+          "title": "Webhook 请求时间线",
+          "content": "12:00:00 eventId=evt-syn-88 signature=valid\n12:00:05 provider outcome=timeout retry=1\n12:00:06 eventId=evt-syn-88 signature=valid\nreceiver responses: 200 at 12:00:06 and 12:00:12",
+          "language": "http"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-01-evidence-02",
+          "type": "log",
+          "title": "数据库审计",
+          "content": "fulfillment f-201 sourceEvent=evt-syn-88\nfulfillment f-202 sourceEvent=evt-syn-88\nunique_index(sourceEvent)=absent",
+          "language": "text"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-webhook-idempotency-001-node-01-option-a",
+          "label": "在同一事务中登记 eventId 并创建一次副作用，重复 eventId 返回已处理结果",
+          "explanation": "事务化幂等账本与唯一约束能在并发重投下保证同一事件只产生一次履约。",
+          "errorType": "none"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-01-option-b",
+          "label": "把接收超时提高到 30 秒，不改变数据库写入",
+          "explanation": "更长超时减少部分重投，但网络丢响应或更长处理仍会重复，数据层没有最终去重保证。",
+          "errorType": "transport-only-fix"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-01-option-c",
+          "label": "关闭签名验证以缩短响应时间并减少供应商重试",
+          "explanation": "签名验证不是已证实瓶颈，关闭后任何伪造请求都可能触发履约，形成严重安全与财务风险。",
+          "errorType": "authentication-bypass"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-webhook-idempotency-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "传输层重投是正常行为，接收端必须让业务副作用幂等。",
+        "secondWrong": "两次请求 eventId 完全相同，而数据库没有唯一约束。",
+        "revealedAnswer": "应在数据库事务中登记 eventId 与履约副作用，重复事件返回已处理状态；并发测试应证明只创建一条记录。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-webhook-idempotency-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "api-webhook-idempotency-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "重投被安全识别，新的重复履约停止。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "常见超时减少，但重复副作用仍可发生。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "未认证请求获得创建履约的能力。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-webhook-idempotency-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-webhook-idempotency-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "api-webhook-idempotency-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "api-webhook-idempotency-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "修复已产生的重复记录",
+      "prompt": "怎样恢复当前数据而不制造新的客户损害？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "api-webhook-idempotency-001-node-02-evidence-01",
+          "type": "json",
+          "title": "对账摘要",
+          "content": "{\n  \"duplicateEventGroups\": 14,\n  \"notShipped\": 11,\n  \"shipped\": 3,\n  \"paymentCountPerEvent\": 1\n}",
+          "language": "json"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-02-evidence-02",
+          "type": "customer-message",
+          "title": "运营约束",
+          "content": "未发货记录可在审批后取消；已发货记录必须逐单联系客户，不能自动删除或再次退款。"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-webhook-idempotency-001-node-02-option-a",
+          "label": "删除故障时间窗内全部履约记录，再从支付表重建",
+          "explanation": "时间窗包含正常单且部分已发货，批量删除会丢失真实状态并造成更多履约和财务错误。",
+          "errorType": "destructive-bulk-repair"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-02-option-b",
+          "label": "按 eventId 生成差异清单，未发货项审批后取消，已发货项交由人工补救并保留审计",
+          "explanation": "按稳定事件键限定影响，区分可逆与不可逆状态，并保留操作审计，符合运营约束。",
+          "errorType": "none"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-02-option-c",
+          "label": "对所有重复 eventId 自动退款一次，不检查是否已发货",
+          "explanation": "支付本身只有一次，自动退款会引入新的财务损失，也未处理已发货客户沟通。",
+          "errorType": "unverified-compensation"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-webhook-idempotency-001-node-02-option-b"
+      },
+      "feedback": {
+        "firstWrong": "恢复动作要按业务状态区分可逆和不可逆结果。",
+        "secondWrong": "对账显示每个 eventId 只有一笔付款，重复的是履约而不是扣款。",
+        "revealedAnswer": "应按 eventId 对账并分流：未发货项审批取消，已发货项人工补救，全部保留审计；复核正常记录未被改变。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-webhook-idempotency-001-node-02-option-a"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "api-webhook-idempotency-001-node-02-option-a",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "正常订单与已发货审计被破坏，影响面扩大。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-02-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "重复记录被有边界地补救，正常履约保持不变。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-02-option-c",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "系统对有效付款产生不必要退款。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-webhook-idempotency-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-webhook-idempotency-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "api-webhook-idempotency-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "api-webhook-idempotency-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "设计可靠的确认时序",
+      "prompt": "修复后的 Webhook 流程应如何确认和异步处理？",
+      "skillWeights": {
+        "api.integration": 0.6,
+        "reliability.observability": 0.4
+      },
+      "evidence": [
+        {
+          "id": "api-webhook-idempotency-001-node-03-evidence-01",
+          "type": "diagram",
+          "title": "候选数据流",
+          "content": "provider -> signature check -> event ledger -> durable queue -> 2xx\nworker -> ledger claim -> fulfillment -> processed status"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-03-evidence-02",
+          "type": "metric",
+          "title": "容量测试",
+          "content": "signature check + ledger commit p99=180ms; inventory lookup p99=5.4s; provider acknowledgement deadline=5s."
+        }
+      ],
+      "options": [
+        {
+          "id": "api-webhook-idempotency-001-node-03-option-a",
+          "label": "在请求线程里完成库存与履约，并用分布式锁等待所有步骤",
+          "explanation": "同步慢步骤仍会超过确认窗口；锁只序列化处理，不能替代持久事件状态和安全重放。",
+          "errorType": "synchronous-slow-ack"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-03-option-b",
+          "label": "收到请求立即返回 200，然后异步进行签名验证和入队",
+          "explanation": "在认证与持久化前确认会接受伪造事件，并在进程崩溃时永久丢失已确认事件。",
+          "errorType": "ack-before-auth-and-durability"
+        },
+        {
+          "id": "api-webhook-idempotency-001-node-03-option-c",
+          "label": "先验签并持久登记 eventId、可靠入队后返回 2xx，由 worker 幂等处理并记录状态",
+          "explanation": "确认前完成认证和持久化避免伪造与丢失，慢库存步骤移到 worker，账本支持重放和观测。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-webhook-idempotency-001-node-03-option-c"
+      },
+      "feedback": {
+        "firstWrong": "2xx 是供应商停止重投的承诺，必须建立在认证和持久化完成之后。",
+        "secondWrong": "容量数据表明验签与账本提交远低于 5 秒，真正慢的是库存查询。",
+        "revealedAnswer": "应在验签、eventId 事务登记和可靠入队后返回 2xx，再由 worker 幂等处理；通过崩溃与重放测试验证不丢不重。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-webhook-idempotency-001-node-03-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "api-webhook-idempotency-001-node-03-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "供应商继续因超时重投，吞吐也受锁竞争限制。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-03-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "伪造或未持久事件被确认，安全性与可靠性同时失效。"
+        },
+        {
+          "optionId": "api-webhook-idempotency-001-node-03-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "接收端快速可靠确认，异步处理可安全重试与追踪。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "同步库存查询超过供应商确认窗口，触发相同 eventId 重投；接收端缺少事务化幂等账本，因而重复履约。正确路径是数据层去重、状态化补救和认证持久后快速确认。",
+    "rootCause": "Webhook 接收端把慢业务处理放在确认路径，且未以 eventId 建立并发安全的幂等与处理状态。",
+    "correctApproach": [
+      "在同一事务中唯一登记 eventId 与业务副作用。",
+      "按 eventId 和履约状态对账，执行有审批、可审计的定向补救。",
+      "验签和可靠持久化后快速返回 2xx。",
+      "由 worker 幂等处理慢步骤并暴露重试、积压和失败状态。"
+    ],
+    "keyLessons": [
+      "Webhook 重投是协议预期行为，消费者必须幂等。",
+      "确认前必须完成认证与持久化，但不必完成所有慢业务。",
+      "事故补救应以稳定键和业务状态限定影响。"
+    ],
+    "interviewerPerspective": "观察候选人是否把传输重试与业务幂等分离，并能设计崩溃安全确认、对账和定向补偿。",
+    "customerRiskPerspective": "重复履约与错误退款会造成直接成本和客户困惑；安全重放与透明补救能恢复交易信任。",
+    "remediation": [
+      "增加 eventId 唯一约束、事件账本和处理状态机。",
+      "把库存与履约移入可重试的持久 worker。",
+      "建立重复事件、确认延迟和队列积压告警。"
+    ],
+    "verification": [
+      "并发发送相同 eventId 并确认只创建一个履约。",
+      "在入队前后模拟崩溃并确认事件不丢失。",
+      "重放已处理事件并确认返回成功且无新副作用。",
+      "核对 14 组历史重复项的补救审计。"
+    ],
+    "knowledgePoints": [
+      "webhook idempotency",
+      "durable acknowledgement",
+      "transactional event ledger",
+      "targeted incident reconciliation"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 1,
+  "id": "rag-permission-filter-gap-001",
+  "slug": "rag-permission-filter-gap-001",
+  "title": "RAG 权限过滤在网关迁移后缺失",
+  "summary": "处理企业检索请求在身份声明映射变化后遗漏权限过滤的问题，并验证失败关闭、检索隔离与 API 契约。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["rag-search", "security-governance", "api-integration"],
+  "skills": ["rag.search", "security.governance", "api.integration"],
+  "lifecycleStages": ["deploy", "operate", "incident-response"],
+  "technicalLayers": ["identity-gateway", "retrieval", "application-api"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["privacy", "authorization", "customer-trust"],
+  "behaviorPatterns": [
+    "fail-closed-authorization",
+    "evidence-before-action",
+    "negative-access-testing"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的工程咨询公司使用企业 RAG 助手检索按项目组隔离的设计文档。",
+    "background": "身份网关从旧版 group_ids 声明迁移到 groups 声明，检索服务仍从请求上下文读取旧字段。",
+    "initialIncident": "一名属于项目组 Cedar 的用户在摘要引用中看到了项目组 Maple 的受限文档标题。",
+    "constraints": [
+      "不得打开或导出受限文档正文。",
+      "可以关闭新网关上的检索路由，但普通非检索功能必须继续。",
+      "需要在 30 分钟内提供已确认影响和下一次更新时间。"
+    ],
+    "confirmedFacts": [
+      "旧网关路径使用相同索引时不会返回跨组文档。",
+      "异常请求的认证已成功，但检索过滤日志显示 groupFilter 为空。",
+      "向量索引中的每个文档仍带有 projectGroup 元数据。"
+    ]
+  },
+  "startNodeId": "rag-permission-filter-gap-001-node-01",
+  "nodes": [
+    {
+      "id": "rag-permission-filter-gap-001-node-01",
+      "type": "configuration-review",
+      "title": "先控制授权暴露面",
+      "prompt": "结合身份上下文与检索配置，应先采取哪项行动？",
+      "skillWeights": {
+        "security.governance": 1
+      },
+      "evidence": [
+        {
+          "id": "rag-permission-filter-gap-001-node-01-evidence-01",
+          "type": "json",
+          "title": "网关到应用的身份上下文",
+          "content": "{\n  \"subject\": \"synthetic-user-17\",\n  \"groups\": [\"cedar\"],\n  \"group_ids\": null\n}",
+          "language": "json"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-01-evidence-02",
+          "type": "config",
+          "title": "检索过滤回退",
+          "content": "filter_source: request.group_ids\nwhen_filter_missing: allow_unfiltered\nindex_metadata_field: projectGroup",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-permission-filter-gap-001-node-01-option-a",
+          "label": "关闭受影响检索路由，并把缺失权限上下文改为拒绝查询",
+          "explanation": "身份字段不匹配且当前回退为未过滤检索；隔离路由并失败关闭能立即停止潜在跨组暴露。",
+          "errorType": "none"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-01-option-b",
+          "label": "立即重建全部向量索引，迁移完成前保持查询开放",
+          "explanation": "文档元数据仍存在，证据指向请求过滤字段；重建索引不修复 fail-open 行为且延长暴露时间。",
+          "errorType": "wrong-layer-remediation"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-01-option-c",
+          "label": "导出所有跨组命中的正文，用人工方式判断影响",
+          "explanation": "导出受限正文违反最小访问原则并扩大隐私暴露；已有标题、身份与过滤日志足以先遏制。",
+          "errorType": "excessive-sensitive-data-access"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-permission-filter-gap-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "优先选择能立即减少未经授权读取、且不扩大敏感数据访问的行动。",
+        "secondWrong": "索引元数据仍在；真正缺失的是 group_ids，配置又在缺失时允许未过滤查询。",
+        "revealedAnswer": "应关闭受影响路由并令缺失权限上下文失败关闭；通过拒绝测试确认无 group filter 的请求不会进入检索。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-permission-filter-gap-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "rag-permission-filter-gap-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "跨组检索路径被隔离，其他产品功能继续运行。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "团队投入大范围索引操作，授权漏洞仍然开放。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "不必要的数据复制扩大了潜在隐私事件。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "rag-permission-filter-gap-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "rag-permission-filter-gap-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "rag-permission-filter-gap-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "rag-permission-filter-gap-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证检索隔离",
+      "prompt": "修复字段映射后，哪套测试最能证明权限边界恢复？",
+      "skillWeights": {
+        "rag.search": 1
+      },
+      "evidence": [
+        {
+          "id": "rag-permission-filter-gap-001-node-02-evidence-01",
+          "type": "text",
+          "title": "合成测试语料",
+          "content": "Cedar and Maple each contain one public-within-group document sharing the same rare phrase; a third document is public to both groups."
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-02-evidence-02",
+          "type": "log",
+          "title": "修复候选版本日志",
+          "content": "subject=synthetic-user-17 groups=[cedar] applied_filter=projectGroup IN [cedar,shared] retrieved_groups=[cedar,shared]",
+          "language": "text"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-permission-filter-gap-001-node-02-option-a",
+          "label": "先取回全量候选，再在浏览器中隐藏不属于当前组的结果",
+          "explanation": "客户端过滤意味着受限内容已经离开服务端授权边界，日志、缓存或网络响应仍可能暴露数据。",
+          "errorType": "client-side-authorization"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-02-option-b",
+          "label": "运行组内、跨组、共享文档和缺失声明的正负矩阵，并检查服务端实际过滤条件",
+          "explanation": "该矩阵同时证明允许访问、拒绝访问、共享例外与失败关闭，服务端日志又确认过滤发生在检索前。",
+          "errorType": "none"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-02-option-c",
+          "label": "只比较修复前后的 top-k 相关性分数",
+          "explanation": "相关性分数可以正常而授权仍错误；它不能证明跨组文档被服务端排除。",
+          "errorType": "relevance-only-validation"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-permission-filter-gap-001-node-02-option-b"
+      },
+      "feedback": {
+        "firstWrong": "权限测试既要证明应该看到的能看到，也要证明不应该看到的无法进入候选集。",
+        "secondWrong": "合成语料特意让两个组共享稀有短语，可用于检验跨组误命中而不访问真实文档。",
+        "revealedAnswer": "应运行完整正负权限矩阵并检查服务端过滤日志；验证 Maple 文档不会进入 Cedar 候选，缺失声明请求被拒绝。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-permission-filter-gap-001-node-02-option-a"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "rag-permission-filter-gap-001-node-02-option-a",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "受限候选被发送到客户端，授权边界继续失效。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-02-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "权限边界由可重复的正负测试和服务端证据共同证明。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-02-option-c",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "检索质量看似稳定，但权限隔离没有被验证。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "rag-permission-filter-gap-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "rag-permission-filter-gap-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "rag-permission-filter-gap-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "rag-permission-filter-gap-001-node-03",
+      "type": "diff-review",
+      "title": "固化身份与检索契约",
+      "prompt": "哪项变更最能防止下一次声明重命名静默绕过过滤？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "rag-permission-filter-gap-001-node-03-evidence-01",
+          "type": "diff",
+          "title": "候选适配器变更",
+          "content": "- groupIds = context.group_ids ?? []\n+ groupIds = context.groups\n+ if (!Array.isArray(groupIds) || groupIds.length === 0) reject(403)\n+ retrieval.filter = { projectGroup: { in: [...groupIds, \"shared\"] } }",
+          "language": "diff"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-03-evidence-02",
+          "type": "http",
+          "title": "契约测试结果",
+          "content": "groups missing -> 403\n groups=[] -> 403\n groups=[\"cedar\"] -> 200, appliedFilter=[\"cedar\",\"shared\"]\n unknown claim name only -> 403",
+          "language": "http"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-permission-filter-gap-001-node-03-option-a",
+          "label": "在网关缓存最近一次非空组列表，字段缺失时复用",
+          "explanation": "跨请求复用身份组会造成主体混淆；授权上下文必须来自当前已认证请求。",
+          "errorType": "stale-identity-context"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-03-option-b",
+          "label": "让 groups 成为可选字段，并把命中的受限标题写入日志方便排查",
+          "explanation": "可选授权字段会重新引入 fail-open，记录受限标题又扩大敏感元数据暴露。",
+          "errorType": "optional-authorization-and-sensitive-logging"
+        },
+        {
+          "id": "rag-permission-filter-gap-001-node-03-option-c",
+          "label": "定义必填 groups 契约、缺失即 403，并对网关到检索的过滤映射做集成测试",
+          "explanation": "显式契约和失败关闭消除静默默认值，跨层集成测试可在声明变更时立即阻断发布。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-permission-filter-gap-001-node-03-option-c"
+      },
+      "feedback": {
+        "firstWrong": "需要让字段缺失成为可见失败，而不是寻找另一个静默回退。",
+        "secondWrong": "候选 diff 与契约测试已经证明 groups 可作为必填边界并在缺失时返回 403。",
+        "revealedAnswer": "应固化必填 groups 契约、缺失即拒绝，并建立网关到检索过滤的集成测试；验证声明重命名会使测试失败。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-permission-filter-gap-001-node-03-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "rag-permission-filter-gap-001-node-03-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "旧身份上下文可能被错误应用到另一请求。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-03-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "授权绕过与敏感日志同时扩大事件影响。"
+        },
+        {
+          "optionId": "rag-permission-filter-gap-001-node-03-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "声明漂移会在发布前失败，而不是退化为未过滤检索。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "网关声明由 group_ids 迁移为 groups，而检索服务仍读取旧字段并在缺失时执行未过滤查询。正确处置先失败关闭，再用合成语料证明服务端隔离，最后用必填契约和跨层测试防止漂移。",
+    "rootCause": "身份声明字段漂移与检索层 fail-open 回退组合，使已认证但缺失旧字段的请求绕过项目组过滤。",
+    "correctApproach": [
+      "关闭受影响检索路由，并拒绝任何缺失有效组声明的请求。",
+      "修复 groups 到 projectGroup 服务端过滤的映射。",
+      "使用合成组内、跨组、共享和缺失声明矩阵验证授权。",
+      "把身份声明与检索过滤契约加入网关到应用的集成测试和发布门禁。"
+    ],
+    "keyLessons": [
+      "认证成功不代表资源授权上下文完整。",
+      "RAG 元数据过滤必须在服务端检索前执行并失败关闭。",
+      "跨层契约测试能把身份字段漂移变成可见的发布失败。"
+    ],
+    "interviewerPerspective": "观察候选人是否先遏制隐私风险、避免访问正文，并能用正负权限测试与 API 契约证明修复。",
+    "customerRiskPerspective": "跨项目标题或正文暴露会造成保密与信任损害；最小化访问、透明更新和可重复验证是恢复信任的基础。",
+    "remediation": [
+      "删除未过滤回退并对空组声明返回 403。",
+      "为身份声明映射增加版本化契约和集成测试。",
+      "监控缺失过滤、跨组候选和 403 异常变化。"
+    ],
+    "verification": [
+      "确认缺失或空 groups 的请求无法调用检索。",
+      "确认 Cedar 用户的候选集中不含 Maple 文档。",
+      "确认 shared 文档仍可被两个组访问。",
+      "确认旧字段回归会在 CI 契约测试中失败。"
+    ],
+    "knowledgePoints": [
+      "RAG metadata authorization",
+      "fail-closed access control",
+      "identity claim contracts",
+      "negative authorization testing"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

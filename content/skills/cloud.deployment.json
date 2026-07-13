@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "cloud.deployment",
+  "domainId": "cloud-deployment",
+  "label": "Cloud deployment",
+  "description": "Deploy and operate workloads across cloud and container platforms.",
+  "status": "active"
+}

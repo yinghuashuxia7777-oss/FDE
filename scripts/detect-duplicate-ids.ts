@@ -1,5 +1,3 @@
-import type { FdeCase } from '../src/domain/cases/types';
-
 import { parseCliArgs } from './cli';
 import {
   emitJsonReport,
@@ -11,76 +9,14 @@ import {
   writeCliReport,
 } from './files';
 import { validateContentSources } from './validate-content';
+import { detectDuplicateIds } from '../src/content/detect-duplicate-ids';
 
-export type DuplicateIdKind = 'case' | 'node' | 'option' | 'evidence';
-
-export interface CaseSource {
-  file: string;
-  case: FdeCase;
-}
-
-export interface DuplicateIdIssue {
-  kind: DuplicateIdKind;
-  id: string;
-  files: string[];
-  message: string;
-}
-
-interface IdOccurrence {
-  id: string;
-  file: string;
-}
-
-export function detectDuplicateIds(
-  sources: readonly CaseSource[],
-): DuplicateIdIssue[] {
-  const occurrences: Record<DuplicateIdKind, IdOccurrence[]> = {
-    case: [],
-    node: [],
-    option: [],
-    evidence: [],
-  };
-
-  for (const source of sources) {
-    occurrences.case.push({ id: source.case.id, file: source.file });
-    for (const node of source.case.nodes) {
-      occurrences.node.push({ id: node.id, file: source.file });
-      node.options.forEach(({ id }) => {
-        occurrences.option.push({ id, file: source.file });
-      });
-      node.evidence.forEach(({ id }) => {
-        occurrences.evidence.push({ id, file: source.file });
-      });
-    }
-  }
-
-  const issues: DuplicateIdIssue[] = [];
-  (Object.keys(occurrences) as DuplicateIdKind[]).forEach((kind) => {
-    const filesById = new Map<string, Set<string>>();
-    occurrences[kind].forEach(({ id, file }) => {
-      const files = filesById.get(id) ?? new Set<string>();
-      files.add(file);
-      filesById.set(id, files);
-    });
-    filesById.forEach((fileSet, id) => {
-      if (fileSet.size < 2) return;
-      const files = [...fileSet].sort();
-      issues.push({
-        kind,
-        id,
-        files,
-        message: `Duplicate ${kind} ID ${id} appears in ${files.join(', ')}.`,
-      });
-    });
-  });
-
-  return issues.sort(
-    (left, right) =>
-      left.kind.localeCompare(right.kind) ||
-      left.id.localeCompare(right.id) ||
-      left.files.join('\0').localeCompare(right.files.join('\0')),
-  );
-}
+export type {
+  CaseSource,
+  DuplicateIdIssue,
+  DuplicateIdKind,
+} from '../src/content/detect-duplicate-ids';
+export { detectDuplicateIds } from '../src/content/detect-duplicate-ids';
 
 export function runDetectDuplicateIdsCli(args: readonly string[]): number {
   try {

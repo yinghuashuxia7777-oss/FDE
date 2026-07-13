@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.webhook-idempotency",
+  "type": "foundation",
+  "title": "Webhook 与幂等：安全接收重复事件",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "intermediate",
+  "order": 20,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "Webhook 是外部系统主动推送事件的 HTTP 调用；发送方在没及时收到确认时通常会重投，因此接收方必须把重复投递视为正常情况。",
+    "analogy": "Webhook 像挂号信：寄件方没收到回执就会再寄一封。收件方应按信件编号登记，而不是每收到一个信封就重复执行同一笔业务。",
+    "technicalExplanation": "接收端先验证签名和时间窗口，再用稳定事件 ID 建立幂等账本。原子记录接收状态、快速确认，并由可恢复工作器处理副作用，可避免重复履约。",
+    "example": "履约服务处理事件超过发送方超时阈值，发送方重投同一 event_id，系统创建两次发货。应以 event_id 去重，并验证故障注入下只有一次业务结果。",
+    "commonMistakes": "只在内存中缓存最近事件无法抵抗重启和多实例并发；先执行副作用再写去重标记也有竞态。签名验证同样不能替代幂等处理。"
+  },
+  "relatedCases": ["api-webhook-idempotency-001"]
+}

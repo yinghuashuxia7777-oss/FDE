@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "fde.adoption",
+  "domainId": "fde-adoption",
+  "label": "Field adoption",
+  "description": "Drive adoption through delivery, enablement, and stakeholder alignment.",
+  "status": "active"
+}

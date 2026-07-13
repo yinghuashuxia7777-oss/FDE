@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "network.port",
+  "type": "foundation",
+  "title": "端口：一台主机上的服务入口",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["cloud.deployment"],
+  "level": "beginner",
+  "order": 13,
+  "estimatedMinutes": 7,
+  "content": {
+    "simpleExplanation": "端口让同一个 IP 上的多个网络程序拥有不同入口；客户端地址、容器监听端口、服务转发端口和健康探针端口必须形成一致链路。",
+    "analogy": "IP 像办公楼地址，端口像楼内分机号。快递到达大楼却拨错分机，目标团队依然收不到；这不是整栋楼不存在。",
+    "technicalExplanation": "TCP 或 UDP 连接由协议、源和目的 IP、端口共同标识。容器平台可能在容器端口、Service targetPort 和负载均衡端口之间做映射。",
+    "example": "应用日志显示监听 8080，但 Readiness 探针检查 8081，进程存活却始终未就绪。修复应对齐声明与真实监听端口，并观察滚动期间是否正常接流量。",
+    "commonMistakes": "开放所有端口或关闭健康探针只是绕过症状，还扩大攻击面。另一个误区是看到连接被拒绝就只查防火墙，而不确认目标进程是否实际监听。"
+  },
+  "relatedCases": ["container-readiness-port-001"]
+}

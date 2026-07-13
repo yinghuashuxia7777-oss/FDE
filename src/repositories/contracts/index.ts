@@ -1,5 +1,6 @@
 export type { AttemptRepository } from './attempt-repository';
 export type { CaseRepository } from './case-repository';
+export type { ContentRepository } from './content-repository';
 export type { CoverageRepository } from './coverage-repository';
 export type { MistakeRepository } from './mistake-repository';
 export type {

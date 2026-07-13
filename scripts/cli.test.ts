@@ -15,6 +15,7 @@ describe('parseCliArgs', () => {
           '--output',
           'report.json',
           '--skip-existing',
+          '--check',
         ],
         {
           dryRun: true,
@@ -22,6 +23,7 @@ describe('parseCliArgs', () => {
           input: true,
           output: true,
           skipExisting: true,
+          check: true,
         },
       ),
     ).toEqual({
@@ -30,6 +32,7 @@ describe('parseCliArgs', () => {
       limit: 3,
       output: 'report.json',
       skipExisting: true,
+      check: true,
     });
   });
 

@@ -1,0 +1,48 @@
+{
+  "$id": "https://fde-arena.local/schemas/coverage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domains": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "domainId": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "targetCaseCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "domainId",
+          "targetCaseCount"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "targetCaseCount": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "targetCaseCount",
+    "domains"
+  ],
+  "title": "FDE Arena Coverage Plan",
+  "type": "object"
+}

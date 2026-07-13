@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "git-delivery",
+  "label": "Git, collaboration & delivery",
+  "description": "Version control, collaboration workflows, and software delivery.",
+  "status": "active"
+}

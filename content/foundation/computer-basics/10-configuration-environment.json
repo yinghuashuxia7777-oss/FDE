@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.configuration-environment",
+  "type": "foundation",
+  "title": "配置与环境：代码之外的运行输入",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations"],
+  "level": "beginner",
+  "order": 10,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "配置让同一份代码在不同环境采用不同参数，例如地址、超时和功能开关；必须知道多个配置来源的优先级，以及当前实例最终使用了哪个值。",
+    "analogy": "代码像统一生产的空调，配置像每个房间的温度设定。遥控器、墙面面板和中央系统都能调温时，必须明确谁的指令优先。",
+    "technicalExplanation": "常见来源包括默认值、配置文件、环境变量和远端配置服务。可靠系统会限制重复来源、记录非敏感有效值摘要，并通过受审部署流程变更。",
+    "example": "镜像中的 YAML 写着超时 30 秒，启动日志却显示 source=environment、value=5。根因是部署清单遗留覆盖项，而不是配置文件没有被打进镜像。",
+    "commonMistakes": "只对比开发环境与仓库文件、在生产容器内手改配置，或输出完整环境变量都不安全。验证要覆盖生效来源和运行行为，并保留回滚路径。"
+  },
+  "relatedCases": ["python-config-precedence-001"]
+}

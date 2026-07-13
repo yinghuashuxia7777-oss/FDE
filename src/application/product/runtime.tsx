@@ -11,21 +11,25 @@ import {
 import type {
   AttemptRepository,
   CaseRepository,
+  ContentRepository,
   MistakeRepository,
   ProgressRepository,
   SettingsRepository,
   SkillRepository,
 } from '../../repositories/contracts';
-import {
-  createIndexedDbRepositories,
-  type IndexedDbRepositories,
-} from '../../repositories/indexeddb';
-import { caseIndex } from '../../generated/case-index';
+import { createIndexedDbRepositories } from '../../repositories/indexeddb';
+import { ContentInstaller } from '../../content/installer';
 import { openFdeArenaDatabase } from '../../storage/database';
+import {
+  ContentManagementService,
+  type ContentManagement,
+} from './content-management';
 
 export interface ProductRepositories {
   attempts: AttemptRepository;
   cases: CaseRepository;
+  content: ContentRepository;
+  contentManagement: ContentManagement;
   mistakes: MistakeRepository;
   progress: ProgressRepository;
   settings: SettingsRepository;
@@ -39,11 +43,7 @@ export type RepositorySource =
 export async function bootstrapDefaultRepositories(
   repositories: ProductRepositories,
 ): Promise<void> {
-  if (caseIndex.length === 0) return;
-  const cases = await Promise.all(
-    caseIndex.map(async ({ load }) => (await load()).default),
-  );
-  await repositories.cases.seed(cases);
+  await repositories.contentManagement.ensureBundledInitialized();
 }
 
 export function createRetryableRepositoryGetter<T extends ProductRepositories>(
@@ -66,8 +66,17 @@ export function createRetryableRepositoryGetter<T extends ProductRepositories>(
 }
 
 export const getDefaultRepositories = createRetryableRepositoryGetter(
-  async (): Promise<IndexedDbRepositories> =>
-    createIndexedDbRepositories(await openFdeArenaDatabase()),
+  async (): Promise<ProductRepositories> => {
+    const database = await openFdeArenaDatabase();
+    const repositories = createIndexedDbRepositories(database);
+    return {
+      ...repositories,
+      contentManagement: new ContentManagementService(
+        repositories.content,
+        new ContentInstaller(database),
+      ),
+    };
+  },
 );
 
 const ProductRepositoriesContext = createContext<RepositoryGetter | undefined>(

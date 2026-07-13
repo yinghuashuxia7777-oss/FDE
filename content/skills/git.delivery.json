@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "git.delivery",
+  "domainId": "git-delivery",
+  "label": "Git delivery",
+  "description": "Use version control and delivery workflows safely and effectively.",
+  "status": "active"
+}

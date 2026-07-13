@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "network.dns",
+  "type": "foundation",
+  "title": "DNS：把稳定名称解析为当前地址",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["systems.networking"],
+  "level": "beginner",
+  "order": 12,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "DNS 把人和程序使用的域名转换成 IP 地址；不同网络、区域或缓存可能得到不同结果，所以排障要在真正发起请求的环境中查询。",
+    "analogy": "DNS 像企业内部通讯录：同一个部门名称在公司内网会指向内部分机，在外部通讯录可能指向总机。查错通讯录就会联系到错误地点。",
+    "technicalExplanation": "解析会经过本地缓存、递归解析器和权威记录，并受 TTL 控制。私有 DNS 区域、分视图解析和搜索域会使答案依客户端网络上下文而变化。",
+    "example": "开发者笔记本解析服务名得到私有地址，生产工作负载却得到公网地址。应从生产网络执行解析并检查私有区域关联，而不是只刷新个人电脑缓存。",
+    "commonMistakes": "修改 hosts 文件证明能连接，并不能证明 DNS 配置已修好；它绕过了真实解析路径。也不要忽略 TTL，记录更新后旧缓存可能在一段时间内仍合法存在。"
+  },
+  "relatedCases": ["dns-private-endpoint-001"]
+}

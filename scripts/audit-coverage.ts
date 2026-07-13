@@ -1,4 +1,8 @@
 import type { FdeCase } from '../src/domain/cases/types';
+import type {
+  ActiveCaseReference,
+  CoveragePlan,
+} from '../src/content/contracts';
 import { caseIndex } from '../src/generated/case-index';
 
 import { parseCliArgs } from './cli';
@@ -7,11 +11,15 @@ import {
   isDirectRun,
   printCliError,
   PROJECT_ROOT,
+  readContentBundleSources,
   readContentSources,
   resolveSafeProjectPath,
   writeCliReport,
 } from './files';
-import { validateContentSources } from './validate-content';
+import {
+  validateContentBundleSources,
+  validateContentSources,
+} from './validate-content';
 
 export interface CoverageGap {
   code: string;
@@ -21,6 +29,10 @@ export interface CoverageGap {
 }
 
 export interface CoverageReport {
+  schemaVersion: 1;
+  targetCaseCount: number | null;
+  remainingCaseCount: number | null;
+  plannedDomainCaseCounts: Record<string, number>;
   totalCases: number;
   publishedCases: number;
   empty: boolean;
@@ -54,9 +66,26 @@ function toSortedRecord(counts: ReadonlyMap<string, number>) {
 export function auditCoverage(
   cases: readonly FdeCase[],
   indexedCaseIds: readonly string[] = [],
+  options: {
+    activeCases?: readonly ActiveCaseReference[];
+    plan?: CoveragePlan;
+  } = {},
 ): CoverageReport {
   const minimumRatio = 0.4;
-  const published = cases.filter(({ status }) => status === 'published');
+  const activeKeys =
+    options.activeCases === undefined
+      ? null
+      : new Set(
+          options.activeCases.map(
+            ({ caseId, version }) => `${caseId}@${version}`,
+          ),
+        );
+  const published = cases.filter(
+    (candidate) =>
+      candidate.status === 'published' &&
+      (activeKeys === null ||
+        activeKeys.has(`${candidate.id}@${candidate.metadata.version}`)),
+  );
   const domainCounts = new Map<string, number>();
   const levelCounts = new Map<string, number>();
   const statusCounts = new Map<string, number>();
@@ -98,6 +127,18 @@ export function auditCoverage(
       caseIds: [],
     });
   }
+  const remainingCaseCount =
+    options.plan === undefined
+      ? null
+      : Math.max(0, options.plan.targetCaseCount - published.length);
+  if (remainingCaseCount !== null && remainingCaseCount > 0) {
+    gaps.push({
+      code: 'coverage_plan_remaining',
+      severity: 'info',
+      message: `${remainingCaseCount} planned active cases remain to reach the coverage target.`,
+      caseIds: [],
+    });
+  }
   if (ratioPasses === false) {
     gaps.push({
       code: 'insufficient_cross_domain_ratio',
@@ -132,6 +173,22 @@ export function auditCoverage(
   );
 
   return {
+    schemaVersion: 1,
+    targetCaseCount: options.plan?.targetCaseCount ?? null,
+    remainingCaseCount,
+    plannedDomainCaseCounts:
+      options.plan === undefined
+        ? {}
+        : Object.fromEntries(
+            [...options.plan.domains]
+              .sort((left, right) =>
+                left.domainId.localeCompare(right.domainId),
+              )
+              .map(({ domainId, targetCaseCount }) => [
+                domainId,
+                targetCaseCount,
+              ]),
+          ),
     totalCases: cases.length,
     publishedCases: published.length,
     empty: published.length === 0,
@@ -161,21 +218,52 @@ export function runAuditCoverageCli(args: readonly string[]): number {
       input: true,
       output: true,
     });
-    const validation = validateContentSources(
-      readContentSources(
-        PROJECT_ROOT,
-        options.input ?? 'content/cases',
-        options.limit === undefined ? {} : { limit: options.limit },
-      ),
-    );
-    const coverage = auditCoverage(
-      validation.cases.map(({ case: candidate }) => candidate),
-      caseIndex.map(({ id }) => id),
-    );
+    const result =
+      options.input === undefined
+        ? (() => {
+            const validation = validateContentBundleSources(
+              readContentBundleSources(PROJECT_ROOT, {
+                ...(options.limit === undefined
+                  ? {}
+                  : { limit: options.limit }),
+              }),
+            );
+            return {
+              validationIssues: validation.issues,
+              coverage: auditCoverage(
+                validation.cases.map(({ case: candidate }) => candidate),
+                [],
+                {
+                  ...(validation.config === null
+                    ? {}
+                    : { activeCases: validation.config.activeCases }),
+                  ...(validation.coverage === null
+                    ? {}
+                    : { plan: validation.coverage }),
+                },
+              ),
+            };
+          })()
+        : (() => {
+            const validation = validateContentSources(
+              readContentSources(
+                PROJECT_ROOT,
+                options.input,
+                options.limit === undefined ? {} : { limit: options.limit },
+              ),
+            );
+            return {
+              validationIssues: validation.issues,
+              coverage: auditCoverage(
+                validation.cases.map(({ case: candidate }) => candidate),
+                caseIndex.map(({ id }) => id),
+              ),
+            };
+          })();
     const report = {
-      ok: validation.issues.length === 0 && coverage.passed,
-      validationIssues: validation.issues,
-      coverage,
+      ok: result.validationIssues.length === 0 && result.coverage.passed,
+      validationIssues: result.validationIssues,
+      coverage: result.coverage,
     };
     const output =
       options.output === undefined

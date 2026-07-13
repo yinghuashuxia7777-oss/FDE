@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.timeout-retry",
+  "type": "foundation",
+  "title": "超时与重试：不确定结果下的受控恢复",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "intermediate",
+  "order": 19,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "超时表示调用者在期限内没有得到结果，却不证明服务端没有执行；重试可以恢复瞬时故障，也可能把一次写操作变成多次，所以必须受预算控制。",
+    "analogy": "网购付款后页面卡住，你不知道银行是否已经扣款。反复点击付款可能多次扣款；更安全的做法是用订单号查询结果，再决定是否重试。",
+    "technicalExplanation": "可靠重试需要限定可重试错误、指数退避、随机抖动和总尝试预算。写操作还需幂等键，让服务端识别同一业务意图并返回同一结果。",
+    "example": "Agent 调用创建工单接口后等待超时，编排器立即再次调用，最终产生两个工单。应贯穿同一幂等键、记录尝试次数，并在重试前查询已知结果。",
+    "commonMistakes": "无限重试、立即重试或在每次尝试生成新业务 ID，都会放大负载和重复副作用。仅缩短超时也可能让更多已执行请求变成未知结果。"
+  },
+  "relatedCases": ["agent-tool-timeout-retry-001"]
+}

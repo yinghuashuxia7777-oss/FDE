@@ -1,7 +1,12 @@
 import type { z } from 'zod';
 
 import type { FdeCaseSchema } from '../../schemas/case.schema';
-import type { EvaluationResult, FdeCase, NodeSubmission } from './types';
+import type {
+  EvaluationResult,
+  FdeCase,
+  NodeSubmission,
+  ReviewedCaseStatus,
+} from './types';
 
 type Equal<Left, Right> = [Left] extends [Right]
   ? [Right] extends [Left]
@@ -11,7 +16,7 @@ type Equal<Left, Right> = [Left] extends [Right]
 
 type Expect<Value extends true> = Value;
 type SchemaFdeCase = z.infer<typeof FdeCaseSchema>;
-type ReviewedCase = Extract<FdeCase, { status: 'reviewed' | 'published' }>;
+type ReviewedCase = Extract<FdeCase, { status: ReviewedCaseStatus }>;
 type ReviewedBranchExists = [ReviewedCase] extends [never] ? false : true;
 type ReviewedMetadataIsRequired = ReviewedCase['metadata'] extends {
   reviewer: string;

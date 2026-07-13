@@ -139,6 +139,7 @@ function checkpoint(
     roundHistory: [],
     consequences: [],
     ...overrides,
+    schemaVersion: overrides.schemaVersion ?? 1,
   };
 }
 

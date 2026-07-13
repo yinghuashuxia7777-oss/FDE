@@ -1,10 +1,12 @@
 import type {
   CaseProgressRecord,
   CaseSummary,
+  CompletedAttemptRecord,
   MistakeRecord,
   SkillMasteryRecord,
 } from '../../repositories/contracts';
 import {
+  buildDailyTrainingPlan,
   calculateTrainingStreak,
   masteryStatus,
   recommendCases,
@@ -58,6 +60,198 @@ function progress(caseId: string, updatedAt: string): CaseProgressRecord {
     updatedAt,
   };
 }
+
+function completedAttempt(
+  caseId: string,
+  completedAt: string,
+  overrides: Partial<CompletedAttemptRecord> = {},
+): CompletedAttemptRecord {
+  return {
+    id: `${caseId}-attempt`,
+    userId: 'local-user',
+    caseId,
+    caseVersion: 1,
+    schemaVersion: 1,
+    status: 'completed',
+    startedAt: completedAt,
+    updatedAt: completedAt,
+    completedAt,
+    currentNodeId: null,
+    score: 82,
+    verdict: 'pass',
+    criticalErrorIds: [],
+    visitedNodeIds: [],
+    roundHistory: [],
+    ...overrides,
+  };
+}
+
+describe('daily training plan', () => {
+  const now = new Date(2026, 6, 13, 12);
+
+  it('ranks critical mistakes, weak mastery, and recent failures in strict order', () => {
+    const failed = progress('recent-failure', '2026-07-12T10:00:00.000Z');
+    failed.latestVerdict = 'fail';
+
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('recent-failure', ['steady']),
+        caseSummary('weak-mastery', ['weak-skill']),
+        caseSummary('critical-transfer', ['critical-skill']),
+      ],
+      [failed],
+      [mastery('weak-skill', 32, 4)],
+      [
+        {
+          caseId: 'historical-case',
+          critical: true,
+          skillIds: ['critical-skill'],
+          createdAt: '2026-07-12T11:00:00.000Z',
+        } as MistakeRecord,
+      ],
+      [],
+      now,
+    );
+
+    expect([
+      plan.focusCase?.caseSummary.id,
+      ...plan.nextCases.map(({ caseSummary: item }) => item.id),
+    ]).toEqual(['critical-transfer', 'weak-mastery', 'recent-failure']);
+    expect(plan.focusCase?.reason).toMatch(/critical/i);
+    expect(plan.nextCases[0]?.reason).toMatch(/below 40/i);
+    expect(plan.nextCases[1]?.reason).toMatch(/failed/i);
+  });
+
+  it('ranks migration verification before unfinished work and fallback', () => {
+    const fallback = progress('fallback', '2026-01-01T00:00:00.000Z');
+
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('fallback', ['steady']),
+        caseSummary('unfinished', ['unseen']),
+        caseSummary('migration-check', ['newly-competent']),
+      ],
+      [fallback],
+      [mastery('newly-competent', 65, 2), mastery('steady', 80, 8)],
+      [],
+      [],
+      now,
+    );
+
+    expect([
+      plan.focusCase?.caseSummary.id,
+      ...plan.nextCases.map(({ caseSummary: item }) => item.id),
+    ]).toEqual(['migration-check', 'unfinished', 'fallback']);
+    expect(plan.focusCase?.reason).toMatch(/newly learned/i);
+  });
+
+  it('ranks a recent failure before migration verification', () => {
+    const failed = progress('recent-failure', '2026-07-12T10:00:00.000Z');
+    failed.latestVerdict = 'fail';
+
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('migration-check', ['newly-competent']),
+        caseSummary('recent-failure', ['steady']),
+      ],
+      [failed],
+      [mastery('newly-competent', 65, 2)],
+      [],
+      [],
+      now,
+    );
+
+    expect(plan.focusCase?.caseSummary.id).toBe('recent-failure');
+    expect(plan.nextCases[0]?.caseSummary.id).toBe('migration-check');
+  });
+
+  it('retains today completed cases with the latest review attempt and remaining estimate', () => {
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('focus', ['risk']),
+        caseSummary('completed-today', ['steady']),
+        caseSummary('next', ['steady']),
+      ],
+      [],
+      [],
+      [
+        {
+          caseId: 'focus',
+          critical: true,
+          skillIds: ['risk'],
+        } as MistakeRecord,
+      ],
+      [
+        completedAttempt('completed-today', '2026-07-13T08:00:00.000Z', {
+          id: 'older-attempt',
+          score: 70,
+        }),
+        completedAttempt('completed-today', '2026-07-13T09:00:00.000Z', {
+          id: 'review-attempt',
+          score: 91,
+        }),
+      ],
+      now,
+    );
+
+    expect(plan.focusCase).toMatchObject({
+      caseSummary: { id: 'completed-today' },
+      completedToday: true,
+      attemptId: 'review-attempt',
+      score: 91,
+    });
+    expect(plan.completedCount).toBe(1);
+    expect(plan.plannedCount).toBe(3);
+    expect(plan.estimatedMinutes).toBe(30);
+  });
+
+  it('ignores invalid completion dates and filters, de-duplicates, and orders cases deterministically', () => {
+    const duplicateV2 = caseSummary('case-b', ['steady']);
+    duplicateV2.version = 2;
+    const expert = caseSummary('expert', ['steady']);
+    expert.level = 'expert';
+    const draft = caseSummary('draft', ['steady']);
+    draft.status = 'draft';
+
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('case-c', ['steady']),
+        caseSummary('case-b', ['steady']),
+        caseSummary('case-a', ['steady']),
+        duplicateV2,
+        expert,
+        draft,
+      ],
+      [],
+      [],
+      [],
+      [completedAttempt('case-a', 'not-a-date')],
+      now,
+    );
+
+    const items = [plan.focusCase, ...plan.nextCases];
+    expect(items.map((item) => item?.caseSummary.id)).toEqual([
+      'case-a',
+      'case-b',
+      'case-c',
+    ]);
+    expect(items[1]?.caseSummary.version).toBe(2);
+    expect(items.every((item) => item?.completedToday === false)).toBe(true);
+    expect(plan.completedCount).toBe(0);
+  });
+
+  it('returns a safe empty plan when no eligible case exists', () => {
+    const plan = buildDailyTrainingPlan([], [], [], [], [], now);
+
+    expect(plan).toEqual({
+      focusCase: undefined,
+      nextCases: [],
+      completedCount: 0,
+      plannedCount: 0,
+      estimatedMinutes: 0,
+    });
+  });
+});
 
 describe('mastery status boundaries', () => {
   it.each([

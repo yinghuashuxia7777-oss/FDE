@@ -1,4 +1,5 @@
 import { scoreCase, type CaseScoreEntry } from '../../domain/scoring';
+import { useI18n } from '../../i18n';
 
 interface TrainingProgressProps {
   scoreEntries: readonly CaseScoreEntry[];
@@ -9,6 +10,7 @@ export function TrainingProgress({
   scoreEntries,
   visitedNodeIds,
 }: TrainingProgressProps) {
+  const { t } = useI18n();
   const visitedCount = visitedNodeIds.length;
   const resolvedCount = Math.min(scoreEntries.length, visitedCount);
   const nativeMax = Math.max(visitedCount, 1);
@@ -17,30 +19,33 @@ export function TrainingProgress({
   return (
     <section
       className="training-progress"
-      aria-label="Training progress summary"
+      aria-label={t('training.progress.summary')}
     >
-      <h3>Training progress</h3>
+      <h3>{t('training.progress.title')}</h3>
       <progress
-        aria-label="Training progress"
+        aria-label={t('training.progress.title')}
         value={resolvedCount}
         max={nativeMax}
       />
       <p>
-        {resolvedCount} of {visitedCount} decisions resolved
+        {t('training.progress.resolved', {
+          resolved: resolvedCount,
+          visited: visitedCount,
+        })}
       </p>
-      <p>Current score: {score}%</p>
+      <p>{t('training.progress.currentScore', { score })}</p>
 
       {visitedCount > 0 ? (
         <div>
-          <strong>Visited decision path</strong>
-          <ol aria-label="Visited decision path">
+          <strong>{t('training.progress.visitedPath')}</strong>
+          <ol aria-label={t('training.progress.visitedPath')}>
             {visitedNodeIds.map((nodeId, index) => (
               <li key={`${String(index)}-${nodeId}`}>{nodeId}</li>
             ))}
           </ol>
         </div>
       ) : (
-        <p>No decisions visited yet</p>
+        <p>{t('training.progress.noDecisions')}</p>
       )}
     </section>
   );

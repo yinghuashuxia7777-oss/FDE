@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "git-hotfix-wrong-branch-001",
+  "slug": "git-hotfix-wrong-branch-001",
+  "title": "紧急修复提交到了错误分支",
+  "summary": "在不改写共享历史的前提下把已验证热修复移到正确发布分支，并确认交付内容。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["git-delivery"],
+  "skills": ["git.delivery"],
+  "lifecycleStages": ["develop", "deliver"],
+  "technicalLayers": ["version-control", "ci"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["delivery", "availability"],
+  "behaviorPatterns": ["safe-history-recovery", "reviewed-delivery"],
+  "scenario": {
+    "customerProfile": "一家虚构的票务平台通过维护分支向生产发布小版本。",
+    "background": "工程师修复了结算错误并通过本地测试，但误把提交推送到了仍在开发的 main 分支；生产流水线只部署 release-2-3。",
+    "initialIncident": "发布窗口还有 40 分钟，流水线在 release-2-3 上找不到修复提交。",
+    "constraints": [
+      "main 与 release-2-3 都是多人共享分支，禁止强制推送。",
+      "热修复必须经过代码审查和现有回归测试。",
+      "不能把 main 上其他未发布功能带入维护版本。"
+    ],
+    "confirmedFacts": [
+      "修复是单一提交 7ac91e，父提交在 main 上。",
+      "该提交只修改结算校验和对应测试。",
+      "release-2-3 当前流水线通过。"
+    ]
+  },
+  "startNodeId": "git-hotfix-wrong-branch-001-node-01",
+  "nodes": [
+    {
+      "id": "git-hotfix-wrong-branch-001-node-01",
+      "type": "command-choice",
+      "title": "安全迁移热修复",
+      "prompt": "第一步应采用哪种 Git 处理方式？",
+      "skillWeights": { "git.delivery": 1 },
+      "evidence": [
+        {
+          "id": "git-hotfix-wrong-branch-001-node-01-evidence-01",
+          "type": "terminal",
+          "title": "分支包含关系",
+          "content": "$ git branch --contains 7ac91e\n* main\n$ git branch --contains 7ac91e release-2-3\n"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-01-evidence-02",
+          "type": "diff",
+          "title": "提交范围",
+          "content": "7ac91e Fix checkout validation\n files: checkout/validator.py, tests/test_validator.py"
+        }
+      ],
+      "options": [
+        {
+          "id": "git-hotfix-wrong-branch-001-node-01-option-a",
+          "label": "从 release-2-3 建热修复分支，cherry-pick 7ac91e，运行测试后提交审查",
+          "explanation": "单一提交范围明确，cherry-pick 能只迁移修复而不带入 main 的其他变化；独立分支保留审查和回滚路径。"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-01-option-b",
+          "label": "把整个 main 合并进 release-2-3 以确保包含修复",
+          "explanation": "这会把未发布功能一起带入维护版本，违反范围约束并显著增加回归风险。",
+          "errorType": "oversized-hotfix-merge"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-01-option-c",
+          "label": "强制重置 release-2-3 到 7ac91e 并覆盖远端",
+          "explanation": "强制重置会改写共享发布历史，可能删除维护分支上的提交并破坏其他人的工作。",
+          "errorType": "destructive-shared-history-rewrite"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "git-hotfix-wrong-branch-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "目标是只迁移一个已知修复，同时保护共享分支历史。",
+        "secondWrong": "证据显示 7ac91e 是单一提交，且 main 还有不能进入维护版的工作。",
+        "revealedAnswer": "应从正确发布分支创建热修复分支，cherry-pick 单一提交，测试并走审查。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "git-hotfix-wrong-branch-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "git-hotfix-wrong-branch-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "git-hotfix-wrong-branch-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "git-hotfix-wrong-branch-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "git-hotfix-wrong-branch-001-node-02",
+      "type": "diff-review",
+      "title": "确认发布内容",
+      "prompt": "审查通过后，哪种发布前验证最可靠？",
+      "skillWeights": { "git.delivery": 1 },
+      "evidence": [
+        {
+          "id": "git-hotfix-wrong-branch-001-node-02-evidence-01",
+          "type": "terminal",
+          "title": "热修复分支历史",
+          "content": "$ git log --oneline release-2-3..hotfix/checkout\n9bd21f Fix checkout validation"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "CI 结果",
+          "content": "unit=pass integration=pass changed_files=2 approvals=1"
+        }
+      ],
+      "options": [
+        {
+          "id": "git-hotfix-wrong-branch-001-node-02-option-a",
+          "label": "核对分支差异只含两处预期文件，再合并并从 release-2-3 的不可变提交构建",
+          "explanation": "差异核对证明范围正确，测试与审查证明质量门槛通过，从合并后的固定提交构建保证可追踪交付。"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-02-option-b",
+          "label": "因为 cherry-pick 成功，跳过差异检查和 CI 直接合并",
+          "explanation": "命令成功不证明冲突解决、文件范围或行为正确，跳过现有门槛会削弱发布证据。",
+          "errorType": "delivery-without-verification"
+        },
+        {
+          "id": "git-hotfix-wrong-branch-001-node-02-option-c",
+          "label": "从工程师未提交的本地工作区直接构建并上传生产制品",
+          "explanation": "本地工作区不可审计且可能包含额外变化，制品无法关联到审查过的提交，造成严重供应链风险。",
+          "errorType": "untracked-production-artifact"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "git-hotfix-wrong-branch-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "发布前需要同时证明内容范围、测试结果和制品来源。",
+        "secondWrong": "已有差异范围和 CI 证据，应把制品绑定到合并后的固定提交。",
+        "revealedAnswer": "应核对只有两处预期文件，合并后从 release-2-3 的不可变提交构建和发布。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "git-hotfix-wrong-branch-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "修复提交误入 main，但范围是单一提交。安全方案是在正确发布分支上迁移该提交，经差异、测试和审查验证后从固定提交构建。",
+    "rootCause": "工程师在未确认当前分支和发布目标的情况下提交并推送了紧急修复。",
+    "correctApproach": [
+      "从 release-2-3 创建热修复分支并 cherry-pick 单一修复提交。",
+      "核对差异、运行 CI、完成审查，再从合并后的固定提交构建。"
+    ],
+    "keyLessons": [
+      "修复错误分支不需要改写共享历史。",
+      "发布证据必须覆盖内容范围、测试和制品可追踪性。"
+    ],
+    "interviewerPerspective": "观察候选人是否能选择最小 Git 操作并保护共享历史、审查和制品来源。",
+    "customerRiskPerspective": "大范围合并或不可追踪制品可能把未知变化带入生产并延长故障。",
+    "remediation": [
+      "在提交和发布脚本中显示并确认目标分支。",
+      "为维护分支要求审查、CI 和固定提交制品。"
+    ],
+    "verification": [
+      "确认发布分支只新增预期修复文件。",
+      "确认生产制品摘要关联到合并后的 release-2-3 提交。"
+    ],
+    "knowledgePoints": [
+      "Git cherry-pick",
+      "shared history safety",
+      "artifact provenance"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

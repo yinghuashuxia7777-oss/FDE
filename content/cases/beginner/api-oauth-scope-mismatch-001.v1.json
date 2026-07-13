@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "api-oauth-scope-mismatch-001",
+  "slug": "api-oauth-scope-mismatch-001",
+  "title": "OAuth 令牌缺少新接口要求的范围",
+  "summary": "利用 HTTP 响应与令牌声明定位权限范围不匹配，并以最小权限方式修复和验证。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["api-integration"],
+  "skills": ["api.integration"],
+  "lifecycleStages": ["integrate", "operate"],
+  "technicalLayers": ["http", "oauth"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["authorization", "availability"],
+  "behaviorPatterns": ["least-privilege", "contract-driven-debugging"],
+  "scenario": {
+    "customerProfile": "一家虚构的财务自动化平台通过合作方 API 只读同步发票状态。",
+    "background": "团队把同步任务迁移到新版发票端点并轮换了客户端凭据，认证服务器仍能签发令牌。",
+    "initialIncident": "迁移后所有新版端点调用返回 403，但旧版账户查询继续成功。",
+    "constraints": [
+      "集成只能获得读取发票所需的最小权限。",
+      "不得在日志或工单中复制访问令牌。",
+      "权限变更必须先在合成测试租户验证。"
+    ],
+    "confirmedFacts": [
+      "令牌签名、受众和过期时间均有效。",
+      "新版发票端点文档要求 billing.invoices.read。",
+      "当前客户端注册尚未批准该范围。"
+    ]
+  },
+  "startNodeId": "api-oauth-scope-mismatch-001-node-01",
+  "nodes": [
+    {
+      "id": "api-oauth-scope-mismatch-001-node-01",
+      "type": "log-analysis",
+      "title": "解释 403 并选择修复",
+      "prompt": "根据响应与令牌摘要，下一步应做什么？",
+      "skillWeights": { "api.integration": 1 },
+      "evidence": [
+        {
+          "id": "api-oauth-scope-mismatch-001-node-01-evidence-01",
+          "type": "http",
+          "title": "新版端点响应",
+          "content": "HTTP/1.1 403 Forbidden\nWWW-Authenticate: Bearer error=\"insufficient_scope\" scope=\"billing.invoices.read\""
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-01-evidence-02",
+          "type": "json",
+          "title": "脱敏令牌声明摘要",
+          "content": "{\"aud\":\"billing-api\",\"scope\":\"accounts.read invoices.read\",\"expired\":false}"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-oauth-scope-mismatch-001-node-01-option-a",
+          "label": "为客户端申请 billing.invoices.read，完成批准后重新签发令牌并测试",
+          "explanation": "响应明确给出缺失范围，令牌摘要也证明当前未包含它；申请单一只读范围符合接口契约和最小权限。"
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-01-option-b",
+          "label": "持续重试当前请求并延长 HTTP 超时",
+          "explanation": "403 insufficient_scope 是确定的授权拒绝，不是暂时网络故障；重试不会改变令牌权限。",
+          "errorType": "retry-nontransient-authorization-error"
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-01-option-c",
+          "label": "改用拥有全部管理范围的共享令牌绕过审批",
+          "explanation": "共享高权限令牌违反最小权限和凭据治理，会把只读同步扩大成不必要的管理访问。",
+          "errorType": "shared-overprivileged-token"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-oauth-scope-mismatch-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先区分认证失败、授权失败和网络失败。",
+        "secondWrong": "响应明确写出 insufficient_scope 及所需范围，令牌摘要没有该值。",
+        "revealedAnswer": "应只申请 billing.invoices.read，经批准后签发新令牌并在测试租户验证。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-oauth-scope-mismatch-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-oauth-scope-mismatch-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-oauth-scope-mismatch-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "api-oauth-scope-mismatch-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "api-oauth-scope-mismatch-001-node-02",
+      "type": "command-choice",
+      "title": "验证最小权限令牌",
+      "prompt": "范围获批后，哪种验证最完整且安全？",
+      "skillWeights": { "api.integration": 1 },
+      "evidence": [
+        {
+          "id": "api-oauth-scope-mismatch-001-node-02-evidence-01",
+          "type": "json",
+          "title": "新令牌脱敏摘要",
+          "content": "{\"aud\":\"billing-api\",\"scope\":\"billing.invoices.read\",\"expired\":false}"
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-02-evidence-02",
+          "type": "http",
+          "title": "合成租户响应",
+          "content": "GET /v2/invoices/test-100 -> 200\nPATCH /v2/invoices/test-100 -> 403 insufficient_scope"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-oauth-scope-mismatch-001-node-02-option-a",
+          "label": "确认只读调用成功且写调用仍被拒绝，并只记录状态码与脱敏范围摘要",
+          "explanation": "一正一负测试证明所需读取能力可用且权限没有扩大，脱敏记录又保留审计证据而不泄露令牌。"
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-02-option-b",
+          "label": "只看令牌字符串长度发生变化就宣布修复",
+          "explanation": "令牌长度不能证明范围、受众或端点行为，缺少契约和权限边界验证。",
+          "errorType": "token-shape-not-behavior-verified"
+        },
+        {
+          "id": "api-oauth-scope-mismatch-001-node-02-option-c",
+          "label": "把完整 Bearer 令牌写入共享日志，方便其他人重复调用",
+          "explanation": "访问令牌是可用凭据，写入共享日志会造成严重泄露；验证无需保存令牌原文。",
+          "errorType": "bearer-token-log-exposure"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-oauth-scope-mismatch-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "最小权限验证既要有允许的正例，也要有应拒绝的负例。",
+        "secondWrong": "只读 GET 应成功，写入 PATCH 应继续 403，而且不能记录令牌。",
+        "revealedAnswer": "应证明读取成功、写入仍拒绝，并只保留状态码和脱敏范围摘要。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-oauth-scope-mismatch-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "新版端点需要 billing.invoices.read，而当前令牌只有旧范围。正确修复是申请单一范围，并用读成功、写拒绝验证最小权限。",
+    "rootCause": "客户端注册与令牌未包含新版发票接口要求的只读 OAuth 范围。",
+    "correctApproach": [
+      "申请并批准 billing.invoices.read 后重新签发令牌。",
+      "在合成租户验证读取允许、写入拒绝且不记录令牌。"
+    ],
+    "keyLessons": [
+      "403 insufficient_scope 应按授权契约诊断，而不是当作网络故障重试。",
+      "权限修复必须用正负测试证明最小权限边界。"
+    ],
+    "interviewerPerspective": "观察候选人是否读取标准错误证据、坚持最小权限并保护凭据。",
+    "customerRiskPerspective": "过度授权或令牌泄露会把一次可用性故障升级为数据与合规风险。",
+    "remediation": [
+      "把端点所需范围加入集成契约和客户端审批流程。",
+      "建立不含令牌原文的 OAuth 失败分类与监控。"
+    ],
+    "verification": [
+      "确认新令牌仅含 billing.invoices.read 且 GET 返回 200。",
+      "确认写操作继续返回 403，日志中不存在 Bearer 令牌。"
+    ],
+    "knowledgePoints": [
+      "OAuth scopes",
+      "least privilege",
+      "HTTP authorization errors"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

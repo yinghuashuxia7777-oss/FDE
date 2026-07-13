@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   completeAttempt,
@@ -22,46 +23,78 @@ import {
   StatusBadge,
 } from '../../components/ui';
 import type { NodeSubmission } from '../../domain/cases/types';
+import { localizeUiError, useI18n } from '../../i18n';
 
 interface TrainingSessionPageProps {
   dependencies: TrainingDependencies;
   initialState: TrainingState;
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error && error.message.trim().length > 0
-    ? error.message
-    : 'The training action could not be completed.';
-}
-
 export function TrainingSessionPage({
   dependencies,
   initialState,
 }: TrainingSessionPageProps) {
+  const { language, t } = useI18n();
   const [state, setState] = useState(initialState);
   const [pending, setPending] = useState(false);
-  const [operationError, setOperationError] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState<unknown>(null);
+  const pageTitleRef = useRef<HTMLHeadingElement>(null);
+  const completed = state.phase === 'completed';
+
+  useEffect(() => {
+    pageTitleRef.current?.focus();
+  }, [completed]);
 
   if (state.phase === 'completed') {
+    const verdict = t(`training.verdict.${state.completedAttempt.verdict}`);
     return (
-      <main className="training-complete">
-        <p className="eyebrow">Attempt recorded locally</p>
-        <h1>Case complete</h1>
+      <section className="training-complete">
+        <p className="eyebrow">{t('training.session.recordedLocally')}</p>
+        <h1 id="page-title" ref={pageTitleRef} tabIndex={-1}>
+          {t('training.session.completeTitle')}
+        </h1>
         <p>
-          Score {Math.round(state.completedAttempt.score)}%. Verdict:{' '}
-          {state.completedAttempt.verdict}.
+          {t('training.session.result', {
+            score: Math.round(state.completedAttempt.score),
+            verdict,
+          })}
         </p>
-      </main>
+        <p>{t('training.session.masteryUpdated')}</p>
+        <Link
+          className="button button--primary"
+          to={`/debrief/${state.completedAttempt.id}`}
+        >
+          {t('training.session.reviewDecisions')}
+        </Link>
+        <Link className="button button--secondary" to="/skills">
+          {t('training.session.viewMastery')}
+        </Link>
+        <Link className="button button--secondary" to="/">
+          {t('training.session.backToPlan')}
+        </Link>
+      </section>
     );
   }
 
   if (state.phase === 'loading') {
     return state.persistenceError === null ? (
-      <LoadingState label="Preparing training case" />
+      <LoadingState
+        focusTitle
+        label={t('training.route.preparing')}
+        titleAs="h1"
+        titleId="page-title"
+      />
     ) : (
       <ErrorState
-        title="Training session was not saved"
-        message={state.persistenceError}
+        focusTitle
+        title={t('training.session.notSavedTitle')}
+        titleAs="h1"
+        titleId="page-title"
+        message={localizeUiError(
+          language,
+          state.persistenceError,
+          t('training.session.persistenceFailed'),
+        )}
       />
     );
   }
@@ -75,7 +108,7 @@ export function TrainingSessionPage({
     try {
       setState(await submitNode(state, submission, dependencies));
     } catch (error) {
-      setOperationError(errorMessage(error));
+      setOperationError(error);
     } finally {
       setPending(false);
     }
@@ -99,7 +132,7 @@ export function TrainingSessionPage({
     try {
       setState(await completeAttempt(state, dependencies));
     } catch (error) {
-      setOperationError(errorMessage(error));
+      setOperationError(error);
     } finally {
       setPending(false);
     }
@@ -110,13 +143,13 @@ export function TrainingSessionPage({
   const decisionDisabled = pending || state.phase !== 'active';
 
   return (
-    <main className="training-session-page">
+    <section className="training-session-page">
       <TrainingLayout
         scene={
           <div className="training-context-panel">
             <div className="training-section-heading">
-              <p className="eyebrow">Case context</p>
-              <h2>Scene</h2>
+              <p className="eyebrow">{t('training.session.caseContext')}</p>
+              <h2>{t('training.session.scene')}</h2>
             </div>
             <CaseScene scenario={state.caseContent.scenario} />
           </div>
@@ -124,8 +157,8 @@ export function TrainingSessionPage({
         evidence={
           <div className="training-context-panel">
             <div className="training-section-heading">
-              <p className="eyebrow">Observed signals</p>
-              <h2>Evidence</h2>
+              <p className="eyebrow">{t('training.session.observedSignals')}</p>
+              <h2>{t('training.session.evidence')}</h2>
             </div>
             <CaseEvidence evidence={node.evidence} />
           </div>
@@ -135,10 +168,14 @@ export function TrainingSessionPage({
             <div className="decision-context__heading">
               <div>
                 <p className="eyebrow">{state.caseContent.title}</p>
-                <h1>{node.title ?? 'Current decision'}</h1>
+                <h1 id="page-title" ref={pageTitleRef} tabIndex={-1}>
+                  {node.title ?? t('training.session.currentDecision')}
+                </h1>
               </div>
               <StatusBadge tone={state.hintLevel > 1 ? 'warning' : 'neutral'}>
-                Round {state.attemptNumber} of 3
+                {t('training.session.round', {
+                  attempt: state.attemptNumber,
+                })}
               </StatusBadge>
             </div>
             <p className="decision-context__prompt">{node.prompt}</p>
@@ -146,25 +183,36 @@ export function TrainingSessionPage({
               scoreEntries={state.scoreEntries}
               visitedNodeIds={state.visitedNodeIds}
             />
-            <AdaptiveFeedback feedback={feedback} node={node} />
           </div>
         }
         options={
           <div
             className="decision-controls"
-            aria-label="Decision controls"
+            aria-label={t('training.session.decisionControls')}
             aria-busy={pending || undefined}
           >
             {operationError === null ? null : (
-              <Alert title="Decision could not be processed" tone="danger">
-                {operationError}
+              <Alert title={t('training.session.decisionFailed')} tone="danger">
+                {localizeUiError(
+                  language,
+                  operationError,
+                  t('training.session.actionFailed'),
+                )}
               </Alert>
             )}
             {persistenceError === null ? null : (
-              <Alert title="Progress not saved" tone="danger">
-                {persistenceError}
+              <Alert
+                title={t('training.session.progressNotSaved')}
+                tone="danger"
+              >
+                {localizeUiError(
+                  language,
+                  persistenceError,
+                  t('training.session.persistenceFailed'),
+                )}
               </Alert>
             )}
+            <AdaptiveFeedback feedback={feedback} node={node} />
             <QuestionRenderer
               node={node}
               disabled={decisionDisabled}
@@ -179,7 +227,7 @@ export function TrainingSessionPage({
                 disabled={pending}
                 onClick={handleRetry}
               >
-                Try again
+                {t('training.session.tryAgain')}
               </Button>
             ) : null}
             {state.phase === 'advancing' ? (
@@ -189,7 +237,9 @@ export function TrainingSessionPage({
                   void handleContinue();
                 }}
               >
-                {state.persistenceError === null ? 'Continue' : 'Retry save'}
+                {state.persistenceError === null
+                  ? t('training.session.continue')
+                  : t('training.session.retrySave')}
               </Button>
             ) : null}
             <ConsequenceMeter
@@ -199,6 +249,6 @@ export function TrainingSessionPage({
           </div>
         }
       />
-    </main>
+    </section>
   );
 }

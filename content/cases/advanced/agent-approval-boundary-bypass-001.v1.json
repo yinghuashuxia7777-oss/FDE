@@ -1,0 +1,497 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-approval-boundary-bypass-001",
+  "slug": "agent-approval-boundary-bypass-001",
+  "title": "Agent 在审批前执行高风险工具",
+  "summary": "调查 Agent 审批回调顺序缺陷，建立服务端授权令牌、API 重放防护与可审计恢复采用。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "agents-evals",
+    "security-governance",
+    "fde-adoption",
+    "api-integration"
+  ],
+  "skills": [
+    "agents.evaluation",
+    "security.governance",
+    "fde.adoption",
+    "api.integration"
+  ],
+  "lifecycleStages": ["design", "deploy", "operate", "incident-response"],
+  "technicalLayers": [
+    "agent-orchestration",
+    "approval-service",
+    "tool-api",
+    "operations"
+  ],
+  "environments": ["production", "staging"],
+  "riskTypes": ["authorization", "financial", "customer-trust"],
+  "behaviorPatterns": [
+    "server-enforced-approval",
+    "sandbox-reproduction",
+    "transparent-recovery"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的财务运营团队使用 Agent 起草供应商付款调整，高于阈值的动作必须由主管审批。",
+    "background": "新编排器把审批 UI 改为异步回调；工具 API 仍信任 Agent 客户端发送的 approved 标志。",
+    "initialIncident": "审计员发现一笔合成测试调整在主管点击拒绝前已经调用工具 API 并返回成功。",
+    "constraints": [
+      "必须立即停止高风险写工具，但只读分析可继续。",
+      "不能通过修改或删除审计记录掩盖事件。",
+      "恢复前必须证明审批与具体动作、参数和时效绑定。"
+    ],
+    "confirmedFacts": [
+      "工具调用时间比审批拒绝时间早 4.2 秒。",
+      "编排 trace 显示 executeTool promise 在 awaitApproval 之前启动。",
+      "工具 API 只检查客户端请求头 X-Approved=true。"
+    ]
+  },
+  "startNodeId": "agent-approval-boundary-bypass-001-node-01",
+  "nodes": [
+    {
+      "id": "agent-approval-boundary-bypass-001-node-01",
+      "type": "log-analysis",
+      "title": "遏制并复现审批绕过",
+      "prompt": "第一项行动怎样兼顾遏制、证据和后续验证？",
+      "skillWeights": {
+        "agents.evaluation": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-01-evidence-01",
+          "type": "log",
+          "title": "编排 trace",
+          "content": "10:04:11.100 executeTool started action=adjust-payment amount=synthetic-12000\n10:04:11.140 awaitApproval displayed\n10:04:15.300 approval result=denied\n10:04:12.020 tool status=200",
+          "language": "text"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-01-evidence-02",
+          "type": "diff",
+          "title": "回调顺序",
+          "content": "- await approvalService.request(action)\n- return tool.execute(action)\n+ const pending = tool.execute(action)\n+ await approvalService.request(action)\n+ return pending",
+          "language": "diff"
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-01-option-a",
+          "label": "保留生产写工具开放，多执行几笔测试以收集更充分证据",
+          "explanation": "已确认执行先于审批，继续生产测试会制造新的未授权财务动作，扩大事件。",
+          "errorType": "continue-known-unauthorized-actions"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-01-option-b",
+          "label": "禁用高风险写工具、保全 trace，在隔离 sandbox 重放拒绝与超时场景",
+          "explanation": "立即遏制未授权副作用并保留审计；sandbox 可安全复现回调竞态和建立修复基线。",
+          "errorType": "none"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-01-option-c",
+          "label": "只把审批 UI 改成同步动画，暂不改变编排器或工具 API",
+          "explanation": "界面表现不改变 promise 已启动和 API 信任客户端标志的服务端事实。",
+          "errorType": "ui-only-approval-fix"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-approval-boundary-bypass-001-node-01-option-b"
+      },
+      "feedback": {
+        "firstWrong": "审批是执行边界，不是界面状态；先停止已知高风险副作用。",
+        "secondWrong": "trace 和 diff 都显示 executeTool 在 awaitApproval 完成前启动。",
+        "revealedAnswer": "应立即禁用高风险写工具、保全不可变 trace，并在 sandbox 重放批准、拒绝、超时与重复回调；验证未批准时 API 调用数为零。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-approval-boundary-bypass-001-node-01-option-a"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-01-option-a",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "更多高风险操作绕过审批并进入生产。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-01-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "生产风险停止，关键时序证据被保存用于验证。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-01-option-c",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "用户看到等待状态，但工具仍可能提前执行。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "agent-approval-boundary-bypass-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "建立服务端审批能力",
+      "prompt": "哪种审批证明能防止客户端自行声明已批准？",
+      "skillWeights": {
+        "security.governance": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-02-evidence-01",
+          "type": "text",
+          "title": "安全要求",
+          "content": "Approval must bind approver, subject, exact tool, normalized arguments, expiry, policy version, and one-time use. Denial and timeout must produce no tool side effect."
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-02-evidence-02",
+          "type": "config",
+          "title": "当前信任边界",
+          "content": "tool_api.authorization: service-identity\napproval_check: request.header.X-Approved == \"true\"\napproval_record_lookup: none",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-02-option-a",
+          "label": "把 X-Approved 改成一个更难猜的请求头名称",
+          "explanation": "客户端仍能自行设置任意头，重命名没有建立可信签发者、参数绑定或一次性使用。",
+          "errorType": "security-through-obscurity"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-02-option-b",
+          "label": "让 Agent 服务账号默认拥有审批权，以减少跨服务延迟",
+          "explanation": "执行者同时成为批准者，彻底绕过职责分离，使任何编排缺陷都可直接执行高风险动作。",
+          "errorType": "self-approval-privilege"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-02-option-c",
+          "label": "由审批服务签发一次性能力，绑定工具、规范化参数、批准者、过期和策略版本",
+          "explanation": "工具 API 可独立验证可信签发、精确动作与时效，一次性约束阻止参数替换和重放。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-approval-boundary-bypass-001-node-02-option-c"
+      },
+      "feedback": {
+        "firstWrong": "可信审批必须由执行客户端之外的服务签发并由工具端验证。",
+        "secondWrong": "要求明确包含工具、参数、批准者、过期、策略版本和一次性使用。",
+        "revealedAnswer": "应使用审批服务签发的一次性参数绑定能力，由工具 API 验证；拒绝、过期或参数变化都必须返回禁止且无副作用。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-approval-boundary-bypass-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "未授权客户端仍可伪造审批状态。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "Agent 可自行批准并执行所有高风险动作。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-02-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "审批成为工具 API 可验证的服务端安全边界。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "agent-approval-boundary-bypass-001-node-03",
+      "type": "configuration-review",
+      "title": "防止 API 重放与结果不确定",
+      "prompt": "工具 API 还需要哪组契约才能安全处理网络重试？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-03-evidence-01",
+          "type": "http",
+          "title": "候选请求",
+          "content": "POST /payment-adjustments\nIdempotency-Key: run-syn-77-action-3\nApproval-Capability: synthetic-signed-reference\nBody-Digest: sha256:synthetic-body",
+          "language": "http"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-03-evidence-02",
+          "type": "text",
+          "title": "故障注入",
+          "content": "The first request commits, then its response is dropped. A retry reuses the same idempotency key and approval capability with an identical body."
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-03-option-a",
+          "label": "原子消费审批能力并记录幂等键、请求摘要与结果；相同重试返回原结果，参数变化拒绝",
+          "explanation": "原子记录同时阻止能力被第二个动作消费，并安全处理提交后丢响应；摘要绑定防止键被复用到新参数。",
+          "errorType": "none"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-03-option-b",
+          "label": "每次重试签发新审批能力，只比较最终金额是否相同",
+          "explanation": "新能力会绕过一次性语义，且只比较金额忽略供应商、币种和其他参数变化。",
+          "errorType": "partial-argument-binding"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-03-option-c",
+          "label": "服务账号请求跳过能力验证和幂等检查，以保证恢复速度",
+          "explanation": "编排器正是服务账号调用方，豁免会恢复原始绕过并允许重复财务副作用。",
+          "errorType": "trusted-client-bypass"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-approval-boundary-bypass-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "审批一次性与网络安全重试需要在同一原子边界协调。",
+        "secondWrong": "故障发生在提交后丢响应，稳定幂等键和请求摘要可以返回第一次结果。",
+        "revealedAnswer": "应原子消费能力并保存幂等键、完整规范化请求摘要与结果；同请求重试复用结果，任何参数变化或能力重用都拒绝。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-approval-boundary-bypass-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "网络重试不会重复执行或篡改已批准动作。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "同一审批可能被变形成不同业务动作。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "高风险执行再次脱离审批与去重保护。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "agent-approval-boundary-bypass-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "agent-approval-boundary-bypass-001-node-04",
+      "type": "customer-response",
+      "title": "恢复现场采用与信任",
+      "prompt": "完成技术修复后，怎样向运营团队恢复高风险工具？",
+      "skillWeights": {
+        "fde.adoption": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-04-evidence-01",
+          "type": "customer-message",
+          "title": "运营主管反馈",
+          "content": "We need to know what executed, how denial now blocks it, who will monitor the first shifts, and how to stop the tool if anything differs."
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-04-evidence-02",
+          "type": "text",
+          "title": "修复验证状态",
+          "content": "Sandbox denial, expiry, argument mutation, and replay tests pass. No production write has been enabled. Read-only agent functions remain available."
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-approval-boundary-bypass-001-node-04-option-a",
+          "label": "直接恢复全部写工具，只发送一份长技术报告供主管自行阅读",
+          "explanation": "技术报告不能替代分阶段启用、现场观察、停止权限和针对运营问题的明确说明。",
+          "errorType": "unmanaged-reenable"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-04-option-b",
+          "label": "说明已确认影响与控制，演示拒绝路径，先小范围启用并指定监控、停止和复盘责任",
+          "explanation": "透明说明和可见演示回应信任问题；小范围、具名责任与停止开关让恢复可控。",
+          "errorType": "none"
+        },
+        {
+          "id": "agent-approval-boundary-bypass-001-node-04-option-c",
+          "label": "把事件描述为界面延迟，不披露已发生的审批前执行",
+          "explanation": "弱化已确认事实会误导客户风险判断，并在审计或再次异常时造成更严重信任损害。",
+          "errorType": "misrepresent-confirmed-impact"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-approval-boundary-bypass-001-node-04-option-b"
+      },
+      "feedback": {
+        "firstWrong": "恢复采用既要证明技术边界，也要让现场人员知道如何观察和停止。",
+        "secondWrong": "主管明确询问影响、拒绝机制、首批监控和停止方式。",
+        "revealedAnswer": "应透明说明已执行事项与新控制，演示拒绝路径，先小范围启用并指定监控、停止、升级和复盘责任。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-approval-boundary-bypass-001-node-04-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-04-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "运营团队缺少可执行的监控与停止方案。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-04-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "运营团队理解新边界并能在异常时立即停止。"
+        },
+        {
+          "optionId": "agent-approval-boundary-bypass-001-node-04-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "客户基于不完整事实恢复使用，信任与治理风险扩大。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "异步回调把工具执行提前到审批完成前，工具 API 又信任客户端 approved 头。正确路径是立即禁用并 sandbox 复现，以服务端参数绑定能力和原子幂等契约固化边界，再透明分阶段恢复。",
+    "rootCause": "审批只存在于客户端编排和 UI，没有成为工具 API 强制执行的服务端授权条件。",
+    "correctApproach": [
+      "禁用高风险写工具、保全 trace，并在 sandbox 覆盖拒绝、超时和竞态。",
+      "由独立审批服务签发一次性、参数与策略绑定的能力。",
+      "工具 API 原子验证能力、幂等键和请求摘要。",
+      "向运营团队透明说明并以监控和停止责任分阶段恢复。"
+    ],
+    "keyLessons": [
+      "审批 UI 不是安全边界，执行服务必须独立验证。",
+      "审批能力要绑定完整动作并防重放。",
+      "高风险 Agent 恢复需要技术证据与现场操作控制共同完成。"
+    ],
+    "interviewerPerspective": "观察候选人是否把事件从 UI bug 上升为服务端授权设计，并能连接竞态测试、幂等 API 与客户信任。",
+    "customerRiskPerspective": "审批绕过可能产生未经授权的财务动作和审计违规；透明遏制与可验证边界是恢复使用的前提。",
+    "remediation": [
+      "重构编排器使审批完成前不创建工具执行 promise。",
+      "部署服务端审批能力验证与一次性消费。",
+      "为高风险工具建立拒绝、超时、参数篡改和重放回归测试。"
+    ],
+    "verification": [
+      "拒绝或超时时确认工具 API 调用数为零。",
+      "修改任一参数时确认原审批能力被拒绝。",
+      "丢弃提交响应并确认重试只返回同一结果。",
+      "小范围生产启用期间确认监控、停止和审计流程有效。"
+    ],
+    "knowledgePoints": [
+      "agent approval boundaries",
+      "capability-based authorization",
+      "API idempotency and replay defense",
+      "field trust recovery"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

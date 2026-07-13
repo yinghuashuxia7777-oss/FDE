@@ -9,7 +9,10 @@ import {
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import type { ContentTextSource } from './validate-content';
+import type {
+  ContentBundleTextSources,
+  ContentTextSource,
+} from './validate-content';
 
 export const PROJECT_ROOT = resolve(import.meta.dirname, '..');
 
@@ -88,6 +91,57 @@ export function readContentSources(
     file: relative(resolve(root), file).split(sep).join('/'),
     text: read(file),
   }));
+}
+
+function readRequiredContentSource(
+  root: string,
+  file: string,
+): ContentTextSource {
+  const sources = readContentSources(root, file);
+  const source = sources[0];
+  if (sources.length !== 1 || source === undefined) {
+    throw new Error(`Required content file is missing: ${file}`);
+  }
+  return source;
+}
+
+function readOptionalContentSources(
+  root: string,
+  input: string,
+  options: { limit?: number } = {},
+): ContentTextSource[] {
+  const inputPath = resolveSafeProjectPath(root, input);
+  if (!existsSync(inputPath)) return [];
+  return readContentSources(root, input, options);
+}
+
+export function readContentBundleSources(
+  root: string,
+  options: { casesInput?: string; limit?: number } = {},
+): ContentBundleTextSources {
+  return {
+    ...(options.limit === undefined ? {} : { partial: true }),
+    config: readRequiredContentSource(
+      root,
+      'content/manifests/content-config.json',
+    ),
+    cases: readContentSources(
+      root,
+      options.casesInput ?? 'content/cases',
+      options.limit === undefined ? {} : { limit: options.limit },
+    ),
+    domains: readContentSources(root, 'content/domains'),
+    skills: readContentSources(root, 'content/skills'),
+    foundation: readOptionalContentSources(
+      root,
+      'content/foundation',
+      options.limit === undefined ? {} : { limit: options.limit },
+    ),
+    coverage: readRequiredContentSource(
+      root,
+      'content/coverage/coverage-plan.json',
+    ),
+  };
 }
 
 export interface ReportWriter {

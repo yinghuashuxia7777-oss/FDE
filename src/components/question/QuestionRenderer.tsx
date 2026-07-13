@@ -9,6 +9,7 @@ import type {
   NodeSubmission,
   OrderingCaseNode,
 } from '../../domain/cases/types';
+import { useI18n } from '../../i18n';
 import { Button } from '../ui';
 
 interface QuestionRendererProps {
@@ -71,6 +72,7 @@ function ChoiceQuestion({
   node,
   onSubmit,
 }: QuestionFormProps<ChoiceCaseNode>) {
+  const { t } = useI18n();
   const [selectedOptionId, setSelectedOptionId] = useState('');
   const complete = selectedOptionId.length > 0;
 
@@ -103,7 +105,7 @@ function ChoiceQuestion({
         </div>
       </fieldset>
       <Button type="submit" disabled={disabled || !complete}>
-        Submit decision
+        {t('training.question.submit')}
       </Button>
     </form>
   );
@@ -115,6 +117,7 @@ function MultipleChoiceQuestion({
   node,
   onSubmit,
 }: QuestionFormProps<MultipleChoiceCaseNode>) {
+  const { t } = useI18n();
   const [selectedOptionIds, setSelectedOptionIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -146,7 +149,9 @@ function MultipleChoiceQuestion({
     >
       <fieldset className="question-fieldset" disabled={disabled}>
         <legend>{groupLabel}</legend>
-        <p className="question-instruction">Select every supported option.</p>
+        <p className="question-instruction">
+          {t('training.question.selectAllSupported')}
+        </p>
         <div className="question-options">
           {node.options.map((option) => (
             <OptionLabel
@@ -162,7 +167,7 @@ function MultipleChoiceQuestion({
         </div>
       </fieldset>
       <Button type="submit" disabled={disabled || !complete}>
-        Submit decision
+        {t('training.question.submit')}
       </Button>
     </form>
   );
@@ -183,6 +188,7 @@ function OrderingQuestion({
   node,
   onSubmit,
 }: QuestionFormProps<OrderingCaseNode>) {
+  const { t } = useI18n();
   const [orderedOptionIds, setOrderedOptionIds] = useState(() =>
     node.options.map((option) => option.id),
   );
@@ -207,7 +213,10 @@ function OrderingQuestion({
     }
     setOrderedOptionIds((current) => moveItem(current, index, nextIndex));
     setAnnouncement(
-      `${option.label} moved to position ${String(nextIndex + 1)}.`,
+      t('training.question.movedAnnouncement', {
+        label: option.label,
+        position: nextIndex + 1,
+      }),
     );
   }
 
@@ -223,9 +232,12 @@ function OrderingQuestion({
       <fieldset className="question-fieldset" disabled={disabled}>
         <legend>{groupLabel}</legend>
         <p className="question-instruction">
-          Put the highest-information, lowest-risk action first.
+          {t('training.question.orderingInstruction')}
         </p>
-        <ol className="ordering-list" aria-label="Current action order">
+        <ol
+          className="ordering-list"
+          aria-label={t('training.question.currentOrder')}
+        >
           {orderedOptionIds.map((optionId, index) => {
             const option = optionById.get(optionId);
             if (option === undefined) return null;
@@ -237,20 +249,24 @@ function OrderingQuestion({
                 <span className="ordering-item__label">{option.label}</span>
                 <span className="ordering-item__actions">
                   <Button
-                    aria-label={`Move ${option.label} up`}
+                    aria-label={t('training.question.moveUpLabel', {
+                      label: option.label,
+                    })}
                     disabled={disabled || index === 0}
                     onClick={() => move(index, -1)}
                     variant="secondary"
                   >
-                    Move up
+                    {t('training.question.moveUp')}
                   </Button>
                   <Button
-                    aria-label={`Move ${option.label} down`}
+                    aria-label={t('training.question.moveDownLabel', {
+                      label: option.label,
+                    })}
                     disabled={disabled || index === orderedOptionIds.length - 1}
                     onClick={() => move(index, 1)}
                     variant="secondary"
                   >
-                    Move down
+                    {t('training.question.moveDown')}
                   </Button>
                 </span>
               </li>
@@ -262,7 +278,7 @@ function OrderingQuestion({
         </p>
       </fieldset>
       <Button type="submit" disabled={disabled || !complete}>
-        Submit decision
+        {t('training.question.submit')}
       </Button>
     </form>
   );
@@ -274,6 +290,7 @@ function MatchingQuestion({
   node,
   onSubmit,
 }: QuestionFormProps<MatchingCaseNode>) {
+  const { t } = useI18n();
   const leftIdSet = useMemo(
     () => new Set(Object.keys(node.answer.pairs)),
     [node.answer.pairs],
@@ -316,7 +333,11 @@ function MatchingQuestion({
         <div className="matching-list">
           {leftOptions.map((leftOption) => (
             <label className="matching-row" key={leftOption.id}>
-              <span>Match {leftOption.label}</span>
+              <span>
+                {t('training.question.matchLabel', {
+                  label: leftOption.label,
+                })}
+              </span>
               <select
                 value={tokenByRightId.get(pairs[leftOption.id] ?? '') ?? ''}
                 disabled={disabled}
@@ -328,7 +349,7 @@ function MatchingQuestion({
                   }));
                 }}
               >
-                <option value="">Choose a target</option>
+                <option value="">{t('training.question.chooseTarget')}</option>
                 {rightOptions.map((rightOption) => (
                   <option
                     key={rightOption.id}
@@ -343,12 +364,12 @@ function MatchingQuestion({
         </div>
         {duplicateTargets ? (
           <p className="question-error" role="alert">
-            Each target can be matched only once.
+            {t('training.question.duplicateTarget')}
           </p>
         ) : null}
       </fieldset>
       <Button type="submit" disabled={disabled || !complete}>
-        Submit decision
+        {t('training.question.submit')}
       </Button>
     </form>
   );
@@ -361,6 +382,7 @@ function EvidenceConclusionQuestion({
   onSubmit,
   showPrompt,
 }: QuestionFormProps<EvidenceConclusionCaseNode> & { showPrompt: boolean }) {
+  const { t } = useI18n();
   const [conclusionId, setConclusionId] = useState('');
   const [evidenceIds, setEvidenceIds] = useState<Set<string>>(() => new Set());
   const orderedEvidenceIds = node.evidence
@@ -392,7 +414,7 @@ function EvidenceConclusionQuestion({
     >
       {showPrompt ? <p className="question-prompt">{groupLabel}</p> : null}
       <fieldset className="question-fieldset" disabled={disabled}>
-        <legend>Conclusion</legend>
+        <legend>{t('training.question.conclusion')}</legend>
         <div className="question-options">
           {node.options.map((option) => (
             <OptionLabel
@@ -408,7 +430,7 @@ function EvidenceConclusionQuestion({
         </div>
       </fieldset>
       <fieldset className="question-fieldset" disabled={disabled}>
-        <legend>Supporting evidence</legend>
+        <legend>{t('training.question.supportingEvidence')}</legend>
         <div className="question-options">
           {node.evidence.map((evidence) => (
             <OptionLabel
@@ -424,17 +446,19 @@ function EvidenceConclusionQuestion({
         </div>
       </fieldset>
       <Button type="submit" disabled={disabled || !complete}>
-        Submit decision
+        {t('training.question.submit')}
       </Button>
     </form>
   );
 }
 
 function UnsupportedQuestion() {
+  const { t } = useI18n();
+
   return (
     <div className="question-error" role="alert">
-      <strong>This question type is not supported.</strong>
-      <p>Return to the case library and choose another case.</p>
+      <strong>{t('training.question.unsupportedTitle')}</strong>
+      <p>{t('training.question.unsupportedDescription')}</p>
     </div>
   );
 }
@@ -445,8 +469,11 @@ export function QuestionRenderer({
   onSubmit,
   promptPlacement = 'renderer',
 }: QuestionRendererProps) {
+  const { t } = useI18n();
   const groupLabel =
-    promptPlacement === 'renderer' ? node.prompt : 'Response options';
+    promptPlacement === 'renderer'
+      ? node.prompt
+      : t('training.question.responseOptions');
 
   switch (node.type) {
     case 'single-choice':

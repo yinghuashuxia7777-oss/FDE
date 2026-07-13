@@ -1,943 +1,84 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://fde-arena.local/schemas/fde-case.schema.json",
-  "title": "FDE Arena Case",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-        "title": { "type": "string", "minLength": 1 },
-        "summary": { "type": "string", "minLength": 1 },
-        "level": {
-          "type": "string",
-          "enum": ["beginner", "intermediate", "advanced", "expert"]
-        },
-        "estimatedMinutes": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        },
-        "domains": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "skills": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "lifecycleStages": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "technicalLayers": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "environments": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "riskTypes": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
         "behaviorPatterns": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "scenario": {
-          "type": "object",
-          "properties": {
-            "customerProfile": { "type": "string", "minLength": 1 },
-            "background": { "type": "string", "minLength": 1 },
-            "initialIncident": { "type": "string", "minLength": 1 },
-            "constraints": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "confirmedFacts": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            }
-          },
-          "required": [
-            "customerProfile",
-            "background",
-            "initialIncident",
-            "constraints",
-            "confirmedFacts"
-          ],
-          "additionalProperties": false
-        },
-        "startNodeId": { "type": "string", "minLength": 1 },
-        "nodes": {
-          "minItems": 1,
-          "type": "array",
           "items": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "single-choice",
-                      "true-false",
-                      "log-analysis",
-                      "command-choice",
-                      "diff-review",
-                      "configuration-review",
-                      "architecture-tradeoff",
-                      "customer-response"
-                    ]
-                  },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "correctOptionId": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["correctOptionId"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "multiple-choice" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "correctOptionIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["correctOptionIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "ordering" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "orderedOptionIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      },
-                      "priorityOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      },
-                      "hazardousOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["orderedOptionIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "matching" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "pairs": {
-                        "type": "object",
-                        "propertyNames": { "type": "string", "minLength": 1 },
-                        "additionalProperties": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      }
-                    },
-                    "required": ["pairs"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "evidence-conclusion" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "conclusionId": { "type": "string", "minLength": 1 },
-                      "evidenceIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["conclusionId", "evidenceIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              }
-            ]
-          }
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
         },
         "debrief": {
-          "type": "object",
+          "additionalProperties": false,
           "properties": {
-            "summary": { "type": "string", "minLength": 1 },
-            "rootCause": { "type": "string", "minLength": 1 },
             "correctApproach": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
               "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+              "type": "array"
+            },
+            "customerRiskPerspective": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "interviewerPerspective": {
+              "minLength": 1,
+              "type": "string"
             },
             "keyLessons": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
               "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "interviewerPerspective": { "type": "string", "minLength": 1 },
-            "customerRiskPerspective": { "type": "string", "minLength": 1 },
-            "remediation": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "verification": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+              "type": "array"
             },
             "knowledgePoints": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
               "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+              "type": "array"
             },
             "recommendedCaseIds": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
               "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+              "type": "array"
+            },
+            "remediation": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "rootCause": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "summary": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "verification": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
             }
           },
           "required": [
@@ -951,1062 +92,1541 @@
             "verification",
             "knowledgePoints"
           ],
-          "additionalProperties": false
-        },
-        "status": {
-          "type": "string",
-          "enum": ["planned", "draft", "deprecated"]
-        },
-        "metadata": {
-          "type": "object",
-          "properties": {
-            "version": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
-            },
-            "sourceType": { "type": "string", "minLength": 1 },
-            "sourceReferences": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "createdAt": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-            },
-            "reviewedAt": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-            },
-            "applicableVersions": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "author": { "type": "string", "minLength": 1 },
-            "reviewer": { "type": "string", "minLength": 1 }
-          },
-          "required": ["version", "sourceType", "createdAt", "author"],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "id",
-        "slug",
-        "title",
-        "summary",
-        "level",
-        "estimatedMinutes",
-        "domains",
-        "skills",
-        "lifecycleStages",
-        "technicalLayers",
-        "environments",
-        "riskTypes",
-        "behaviorPatterns",
-        "scenario",
-        "startNodeId",
-        "nodes",
-        "debrief",
-        "status",
-        "metadata"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-        "title": { "type": "string", "minLength": 1 },
-        "summary": { "type": "string", "minLength": 1 },
-        "level": {
-          "type": "string",
-          "enum": ["beginner", "intermediate", "advanced", "expert"]
-        },
-        "estimatedMinutes": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
+          "type": "object"
         },
         "domains": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
           "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "skills": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "lifecycleStages": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "technicalLayers": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "type": "array"
         },
         "environments": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "riskTypes": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "behaviorPatterns": {
-          "minItems": 1,
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "scenario": {
-          "type": "object",
-          "properties": {
-            "customerProfile": { "type": "string", "minLength": 1 },
-            "background": { "type": "string", "minLength": 1 },
-            "initialIncident": { "type": "string", "minLength": 1 },
-            "constraints": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "confirmedFacts": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            }
-          },
-          "required": [
-            "customerProfile",
-            "background",
-            "initialIncident",
-            "constraints",
-            "confirmedFacts"
-          ],
-          "additionalProperties": false
-        },
-        "startNodeId": { "type": "string", "minLength": 1 },
-        "nodes": {
-          "minItems": 1,
-          "type": "array",
           "items": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "single-choice",
-                      "true-false",
-                      "log-analysis",
-                      "command-choice",
-                      "diff-review",
-                      "configuration-review",
-                      "architecture-tradeoff",
-                      "customer-response"
-                    ]
-                  },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "correctOptionId": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["correctOptionId"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "multiple-choice" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "correctOptionIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["correctOptionIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "ordering" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "orderedOptionIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      },
-                      "priorityOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      },
-                      "hazardousOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["orderedOptionIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "matching" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "pairs": {
-                        "type": "object",
-                        "propertyNames": { "type": "string", "minLength": 1 },
-                        "additionalProperties": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      }
-                    },
-                    "required": ["pairs"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": { "type": "string", "minLength": 1 },
-                  "title": { "type": "string", "minLength": 1 },
-                  "prompt": { "type": "string", "minLength": 1 },
-                  "skillWeights": {
-                    "type": "object",
-                    "propertyNames": { "type": "string", "minLength": 1 },
-                    "additionalProperties": {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    "minProperties": 1
-                  },
-                  "evidence": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "text",
-                            "log",
-                            "terminal",
-                            "http",
-                            "json",
-                            "diff",
-                            "config",
-                            "metric",
-                            "diagram",
-                            "customer-message"
-                          ]
-                        },
-                        "title": { "type": "string", "minLength": 1 },
-                        "content": { "type": "string", "minLength": 1 },
-                        "language": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "type", "content"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "options": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "minLength": 1 },
-                        "label": { "type": "string", "minLength": 1 },
-                        "explanation": { "type": "string", "minLength": 1 },
-                        "errorType": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["id", "label", "explanation"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "feedback": {
-                    "type": "object",
-                    "properties": {
-                      "firstWrong": { "type": "string", "minLength": 1 },
-                      "secondWrong": { "type": "string", "minLength": 1 },
-                      "revealedAnswer": { "type": "string", "minLength": 1 }
-                    },
-                    "required": ["firstWrong", "secondWrong", "revealedAnswer"],
-                    "additionalProperties": false
-                  },
-                  "scoring": {
-                    "type": "object",
-                    "properties": {
-                      "firstTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "secondTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "thirdTry": {
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 100
-                      },
-                      "weight": { "type": "number", "exclusiveMinimum": 0 },
-                      "criticalErrorOptionIds": {
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["firstTry", "secondTry", "thirdTry", "weight"],
-                    "additionalProperties": false
-                  },
-                  "consequences": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "optionId": { "type": "string", "minLength": 1 },
-                        "timeDelta": { "type": "number" },
-                        "costDelta": { "type": "number" },
-                        "trustDelta": { "type": "number" },
-                        "riskDelta": { "type": "number" },
-                        "message": { "type": "string", "minLength": 1 }
-                      },
-                      "required": ["optionId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "branches": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": { "type": "string", "minLength": 1 },
-                        "nextNodeId": {
-                          "anyOf": [
-                            { "type": "string", "minLength": 1 },
-                            { "type": "null" }
-                          ]
-                        }
-                      },
-                      "required": ["key", "nextNodeId"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "type": { "type": "string", "const": "evidence-conclusion" },
-                  "answer": {
-                    "type": "object",
-                    "properties": {
-                      "conclusionId": { "type": "string", "minLength": 1 },
-                      "evidenceIds": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": { "type": "string", "minLength": 1 },
-                        "uniqueItems": true
-                      }
-                    },
-                    "required": ["conclusionId", "evidenceIds"],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "id",
-                  "prompt",
-                  "skillWeights",
-                  "evidence",
-                  "options",
-                  "feedback",
-                  "scoring",
-                  "branches",
-                  "type",
-                  "answer"
-                ],
-                "additionalProperties": false
-              }
-            ]
-          }
-        },
-        "debrief": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string", "minLength": 1 },
-            "rootCause": { "type": "string", "minLength": 1 },
-            "correctApproach": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "keyLessons": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "interviewerPerspective": { "type": "string", "minLength": 1 },
-            "customerRiskPerspective": { "type": "string", "minLength": 1 },
-            "remediation": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "verification": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "knowledgePoints": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            },
-            "recommendedCaseIds": {
-              "minItems": 1,
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
-            }
+            "minLength": 1,
+            "type": "string"
           },
-          "required": [
-            "summary",
-            "rootCause",
-            "correctApproach",
-            "keyLessons",
-            "interviewerPerspective",
-            "customerRiskPerspective",
-            "remediation",
-            "verification",
-            "knowledgePoints"
-          ],
-          "additionalProperties": false
+          "minItems": 1,
+          "type": "array"
         },
-        "status": { "type": "string", "enum": ["reviewed", "published"] },
+        "estimatedMinutes": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "beginner",
+            "intermediate",
+            "advanced",
+            "expert"
+          ],
+          "type": "string"
+        },
+        "lifecycleStages": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
         "metadata": {
-          "type": "object",
+          "additionalProperties": false,
           "properties": {
-            "version": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
+            "applicableVersions": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
             },
-            "sourceType": { "type": "string", "minLength": 1 },
-            "sourceReferences": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+            "author": {
+              "minLength": 1,
+              "type": "string"
             },
             "createdAt": {
-              "type": "string",
               "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
             },
             "reviewedAt": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              "type": "null"
             },
-            "applicableVersions": {
-              "type": "array",
-              "items": { "type": "string", "minLength": 1 }
+            "reviewer": {
+              "type": "null"
             },
-            "author": { "type": "string", "minLength": 1 },
-            "reviewer": { "type": "string", "minLength": 1 }
+            "sourceReferences": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "sourceType": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "version": {
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "type": "integer"
+            }
           },
           "required": [
             "version",
             "sourceType",
             "createdAt",
             "reviewedAt",
+            "applicableVersions",
             "author",
             "reviewer"
           ],
-          "additionalProperties": false
+          "type": "object"
+        },
+        "nodes": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "correctOptionId": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "correctOptionId"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "single-choice",
+                      "true-false",
+                      "log-analysis",
+                      "command-choice",
+                      "diff-review",
+                      "configuration-review",
+                      "architecture-tradeoff",
+                      "customer-response"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "correctOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "correctOptionIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "multiple-choice",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "hazardousOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "orderedOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "priorityOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "orderedOptionIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "ordering",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pairs": {
+                        "additionalProperties": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "propertyNames": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "pairs"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "matching",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "conclusionId": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "evidenceIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "conclusionId",
+                      "evidenceIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "evidence-conclusion",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "riskTypes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "scenario": {
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "confirmedFacts": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "constraints": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "customerProfile": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "initialIncident": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "customerProfile",
+            "background",
+            "initialIncident",
+            "constraints",
+            "confirmedFacts"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "skills": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "slug": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "startNodeId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "planned",
+            "draft"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "technicalLayers": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "type": "string"
         }
       },
       "required": [
+        "schemaVersion",
         "id",
         "slug",
         "title",
@@ -2027,7 +1647,1659 @@
         "status",
         "metadata"
       ],
-      "additionalProperties": false
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "behaviorPatterns": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "debrief": {
+          "additionalProperties": false,
+          "properties": {
+            "correctApproach": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "customerRiskPerspective": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "interviewerPerspective": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "keyLessons": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "knowledgePoints": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "recommendedCaseIds": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "remediation": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "rootCause": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "summary": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "verification": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "summary",
+            "rootCause",
+            "correctApproach",
+            "keyLessons",
+            "interviewerPerspective",
+            "customerRiskPerspective",
+            "remediation",
+            "verification",
+            "knowledgePoints"
+          ],
+          "type": "object"
+        },
+        "domains": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "environments": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "estimatedMinutes": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "beginner",
+            "intermediate",
+            "advanced",
+            "expert"
+          ],
+          "type": "string"
+        },
+        "lifecycleStages": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": false,
+          "properties": {
+            "applicableVersions": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "author": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "createdAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "reviewedAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            "reviewer": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "sourceReferences": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "sourceType": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "version": {
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "version",
+            "sourceType",
+            "createdAt",
+            "reviewedAt",
+            "applicableVersions",
+            "author",
+            "reviewer"
+          ],
+          "type": "object"
+        },
+        "nodes": {
+          "items": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "correctOptionId": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "correctOptionId"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "single-choice",
+                      "true-false",
+                      "log-analysis",
+                      "command-choice",
+                      "diff-review",
+                      "configuration-review",
+                      "architecture-tradeoff",
+                      "customer-response"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "correctOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "correctOptionIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "multiple-choice",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "hazardousOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "orderedOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "priorityOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "orderedOptionIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "ordering",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pairs": {
+                        "additionalProperties": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "propertyNames": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "pairs"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "matching",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "answer": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "conclusionId": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "evidenceIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "conclusionId",
+                      "evidenceIds"
+                    ],
+                    "type": "object"
+                  },
+                  "branches": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "nextNodeId": {
+                          "anyOf": [
+                            {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "nextNodeId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "consequences": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "costDelta": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "optionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "riskDelta": {
+                          "type": "number"
+                        },
+                        "timeDelta": {
+                          "type": "number"
+                        },
+                        "trustDelta": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "optionId"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "evidence": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "language": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "title": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text",
+                            "log",
+                            "terminal",
+                            "http",
+                            "json",
+                            "diff",
+                            "config",
+                            "metric",
+                            "diagram",
+                            "customer-message"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "content"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "feedback": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "revealedAnswer": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "secondWrong": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "firstWrong",
+                      "secondWrong",
+                      "revealedAnswer"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "options": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errorType": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "label": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label",
+                        "explanation"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scoring": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "criticalErrorOptionIds": {
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "firstTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "secondTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "thirdTry": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "weight": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "firstTry",
+                      "secondTry",
+                      "thirdTry",
+                      "weight"
+                    ],
+                    "type": "object"
+                  },
+                  "skillWeights": {
+                    "additionalProperties": {
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "minProperties": 1,
+                    "propertyNames": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "evidence-conclusion",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "prompt",
+                  "skillWeights",
+                  "evidence",
+                  "options",
+                  "feedback",
+                  "scoring",
+                  "branches",
+                  "type",
+                  "answer"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "riskTypes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "scenario": {
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "confirmedFacts": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "constraints": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "customerProfile": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "initialIncident": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "customerProfile",
+            "background",
+            "initialIncident",
+            "constraints",
+            "confirmedFacts"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "skills": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "slug": {
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "startNodeId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "reviewed",
+            "published",
+            "deprecated"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "technicalLayers": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "slug",
+        "title",
+        "summary",
+        "level",
+        "estimatedMinutes",
+        "domains",
+        "skills",
+        "lifecycleStages",
+        "technicalLayers",
+        "environments",
+        "riskTypes",
+        "behaviorPatterns",
+        "scenario",
+        "startNodeId",
+        "nodes",
+        "debrief",
+        "status",
+        "metadata"
+      ],
+      "type": "object"
     }
-  ]
+  ],
+  "title": "FDE Arena Case"
 }

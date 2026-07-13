@@ -1,7 +1,7 @@
 export type CaseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
-export type UnreviewedCaseStatus = 'planned' | 'draft' | 'deprecated';
-export type ReviewedCaseStatus = 'reviewed' | 'published';
+export type UnreviewedCaseStatus = 'planned' | 'draft';
+export type ReviewedCaseStatus = 'reviewed' | 'published' | 'deprecated';
 export type CaseStatus = UnreviewedCaseStatus | ReviewedCaseStatus;
 
 export type ChoiceNodeType =
@@ -182,10 +182,15 @@ export interface CaseMetadata {
   sourceType: string;
   sourceReferences?: string[] | undefined;
   createdAt: string;
-  reviewedAt?: string | undefined;
-  applicableVersions?: string[] | undefined;
+  reviewedAt: string | null;
+  applicableVersions: string[];
   author: string;
-  reviewer?: string | undefined;
+  reviewer: string | null;
+}
+
+export interface UnreviewedCaseMetadata extends CaseMetadata {
+  reviewedAt: null;
+  reviewer: null;
 }
 
 export interface ReviewedCaseMetadata extends CaseMetadata {
@@ -194,6 +199,7 @@ export interface ReviewedCaseMetadata extends CaseMetadata {
 }
 
 interface SharedFdeCase {
+  schemaVersion: 1;
   id: string;
   slug: string;
   title: string;
@@ -215,7 +221,7 @@ interface SharedFdeCase {
 
 export interface UnreviewedFdeCase extends SharedFdeCase {
   status: UnreviewedCaseStatus;
-  metadata: CaseMetadata;
+  metadata: UnreviewedCaseMetadata;
 }
 
 export interface ReviewedFdeCase extends SharedFdeCase {

@@ -249,12 +249,17 @@ export const CaseMetadataSchema = z
     sourceType: NonEmptyStringSchema,
     sourceReferences: z.array(NonEmptyStringSchema).optional(),
     createdAt: z.iso.datetime(),
-    reviewedAt: z.iso.datetime().optional(),
-    applicableVersions: z.array(NonEmptyStringSchema).optional(),
+    reviewedAt: z.iso.datetime().nullable(),
+    applicableVersions: z.array(NonEmptyStringSchema),
     author: NonEmptyStringSchema,
-    reviewer: NonEmptyStringSchema.optional(),
+    reviewer: NonEmptyStringSchema.nullable(),
   })
   .strict();
+
+export const UnreviewedCaseMetadataSchema = CaseMetadataSchema.extend({
+  reviewedAt: z.null(),
+  reviewer: z.null(),
+}).strict();
 
 export const ReviewedCaseMetadataSchema = CaseMetadataSchema.extend({
   reviewedAt: z.iso.datetime(),
@@ -262,6 +267,7 @@ export const ReviewedCaseMetadataSchema = CaseMetadataSchema.extend({
 }).strict();
 
 const SharedCaseShape = {
+  schemaVersion: z.literal(1),
   id: NonEmptyStringSchema,
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   title: NonEmptyStringSchema,
@@ -292,15 +298,15 @@ const SharedCaseShape = {
 const UnreviewedFdeCaseSchema = z
   .object({
     ...SharedCaseShape,
-    status: z.enum(['planned', 'draft', 'deprecated']),
-    metadata: CaseMetadataSchema,
+    status: z.enum(['planned', 'draft']),
+    metadata: UnreviewedCaseMetadataSchema,
   })
   .strict();
 
 const ReviewedFdeCaseSchema = z
   .object({
     ...SharedCaseShape,
-    status: z.enum(['reviewed', 'published']),
+    status: z.enum(['reviewed', 'published', 'deprecated']),
     metadata: ReviewedCaseMetadataSchema,
   })
   .strict();
