@@ -1,0 +1,1168 @@
+{
+  "schemaVersion": 1,
+  "rubricSetVersion": "0.2.0",
+  "skillCatalogVersion": "0.2.0",
+  "status": "draft",
+  "rubrics": [
+    {
+      "schemaVersion": 1,
+      "id": "rubric.eng.python-engineering",
+      "skillId": "eng.python-engineering",
+      "version": 1,
+      "status": "draft",
+      "title": "Python Engineering MVP rubric",
+      "evidenceTypes": ["code-review"],
+      "criteria": [
+        {
+          "criterionId": "criterion.eng.python-engineering.decision",
+          "description": "Produces a bounded code-review supported by the supplied evidence.",
+          "evidenceTypes": ["code-review"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.eng.runtime-debugging",
+      "skillId": "eng.runtime-debugging",
+      "version": 1,
+      "status": "draft",
+      "title": "Runtime Debugging MVP rubric",
+      "evidenceTypes": ["diagnosis"],
+      "criteria": [
+        {
+          "criterionId": "criterion.eng.runtime-debugging.decision",
+          "description": "Produces a bounded diagnosis supported by the supplied evidence.",
+          "evidenceTypes": ["diagnosis"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.eng.automated-testing",
+      "skillId": "eng.automated-testing",
+      "version": 1,
+      "status": "draft",
+      "title": "Automated Testing MVP rubric",
+      "evidenceTypes": ["test-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.eng.automated-testing.decision",
+          "description": "Produces a bounded test-plan supported by the supplied evidence.",
+          "evidenceTypes": ["test-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.software.api-design",
+      "skillId": "software.api-design",
+      "version": 1,
+      "status": "draft",
+      "title": "API Design MVP rubric",
+      "evidenceTypes": ["api-contract"],
+      "criteria": [
+        {
+          "criterionId": "criterion.software.api-design.decision",
+          "description": "Produces a bounded api-contract supported by the supplied evidence.",
+          "evidenceTypes": ["api-contract"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.software.backend-architecture",
+      "skillId": "software.backend-architecture",
+      "version": 1,
+      "status": "draft",
+      "title": "Backend Architecture MVP rubric",
+      "evidenceTypes": ["architecture-decision"],
+      "criteria": [
+        {
+          "criterionId": "criterion.software.backend-architecture.decision",
+          "description": "Produces a bounded architecture-decision supported by the supplied evidence.",
+          "evidenceTypes": ["architecture-decision"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.software.distributed-reliability",
+      "skillId": "software.distributed-reliability",
+      "version": 1,
+      "status": "draft",
+      "title": "Distributed Reliability MVP rubric",
+      "evidenceTypes": ["reliability-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.software.distributed-reliability.decision",
+          "description": "Produces a bounded reliability-plan supported by the supplied evidence.",
+          "evidenceTypes": ["reliability-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.llm-application",
+      "skillId": "ai.llm-application",
+      "version": 1,
+      "status": "draft",
+      "title": "LLM Application Engineering MVP rubric",
+      "evidenceTypes": ["feature-decision"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.llm-application.decision",
+          "description": "Produces a bounded feature-decision supported by the supplied evidence.",
+          "evidenceTypes": ["feature-decision"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.prompt-engineering",
+      "skillId": "ai.prompt-engineering",
+      "version": 1,
+      "status": "draft",
+      "title": "Prompt Engineering MVP rubric",
+      "evidenceTypes": ["prompt-decision"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.prompt-engineering.decision",
+          "description": "Produces a bounded prompt-decision supported by the supplied evidence.",
+          "evidenceTypes": ["prompt-decision"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.structured-output",
+      "skillId": "ai.structured-output",
+      "version": 1,
+      "status": "draft",
+      "title": "Structured Output MVP rubric",
+      "evidenceTypes": ["schema-contract"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.structured-output.decision",
+          "description": "Produces a bounded schema-contract supported by the supplied evidence.",
+          "evidenceTypes": ["schema-contract"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.model-selection",
+      "skillId": "ai.model-selection",
+      "version": 1,
+      "status": "draft",
+      "title": "Model Selection MVP rubric",
+      "evidenceTypes": ["model-adr"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.model-selection.decision",
+          "description": "Produces a bounded model-adr supported by the supplied evidence.",
+          "evidenceTypes": ["model-adr"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.llm-evaluation",
+      "skillId": "ai.llm-evaluation",
+      "version": 1,
+      "status": "draft",
+      "title": "LLM Evaluation MVP rubric",
+      "evidenceTypes": ["evaluation-report"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.llm-evaluation.decision",
+          "description": "Produces a bounded evaluation-report supported by the supplied evidence.",
+          "evidenceTypes": ["evaluation-report"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.retrieval",
+      "skillId": "rag.retrieval",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Retrieval MVP rubric",
+      "evidenceTypes": ["retrieval-report"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.retrieval.decision",
+          "description": "Produces a bounded retrieval-report supported by the supplied evidence.",
+          "evidenceTypes": ["retrieval-report"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.chunking",
+      "skillId": "rag.chunking",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Chunking MVP rubric",
+      "evidenceTypes": ["chunking-decision"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.chunking.decision",
+          "description": "Produces a bounded chunking-decision supported by the supplied evidence.",
+          "evidenceTypes": ["chunking-decision"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.grounding",
+      "skillId": "rag.grounding",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Grounding MVP rubric",
+      "evidenceTypes": ["grounding-report"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.grounding.decision",
+          "description": "Produces a bounded grounding-report supported by the supplied evidence.",
+          "evidenceTypes": ["grounding-report"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.evaluation",
+      "skillId": "rag.evaluation",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Evaluation MVP rubric",
+      "evidenceTypes": ["rag-evaluation"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.evaluation.decision",
+          "description": "Produces a bounded rag-evaluation supported by the supplied evidence.",
+          "evidenceTypes": ["rag-evaluation"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.tool-calling",
+      "skillId": "agent.tool-calling",
+      "version": 1,
+      "status": "draft",
+      "title": "Tool Calling MVP rubric",
+      "evidenceTypes": ["tool-decision"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.tool-calling.decision",
+          "description": "Produces a bounded tool-decision supported by the supplied evidence.",
+          "evidenceTypes": ["tool-decision"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.tool-contracts",
+      "skillId": "agent.tool-contracts",
+      "version": 1,
+      "status": "draft",
+      "title": "Tool Contract MVP rubric",
+      "evidenceTypes": ["tool-contract"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.tool-contracts.decision",
+          "description": "Produces a bounded tool-contract supported by the supplied evidence.",
+          "evidenceTypes": ["tool-contract"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.workflow-design",
+      "skillId": "agent.workflow-design",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent Workflow Design MVP rubric",
+      "evidenceTypes": ["workflow-design"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.workflow-design.decision",
+          "description": "Produces a bounded workflow-design supported by the supplied evidence.",
+          "evidenceTypes": ["workflow-design"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.memory-lifecycle",
+      "skillId": "agent.memory-lifecycle",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent Memory Lifecycle MVP rubric",
+      "evidenceTypes": ["memory-policy"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.memory-lifecycle.decision",
+          "description": "Produces a bounded memory-policy supported by the supplied evidence.",
+          "evidenceTypes": ["memory-policy"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.evaluation",
+      "skillId": "agent.evaluation",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent Evaluation MVP rubric",
+      "evidenceTypes": ["agent-evaluation"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.evaluation.decision",
+          "description": "Produces a bounded agent-evaluation supported by the supplied evidence.",
+          "evidenceTypes": ["agent-evaluation"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.safety",
+      "skillId": "agent.safety",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent Safety MVP rubric",
+      "evidenceTypes": ["safety-review"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.safety.decision",
+          "description": "Produces a bounded safety-review supported by the supplied evidence.",
+          "evidenceTypes": ["safety-review"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.containerization",
+      "skillId": "prod.containerization",
+      "version": 1,
+      "status": "draft",
+      "title": "Docker & Containerization MVP rubric",
+      "evidenceTypes": ["container-review"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.containerization.decision",
+          "description": "Produces a bounded container-review supported by the supplied evidence.",
+          "evidenceTypes": ["container-review"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.deployment",
+      "skillId": "prod.deployment",
+      "version": 1,
+      "status": "draft",
+      "title": "Deployment Engineering MVP rubric",
+      "evidenceTypes": ["release-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.deployment.decision",
+          "description": "Produces a bounded release-plan supported by the supplied evidence.",
+          "evidenceTypes": ["release-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.observability",
+      "skillId": "prod.observability",
+      "version": 1,
+      "status": "draft",
+      "title": "Observability MVP rubric",
+      "evidenceTypes": ["observability-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.observability.decision",
+          "description": "Produces a bounded observability-plan supported by the supplied evidence.",
+          "evidenceTypes": ["observability-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.reliability",
+      "skillId": "prod.reliability",
+      "version": 1,
+      "status": "draft",
+      "title": "Reliability Engineering MVP rubric",
+      "evidenceTypes": ["reliability-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.reliability.decision",
+          "description": "Produces a bounded reliability-plan supported by the supplied evidence.",
+          "evidenceTypes": ["reliability-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.security",
+      "skillId": "prod.security",
+      "version": 1,
+      "status": "draft",
+      "title": "Security Engineering MVP rubric",
+      "evidenceTypes": ["security-review"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.security.decision",
+          "description": "Produces a bounded security-review supported by the supplied evidence.",
+          "evidenceTypes": ["security-review"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.cost-optimization",
+      "skillId": "prod.cost-optimization",
+      "version": 1,
+      "status": "draft",
+      "title": "AI Cost Optimization MVP rubric",
+      "evidenceTypes": ["cost-analysis"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.cost-optimization.decision",
+          "description": "Produces a bounded cost-analysis supported by the supplied evidence.",
+          "evidenceTypes": ["cost-analysis"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.software.system-design",
+      "skillId": "software.system-design",
+      "version": 1,
+      "status": "draft",
+      "title": "System Design MVP rubric",
+      "evidenceTypes": ["system-design"],
+      "criteria": [
+        {
+          "criterionId": "criterion.software.system-design.decision",
+          "description": "Produces a bounded system-design supported by the supplied evidence.",
+          "evidenceTypes": ["system-design"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.software.data-design",
+      "skillId": "software.data-design",
+      "version": 1,
+      "status": "draft",
+      "title": "Data & State Design MVP rubric",
+      "evidenceTypes": ["data-design"],
+      "criteria": [
+        {
+          "criterionId": "criterion.software.data-design.decision",
+          "description": "Produces a bounded data-design supported by the supplied evidence.",
+          "evidenceTypes": ["data-design"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.ai.context-engineering",
+      "skillId": "ai.context-engineering",
+      "version": 1,
+      "status": "draft",
+      "title": "Context Engineering MVP rubric",
+      "evidenceTypes": ["context-policy"],
+      "criteria": [
+        {
+          "criterionId": "criterion.ai.context-engineering.decision",
+          "description": "Produces a bounded context-policy supported by the supplied evidence.",
+          "evidenceTypes": ["context-policy"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.permission-filtering",
+      "skillId": "rag.permission-filtering",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Permission Filtering MVP rubric",
+      "evidenceTypes": ["permission-test"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.permission-filtering.decision",
+          "description": "Produces a bounded permission-test supported by the supplied evidence.",
+          "evidenceTypes": ["permission-test"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.rag.freshness",
+      "skillId": "rag.freshness",
+      "version": 1,
+      "status": "draft",
+      "title": "RAG Freshness & Versioning MVP rubric",
+      "evidenceTypes": ["freshness-plan"],
+      "criteria": [
+        {
+          "criterionId": "criterion.rag.freshness.decision",
+          "description": "Produces a bounded freshness-plan supported by the supplied evidence.",
+          "evidenceTypes": ["freshness-plan"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.state-management",
+      "skillId": "agent.state-management",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent State Management MVP rubric",
+      "evidenceTypes": ["state-model"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.state-management.decision",
+          "description": "Produces a bounded state-model supported by the supplied evidence.",
+          "evidenceTypes": ["state-model"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.agent.approval-design",
+      "skillId": "agent.approval-design",
+      "version": 1,
+      "status": "draft",
+      "title": "Agent Approval Design MVP rubric",
+      "evidenceTypes": ["approval-design"],
+      "criteria": [
+        {
+          "criterionId": "criterion.agent.approval-design.decision",
+          "description": "Produces a bounded approval-design supported by the supplied evidence.",
+          "evidenceTypes": ["approval-design"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.cloud-architecture",
+      "skillId": "prod.cloud-architecture",
+      "version": 1,
+      "status": "draft",
+      "title": "Cloud Architecture MVP rubric",
+      "evidenceTypes": ["cloud-architecture"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.cloud-architecture.decision",
+          "description": "Produces a bounded cloud-architecture supported by the supplied evidence.",
+          "evidenceTypes": ["cloud-architecture"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.prod.release-verification",
+      "skillId": "prod.release-verification",
+      "version": 1,
+      "status": "draft",
+      "title": "Release Verification MVP rubric",
+      "evidenceTypes": ["release-evidence"],
+      "criteria": [
+        {
+          "criterionId": "criterion.prod.release-verification.decision",
+          "description": "Produces a bounded release-evidence supported by the supplied evidence.",
+          "evidenceTypes": ["release-evidence"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.fde.customer-discovery",
+      "skillId": "fde.customer-discovery",
+      "version": 1,
+      "status": "draft",
+      "title": "Customer Discovery MVP rubric",
+      "evidenceTypes": ["discovery-brief"],
+      "criteria": [
+        {
+          "criterionId": "criterion.fde.customer-discovery.decision",
+          "description": "Produces a bounded discovery-brief supported by the supplied evidence.",
+          "evidenceTypes": ["discovery-brief"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.fde.requirement-discovery",
+      "skillId": "fde.requirement-discovery",
+      "version": 1,
+      "status": "draft",
+      "title": "Requirement Discovery MVP rubric",
+      "evidenceTypes": ["requirements-brief"],
+      "criteria": [
+        {
+          "criterionId": "criterion.fde.requirement-discovery.decision",
+          "description": "Produces a bounded requirements-brief supported by the supplied evidence.",
+          "evidenceTypes": ["requirements-brief"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.fde.architecture-proposal",
+      "skillId": "fde.architecture-proposal",
+      "version": 1,
+      "status": "draft",
+      "title": "Architecture Proposal MVP rubric",
+      "evidenceTypes": ["architecture-proposal"],
+      "criteria": [
+        {
+          "criterionId": "criterion.fde.architecture-proposal.decision",
+          "description": "Produces a bounded architecture-proposal supported by the supplied evidence.",
+          "evidenceTypes": ["architecture-proposal"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rubric.fde.customer-solution-design",
+      "skillId": "fde.customer-solution-design",
+      "version": 1,
+      "status": "draft",
+      "title": "Customer Solution Design MVP rubric",
+      "evidenceTypes": ["solution-brief"],
+      "criteria": [
+        {
+          "criterionId": "criterion.fde.customer-solution-design.decision",
+          "description": "Produces a bounded solution-brief supported by the supplied evidence.",
+          "evidenceTypes": ["solution-brief"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-18T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena MVP",
+        "reviewer": null
+      }
+    }
+  ]
+}

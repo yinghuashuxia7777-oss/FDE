@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "fine-tuning-inference",
+  "label": "Model fine-tuning, datasets & inference deployment",
+  "description": "Dataset design, model adaptation, evaluation, serving, and inference operations.",
+  "status": "active"
+}

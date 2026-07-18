@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "security.governance",
+  "domainId": "security-governance",
+  "label": "Security and governance",
+  "description": "Apply security, privacy, policy, and compliance controls.",
+  "status": "active"
+}

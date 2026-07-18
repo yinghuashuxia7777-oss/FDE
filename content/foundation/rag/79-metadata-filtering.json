@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.metadata-filtering",
+  "type": "foundation",
+  "title": "元数据过滤：在召回前强制范围与权限",
+  "domain": "rag",
+  "track": "ai-basics",
+  "skills": ["rag.search", "security.governance", "reliability.observability"],
+  "level": "intermediate",
+  "order": 79,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "元数据过滤用租户、访问组、状态、语言和文档版本限制合法候选集，其中授权条件必须由服务端从可信身份映射生成，并在声明缺失或无效时失败关闭。",
+    "analogy": "它像档案室先核对通行证和项目清单，再在获准柜子中寻找相关文件；若先把全馆资料搬到桌上再遮住几页，标题和摘要早已越过边界。",
+    "technicalExplanation": "过滤契约应定义身份字段到索引元数据的类型与必填映射，在向量查询执行前组合租户和授权谓词；系统还要记录过滤版本、候选数量及空声明拒绝原因。",
+    "example": "身份网关把 group_ids 改成 groups 后，检索服务仍读取旧字段并对空过滤执行全库查询，Cedar 用户遂看到 Maple 标题；应关闭路由、返回拒绝并修复服务端映射。",
+    "commonMistakes": "认证成功就假设授权完整、空过滤时回退到未过滤查询、在生成后再删除敏感文本，或只写正向组内测试都不够，必须加入跨组、共享和缺失声明负例。"
+  },
+  "relatedCases": [
+    "rag-permission-filter-gap-001",
+    "multi-region-rag-consistency-001"
+  ]
+}

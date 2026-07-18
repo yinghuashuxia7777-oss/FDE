@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "0.1.0",
+  "status": "draft",
+  "expectedLeafCount": 70,
+  "presentationNodes": [
+    {
+      "id": "capability.software",
+      "name": "Software engineering",
+      "description": "Build, test, and evolve reliable software systems."
+    },
+    {
+      "id": "capability.integration",
+      "name": "Systems integration",
+      "description": "Connect services through explicit, dependable contracts."
+    },
+    {
+      "id": "capability.data-ai",
+      "name": "Data and AI systems",
+      "description": "Design evidence-driven data and AI capabilities."
+    },
+    {
+      "id": "capability.delivery",
+      "name": "Production delivery",
+      "description": "Move changes into production with controlled risk."
+    },
+    {
+      "id": "capability.operations",
+      "name": "Production operations",
+      "description": "Operate and improve production systems from evidence."
+    },
+    {
+      "id": "capability.security",
+      "name": "Security and governance",
+      "description": "Protect systems and data through enforceable controls."
+    },
+    {
+      "id": "capability.customer-outcomes",
+      "name": "Customer outcomes",
+      "description": "Translate customer needs into adopted technical outcomes."
+    }
+  ],
+  "leaves": [
+    {
+      "schemaVersion": 1,
+      "id": "eng.runtime-debugging",
+      "name": "Runtime debugging",
+      "description": "Diagnose runtime failures from concrete evidence.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 0,
+      "status": "draft",
+      "evidenceTypes": ["diagnosis"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "eng.testing-fundamentals",
+      "name": "Testing fundamentals",
+      "description": "Design focused tests that demonstrate intended behavior.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 1,
+      "status": "draft",
+      "evidenceTypes": ["test-design"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.api-contracts",
+      "name": "API contracts",
+      "description": "Define and verify stable service interface contracts.",
+      "parentSkillId": "api.integration",
+      "capabilityLevel": 2,
+      "status": "draft",
+      "evidenceTypes": ["contract-design"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "data.pipeline-design",
+      "name": "Data pipeline design",
+      "description": "Design data flows with explicit integrity and recovery boundaries.",
+      "parentSkillId": "data.engineering",
+      "capabilityLevel": 3,
+      "status": "draft",
+      "evidenceTypes": ["architecture-decision"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "llm.evaluation-design",
+      "name": "LLM evaluation design",
+      "description": "Create evaluations that measure behavior against product risk.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "draft",
+      "evidenceTypes": ["evaluation"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.production-retrieval",
+      "name": "Production retrieval systems",
+      "description": "Implement and operate retrieval under production constraints.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 5,
+      "status": "draft",
+      "evidenceTypes": ["implementation", "verification"],
+      "activeRubricVersion": null
+    },
+    {
+      "schemaVersion": 1,
+      "id": "fde.solution-delivery",
+      "name": "Solution delivery leadership",
+      "description": "Lead a customer solution from evidence-backed scope to adoption.",
+      "parentSkillId": "fde.adoption",
+      "capabilityLevel": 6,
+      "status": "draft",
+      "evidenceTypes": ["decision", "communication"],
+      "activeRubricVersion": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.runtime-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "eng.runtime-debugging",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.testing-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "eng.testing-fundamentals",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.api-contracts-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.api-contracts",
+      "legacySkillId": "api.integration",
+      "canonical": true
+    },
+    {
+      "id": "edge.pipeline-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "data.pipeline-design",
+      "legacySkillId": "data.engineering",
+      "canonical": true
+    },
+    {
+      "id": "edge.llm-evaluation-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "llm.evaluation-design",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.production-retrieval-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.production-retrieval",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.solution-delivery-rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "fde.solution-delivery",
+      "legacySkillId": "fde.adoption",
+      "canonical": true
+    },
+    {
+      "id": "edge.runtime-before-testing",
+      "type": "prerequisite",
+      "prerequisiteSkillId": "eng.runtime-debugging",
+      "dependentSkillId": "eng.testing-fundamentals"
+    },
+    {
+      "id": "edge.testing-before-contracts",
+      "type": "prerequisite",
+      "prerequisiteSkillId": "eng.testing-fundamentals",
+      "dependentSkillId": "software.api-contracts"
+    },
+    {
+      "id": "edge.software-presentation",
+      "type": "presents-as",
+      "legacySkillId": "software.foundations",
+      "presentationSkillId": "capability.software",
+      "canonical": true
+    },
+    {
+      "id": "edge.api-presentation",
+      "type": "presents-as",
+      "legacySkillId": "api.integration",
+      "presentationSkillId": "capability.integration",
+      "canonical": true
+    },
+    {
+      "id": "edge.data-presentation",
+      "type": "presents-as",
+      "legacySkillId": "data.engineering",
+      "presentationSkillId": "capability.data-ai",
+      "canonical": true
+    }
+  ]
+}

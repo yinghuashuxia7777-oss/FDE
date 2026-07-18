@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.fde.customer-discovery",
+  "version": 1,
+  "status": "draft",
+  "title": "Customer Discovery Focused Practice",
+  "summary": "A focused transfer activity for Customer Discovery.",
+  "primaryConceptId": "concept.scoping",
+  "foundationIds": ["fde.problem-scoping"],
+  "primaryLeafSkillId": "fde.customer-discovery",
+  "difficulty": "advanced",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.fde.customer-discovery",
+    "kind": "decision",
+    "prompt": "Separate the customer outcome, current workflow, constraint, and non-goal.",
+    "stimulus": [
+      {
+        "id": "stimulus.fde.customer-discovery",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.fde.customer-discovery",
+      "skillId": "fde.customer-discovery",
+      "version": 1
+    },
+    "criterionIds": ["criterion.fde.customer-discovery.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "discovery-brief",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

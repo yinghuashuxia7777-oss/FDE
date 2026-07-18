@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "id": "multi-region-rag-consistency-001",
+  "slug": "multi-region-rag-consistency-001",
+  "title": "多区域 RAG 返回不一致引用",
+  "summary": "处理多区域检索索引与权限变更延迟导致的引用漂移，在新鲜度、延迟、可用性和授权之间设计分层一致性。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "rag-search",
+    "performance-scale",
+    "reliability",
+    "security-governance"
+  ],
+  "skills": [
+    "rag.search",
+    "performance.scaling",
+    "reliability.observability",
+    "security.governance"
+  ],
+  "lifecycleStages": ["design", "deploy", "operate", "incident-response"],
+  "technicalLayers": [
+    "retrieval",
+    "replication",
+    "multi-region-routing",
+    "authorization"
+  ],
+  "environments": ["production", "staging"],
+  "riskTypes": ["privacy", "consistency", "availability", "customer-trust"],
+  "behaviorPatterns": [
+    "version-aware-retrieval",
+    "bounded-staleness",
+    "fail-closed-revocation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的全球制造商在两个区域运行企业 RAG 助手，工程师依赖带引用的维护程序。",
+    "background": "文档内容和 ACL 通过同一个异步索引流复制；流量管理器按最近延迟把请求分配到 East 或 West。",
+    "initialIncident": "同一工程师在两次刷新中收到互相矛盾的程序步骤，其中一次还引用了十分钟前已撤销访问的文档。",
+    "constraints": [
+      "普通查询 p95 必须低于 2 秒。",
+      "内容新鲜度目标为 2 分钟，但访问撤销必须在 30 秒内生效。",
+      "不能通过把所有流量永久集中到单一区域来规避问题。"
+    ],
+    "confirmedFacts": [
+      "East 的内容索引版本为 812，West 为 809。",
+      "West 的复制延迟为 6 分钟，服务健康检查仍为绿色。",
+      "访问撤销与内容更新共享同一复制队列。"
+    ]
+  },
+  "startNodeId": "multi-region-rag-consistency-001-node-01",
+  "nodes": [
+    {
+      "id": "multi-region-rag-consistency-001-node-01",
+      "type": "log-analysis",
+      "title": "解释引用漂移",
+      "prompt": "当前最能解释同一用户得到不同答案的证据链是什么？",
+      "skillWeights": {
+        "rag.search": 1
+      },
+      "evidence": [
+        {
+          "id": "multi-region-rag-consistency-001-node-01-evidence-01",
+          "type": "log",
+          "title": "两次检索 trace",
+          "content": "q=torque-procedure user=synthetic-engineer region=east indexVersion=812 citations=[doc-44@v12]\nq=torque-procedure user=synthetic-engineer region=west indexVersion=809 citations=[doc-44@v10,doc-91@v3]",
+          "language": "text"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-01-evidence-02",
+          "type": "diff",
+          "title": "文档版本差异",
+          "content": "doc-44 v10: torque 72 Nm\ndoc-44 v12: torque 58 Nm, approved 11:54 UTC\ndoc-91 access revoked 11:58 UTC",
+          "language": "diff"
+        }
+      ],
+      "options": [
+        {
+          "id": "multi-region-rag-consistency-001-node-01-option-a",
+          "label": "区域路由跨越不同索引版本，答案与引用没有绑定可见的检索快照",
+          "explanation": "trace 明确显示 East 812 与 West 809，引用内容也对应旧版本；快照未绑定导致刷新跨版本漂移。",
+          "errorType": "none"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-01-option-b",
+          "label": "模型温度导致了所有差异，只需把 temperature 设为零",
+          "explanation": "即使生成确定，两个区域提供的引用集合和文档版本仍不同，温度无法修复索引输入漂移。",
+          "errorType": "generation-layer-misattribution"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-01-option-c",
+          "label": "合并两个区域的全部候选并忽略文档版本与访问状态",
+          "explanation": "混合候选会把已撤销文档和冲突版本带入同一上下文，扩大错误指导与未授权暴露。",
+          "errorType": "merge-stale-and-unauthorized-results"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "multi-region-rag-consistency-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先比较生成前的检索输入、索引版本和引用版本。",
+        "secondWrong": "两次 trace 使用不同 indexVersion，并引用了 doc-44 的两个不同版本。",
+        "revealedAnswer": "根因证据指向跨区域索引快照漂移；应暂时把会话绑定到明确版本，并在回答中记录区域、索引和引用版本。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "multi-region-rag-consistency-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "multi-region-rag-consistency-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "团队定位到版本化检索与路由边界，而非模型随机性。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "生成输出更稳定，但陈旧检索输入仍不一致。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "旧程序和已撤销文档进入所有区域的回答。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "multi-region-rag-consistency-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "multi-region-rag-consistency-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "multi-region-rag-consistency-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "multi-region-rag-consistency-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "选择复制与路由策略",
+      "prompt": "哪种设计最能同时满足延迟、新鲜度和多区域可用性？",
+      "skillWeights": {
+        "performance.scaling": 1
+      },
+      "evidence": [
+        {
+          "id": "multi-region-rag-consistency-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "复制实验",
+          "content": "async delta: query p95=1.25s, replication p95=95s, p99=210s\nsync cross-region in request path: query p95=2.48s\nversion-aware regional fallback: p95=1.62s, stale-over-120s=0.1%"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-02-evidence-02",
+          "type": "text",
+          "title": "容量条件",
+          "content": "Both regions can retain three immutable index snapshots. Router can read each region version and route to the nearest region meeting a freshness floor."
+        }
+      ],
+      "options": [
+        {
+          "id": "multi-region-rag-consistency-001-node-02-option-a",
+          "label": "继续只按网络延迟路由，并把新鲜度目标改成尽力而为",
+          "explanation": "这放弃了客户明确的两分钟目标，健康但陈旧的区域仍会持续接收请求。",
+          "errorType": "latency-only-routing"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-02-option-b",
+          "label": "在每次查询路径上等待两个区域同步确认后再检索",
+          "explanation": "实验 p95 已达 2.48 秒，违反延迟目标；任一区域故障还会阻塞全局查询，形成级联不可用。",
+          "errorType": "synchronous-cross-region-request-dependency"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-02-option-c",
+          "label": "异步复制不可变快照，路由选择满足版本新鲜度下限的最近区域并保留区域回退",
+          "explanation": "版本感知路由在 1.62 秒内满足延迟，并把超过两分钟的陈旧请求降到可监控水平，同时保留多区域能力。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "multi-region-rag-consistency-001-node-02-option-c"
+      },
+      "feedback": {
+        "firstWrong": "不能把一致性放进每次跨区域同步，也不能只看网络延迟。",
+        "secondWrong": "版本感知 fallback 的 p95 为 1.62 秒，并能识别超过 120 秒的区域。",
+        "revealedAnswer": "应异步复制不可变快照，并按版本新鲜度下限加最近区域路由；通过故障与滞后演练验证 p95 和可用性。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "multi-region-rag-consistency-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "multi-region-rag-consistency-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "查询快但引用可能超过约定新鲜度。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "区域故障和长尾延迟传播到所有查询。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-02-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "流量按延迟与新鲜度联合选择，陈旧区域可自动退出。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "multi-region-rag-consistency-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "multi-region-rag-consistency-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "multi-region-rag-consistency-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "multi-region-rag-consistency-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "建立一致性可观测与降级",
+      "prompt": "哪些信号和动作能在区域健康但索引陈旧时保护回答？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "multi-region-rag-consistency-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "现有健康检查",
+          "content": "HTTP health=200 in both regions; CPU<55%; queue depth west=18200; indexVersionLag=3; oldestUnappliedAge=360s."
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-03-evidence-02",
+          "type": "text",
+          "title": "可用降级",
+          "content": "Router can remove a stale region, pin a session to a snapshot, or return a transparent freshness warning when no region meets the content target."
+        }
+      ],
+      "options": [
+        {
+          "id": "multi-region-rag-consistency-001-node-03-option-a",
+          "label": "监控版本差、最旧未应用年龄和引用漂移，超阈值移出区域并对无新鲜区域显式降级",
+          "explanation": "这些信号直接观察数据平面而非进程存活；区域摘除和透明降级有明确触发与恢复条件。",
+          "errorType": "none"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-03-option-b",
+          "label": "只增加 CPU 和 HTTP 200 告警，因为复制进程仍在运行",
+          "explanation": "当前 CPU 和 HTTP 都正常却已陈旧 360 秒，进程健康不能代表索引新鲜。",
+          "errorType": "control-plane-only-health"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-03-option-c",
+          "label": "关闭区域健康检查并随机分配请求，以免流量集中",
+          "explanation": "随机路由忽略已知陈旧与故障信号，会把不一致和未授权结果分散给更多用户。",
+          "errorType": "disable-consistency-routing"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "multi-region-rag-consistency-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "服务存活、容量健康与检索数据新鲜是不同层次的信号。",
+        "secondWrong": "West 返回 200，但 indexVersionLag=3 且 oldestUnappliedAge=360s。",
+        "revealedAnswer": "应监控索引版本、未应用年龄和引用漂移，超阈值自动摘除；无区域满足目标时明确告知新鲜度并限制高风险回答。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "multi-region-rag-consistency-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "multi-region-rag-consistency-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "健康但陈旧的区域不会静默提供错误引用。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "陈旧索引继续被健康检查判为可用。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "所有用户随机暴露于陈旧区域。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "multi-region-rag-consistency-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "multi-region-rag-consistency-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "multi-region-rag-consistency-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "multi-region-rag-consistency-001-node-04",
+      "type": "architecture-tradeoff",
+      "title": "隔离权限撤销一致性",
+      "prompt": "如何保证撤销在 30 秒内生效，而内容仍可异步复制？",
+      "skillWeights": {
+        "security.governance": 1
+      },
+      "evidence": [
+        {
+          "id": "multi-region-rag-consistency-001-node-04-evidence-01",
+          "type": "log",
+          "title": "撤销传播时间线",
+          "content": "11:58:00 revoke user access to doc-91\n11:58:18 east permission check=deny\n12:04:02 west index removes doc-91\n12:01:10 west retrieval returned doc-91",
+          "language": "text"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-04-evidence-02",
+          "type": "text",
+          "title": "授权服务能力",
+          "content": "A regional authorization overlay can consume revocation events in under 12 seconds and filter candidate IDs before content fetch. If overlay is unavailable it can deny protected retrieval."
+        }
+      ],
+      "options": [
+        {
+          "id": "multi-region-rag-consistency-001-node-04-option-a",
+          "label": "把内容复制目标从两分钟调到一分钟，并继续依赖索引内 ACL",
+          "explanation": "平均更快不能保证 30 秒撤销上限，队列拥塞时仍会把旧 ACL 与内容一起延迟。",
+          "errorType": "content-replication-as-authorization"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-04-option-b",
+          "label": "用独立授权 overlay 在取文档前过滤候选，撤销快速传播且 overlay 不可用时失败关闭",
+          "explanation": "把高优先级撤销从内容复制解耦，12 秒能力满足目标，失败关闭避免授权服务故障时泄漏。",
+          "errorType": "none"
+        },
+        {
+          "id": "multi-region-rag-consistency-001-node-04-option-c",
+          "label": "允许已缓存授权继续 24 小时，以保证区域故障时可用",
+          "explanation": "24 小时缓存直接违反 30 秒撤销要求，会让已撤销用户持续访问受保护文档。",
+          "errorType": "stale-authorization-cache"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "multi-region-rag-consistency-001-node-04-option-b"
+      },
+      "feedback": {
+        "firstWrong": "内容新鲜度可以有界陈旧，但权限撤销有更严格且独立的安全目标。",
+        "secondWrong": "授权 overlay 能在 12 秒内传播并在内容获取前过滤，且可失败关闭。",
+        "revealedAnswer": "应把权限撤销放入独立强约束 overlay，在候选取文档前过滤，服务不可用时拒绝保护查询；验证各区域 30 秒内生效。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "multi-region-rag-consistency-001-node-04-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "multi-region-rag-consistency-001-node-04-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "权限撤销仍受内容队列长尾控制。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-04-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "内容可以有界陈旧，但权限撤销在独立边界及时生效。"
+        },
+        {
+          "optionId": "multi-region-rag-consistency-001-node-04-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "撤销后的访问窗口从分钟扩大到一天。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "多区域路由跨越索引 812 与 809，健康检查未观察数据陈旧，且 ACL 撤销与内容共用慢队列。正确路径是版本化检索、版本感知路由、数据平面告警，并把权限撤销解耦为失败关闭 overlay。",
+    "rootCause": "路由仅依据网络与进程健康，未约束索引快照；内容与高优先级授权撤销又共享异步复制一致性。",
+    "correctApproach": [
+      "绑定并记录检索快照、区域和引用文档版本。",
+      "异步复制不可变快照并按版本新鲜度与延迟联合路由。",
+      "监控版本差、未应用年龄与引用漂移，建立摘除和透明降级。",
+      "用独立授权 overlay 快速传播撤销并失败关闭。"
+    ],
+    "keyLessons": [
+      "多区域 RAG 一致性首先是检索输入和引用版本问题。",
+      "进程健康不能替代索引新鲜度健康。",
+      "权限撤销不应继承普通内容复制的陈旧预算。"
+    ],
+    "interviewerPerspective": "观察候选人是否能分离内容一致性、性能、可靠性与授权语义，并为每层定义不同的门槛和降级。",
+    "customerRiskPerspective": "错误维护程序可能影响现场安全，已撤销文档暴露还会造成合规与信任损害。",
+    "remediation": [
+      "引入不可变索引版本和会话级快照绑定。",
+      "升级路由器以读取新鲜度并自动摘除陈旧区域。",
+      "拆分授权撤销流并建立区域级失败关闭过滤。"
+    ],
+    "verification": [
+      "同一快照在两个区域返回相同引用版本。",
+      "注入复制滞后并确认陈旧区域在两分钟阈值前退出。",
+      "模拟区域故障并确认 p95 仍低于两秒或明确降级。",
+      "撤销合成用户权限并确认所有区域 30 秒内拒绝。"
+    ],
+    "knowledgePoints": [
+      "multi-region RAG consistency",
+      "version-aware routing",
+      "data-plane freshness SLI",
+      "authorization revocation overlay"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

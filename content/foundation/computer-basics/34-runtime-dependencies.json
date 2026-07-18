@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.runtime-dependencies",
+  "type": "foundation",
+  "title": "运行时依赖：程序启动之外的必要条件",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations", "cloud.deployment"],
+  "level": "intermediate",
+  "order": 34,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "运行时依赖是程序执行和正确处理请求时必须具备的解释器、库、配置、数据库或下游接口，制品能够启动只证明部分依赖满足而不是整条业务链可用。",
+    "analogy": "应用像准备出餐的厨房，厨师到岗只是开始，还要有燃气、食材、菜单和可工作的收银系统。任何一项版本不兼容都可能让厨房看似开门却无法交付正确订单。",
+    "technicalExplanation": "依赖既包括打包进制品的语言运行时和共享库，也包括部署时注入的配置及远程服务契约。可靠交付要固定可重现的版本，声明兼容区间，并把依赖检查放在适合的启动或就绪阶段，同时避免让短暂下游波动触发无限重启。",
+    "example": "零停机 Schema 迁移中，三个服务无法原子升级，旧客户端也不认识新状态名，因此数据库结构和接口枚举都是运行时契约依赖。安全方案应先增加兼容字段与双版本读写，再分批切流和回填，最后在证明没有旧消费者后收缩旧结构。",
+    "commonMistakes": "常见误区是本地安装过某个库就默认镜像也包含它，或只锁定直接依赖而忽略传递依赖。面对远程依赖异常时盲目增加重试也会放大流量；应先确认版本、契约、超时和失败边界，再选择降级或回滚。"
+  },
+  "relatedCases": [
+    "zero-downtime-schema-migration-001",
+    "linux-systemd-runtime-path-001",
+    "docker-runtime-dependency-missing-001"
+  ]
+}

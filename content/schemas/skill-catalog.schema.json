@@ -1,0 +1,300 @@
+{
+  "$id": "https://fde-arena.local/schemas/skill-catalog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "catalogVersion": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "edges": {
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "canonical": {
+                "type": "boolean"
+              },
+              "id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "leafSkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "legacySkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "type": {
+                "const": "rolls-up-to",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "leafSkillId",
+              "legacySkillId",
+              "canonical"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "dependentSkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "prerequisiteSkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "type": {
+                "const": "prerequisite",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "prerequisiteSkillId",
+              "dependentSkillId"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "canonical": {
+                "type": "boolean"
+              },
+              "id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "legacySkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "presentationSkillId": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "type": {
+                "const": "presents-as",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "legacySkillId",
+              "presentationSkillId",
+              "canonical"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "maxItems": 1000,
+      "type": "array"
+    },
+    "expectedLeafCount": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "leaves": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "activeRubricVersion": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilityLevel": {
+            "anyOf": [
+              {
+                "const": 0,
+                "type": "number"
+              },
+              {
+                "const": 1,
+                "type": "number"
+              },
+              {
+                "const": 2,
+                "type": "number"
+              },
+              {
+                "const": 3,
+                "type": "number"
+              },
+              {
+                "const": 4,
+                "type": "number"
+              },
+              {
+                "const": 5,
+                "type": "number"
+              },
+              {
+                "const": 6,
+                "type": "number"
+              }
+            ]
+          },
+          "description": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "evidenceTypes": {
+            "items": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "parentSkillId": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": 1,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "reviewed",
+              "active",
+              "deprecated"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "id",
+          "name",
+          "description",
+          "parentSkillId",
+          "capabilityLevel",
+          "status",
+          "evidenceTypes",
+          "activeRubricVersion"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1000,
+      "type": "array"
+    },
+    "presentationNodes": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "maxItems": 1000,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "reviewed",
+        "published",
+        "deprecated"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "status",
+    "expectedLeafCount",
+    "presentationNodes",
+    "leaves",
+    "edges"
+  ],
+  "title": "FDE Arena V2 Skill Graph Catalog",
+  "type": "object"
+}

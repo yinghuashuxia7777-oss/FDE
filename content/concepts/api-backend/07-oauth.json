@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.oauth",
+  "type": "concept",
+  "category": "api-backend",
+  "order": 7,
+  "title": "OAuth：委托授权与令牌签发流程",
+  "technicalTerm": "OAuth",
+  "simpleExplanation": "OAuth 让用户或系统在不交出主密码的情况下，授权一个应用以限定范围访问资源。",
+  "analogy": "像酒店给住客一张只能开自己房门、并会到期的房卡，而不是把总钥匙交给住客。",
+  "technicalExplanation": "OAuth 区分资源所有者、客户端、授权服务器与资源服务器。授权码等流程用于获得 Access Token，资源服务器随后校验受众、Scope、签发方和有效期；认证用途通常还需配合 OpenID Connect。",
+  "whyItMatters": "企业集成中的 401 或 403 常来自客户端配置、重定向、受众或 Scope 不一致。FDE 应沿签发与消费两端核对声明，而不是盲目增加权限。",
+  "commonMistakes": "把 OAuth 等同于登录；申请过宽 Scope；用错误受众的令牌调用资源；忽略授权服务器与资源服务器时钟或环境差异。",
+  "relatedFoundation": [
+    "api.oauth-roles",
+    "api.oauth-authorization-code",
+    "api.oauth-scope-audience"
+  ],
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

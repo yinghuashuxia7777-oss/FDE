@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.vector-database",
+  "type": "concept",
+  "category": "ai",
+  "order": 30,
+  "title": "向量数据库：存储、索引并过滤向量表示",
+  "technicalTerm": "Vector Database",
+  "simpleExplanation": "向量数据库保存 Embedding，并快速找出与查询向量最相近且符合过滤条件的记录。",
+  "analogy": "像既能按“内容相似”找书、又能按部门权限和版本筛选的图书馆目录。",
+  "technicalExplanation": "向量系统存储向量、原文引用和元数据，通过近似最近邻索引降低搜索成本。分片、副本、索引参数、删除传播和元数据过滤会共同影响延迟、召回与一致性。",
+  "whyItMatters": "大规模重建或多区域复制可能让不同流量看到不同版本。FDE 需要跟踪索引版本、写入水位、查询路由和回滚策略。",
+  "commonMistakes": "把写入成功当成所有副本已可查询；只比较平均延迟；忽略删除和权限元数据传播；切换索引时没有版本标记。",
+  "relatedFoundation": ["ai.vector-database", "ai.vector-indexing"],
+  "relatedCases": [
+    "large-scale-rag-reindex-cutover-001",
+    "multi-region-rag-consistency-001"
+  ]
+}

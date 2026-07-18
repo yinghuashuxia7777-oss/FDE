@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.embedding",
+  "type": "foundation",
+  "title": "Embedding：把内容映射到可比较的向量",
+  "domain": "ai-basics",
+  "track": "ai-basics",
+  "skills": ["rag.search"],
+  "level": "beginner",
+  "order": 25,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "Embedding 把文本或其他内容转换成一组数字，使语义相近的内容在向量空间中更接近；它适合候选召回，但相似不代表事实正确或用户有权访问。",
+    "analogy": "Embedding 像按多种特征给书籍定位：主题相近的书会放在相邻区域，但书架位置不会告诉你哪本更新，也不会自动决定你是否有借阅权限。",
+    "technicalExplanation": "嵌入模型输出固定维度向量，检索系统用余弦相似度或点积排序。模型版本、切块方式和归一化会影响距离，因此索引与查询必须保持兼容。",
+    "example": "政策更新后旧段落仍在索引中，向量相似度很高而被召回。修复要处理版本、缓存和索引新鲜度，不能仅提高相似度阈值。",
+    "commonMistakes": "把相似度分数当成置信概率、混用不同嵌入版本，或在召回后才补权限过滤，都会造成质量和安全问题。应分别验证相关性、新鲜度与授权。"
+  },
+  "relatedCases": ["rag-stale-policy-cache-001"]
+}

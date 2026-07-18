@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.incident",
+  "type": "concept",
+  "category": "system",
+  "order": 21,
+  "title": "事故：生产影响下的受控响应过程",
+  "technicalTerm": "Incident",
+  "simpleExplanation": "事故是对真实用户或业务造成影响、需要协调响应和恢复的生产异常。",
+  "analogy": "像楼宇火警：先确认人员影响并控制危险，再调查起火原因；不能为了完整研究而延迟疏散。",
+  "technicalExplanation": "事故响应包含影响评估、角色分工、缓解、沟通、恢复验证和事后复盘。时间线必须区分已知事实、假设与行动，根因分析在恢复后继续，但缓解措施也要可回滚、可验证。",
+  "whyItMatters": "FDE 经常处在客户、产品和工程之间。清晰的证据与沟通节奏能减少重复操作，并防止未经验证的修复扩大影响。",
+  "commonMistakes": "一开始就争论唯一根因；没有记录谁在何时做了什么；把安静等同于恢复；对客户承诺未经验证的修复时间。",
+  "relatedFoundation": [
+    "fde.evidence-first-debugging",
+    "fde.root-cause-analysis",
+    "fde.customer-communication"
+  ],
+  "relatedCases": [
+    "customer-pilot-production-gap-001",
+    "observability-correlation-id-001",
+    "python-config-precedence-001"
+  ]
+}

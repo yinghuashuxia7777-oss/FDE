@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-tool-timeout-retry-001",
+  "slug": "agent-tool-timeout-retry-001",
+  "title": "Agent 工具超时触发重复写入",
+  "summary": "调查工具型 Agent 在客户工单系统中因超时与盲目重试造成的重复写入，并设计可观测、幂等的恢复路径。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["agents-evals", "reliability", "api-integration"],
+  "skills": [
+    "agents.evaluation",
+    "reliability.observability",
+    "api.integration"
+  ],
+  "lifecycleStages": ["operate", "incident-response", "validate"],
+  "technicalLayers": ["agent-orchestration", "http-api", "observability"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["data-integrity", "reliability", "customer-trust"],
+  "behaviorPatterns": [
+    "trace-before-retry",
+    "minimum-safe-mitigation",
+    "idempotent-recovery"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的设备服务平台使用工具型 Agent 为现场工程师创建维修工单，每次写入都会触发备件预留。",
+    "background": "团队昨晚把 Agent 的单工具超时从 5 秒降到 2 秒，并启用最多三次自动重试；工单 API 本身没有改变。",
+    "initialIncident": "运营人员发现同一客户请求在十分钟内创建了多张内容相同的工单，并重复预留了备件。",
+    "constraints": [
+      "不能停止人工工单入口。",
+      "在确认幂等保护前不得继续对写工具进行自动重试。",
+      "需要保留最小必要的 trace 标识，不能复制客户工单正文。"
+    ],
+    "confirmedFacts": [
+      "重复工单共享同一个 Agent run ID。",
+      "工单 API 的正常 p95 为 1.8 秒，但 p99 为 2.7 秒。",
+      "Agent 将 2 秒内未收到响应视为失败，即使服务端随后完成写入。"
+    ]
+  },
+  "startNodeId": "agent-tool-timeout-retry-001-node-01",
+  "nodes": [
+    {
+      "id": "agent-tool-timeout-retry-001-node-01",
+      "type": "log-analysis",
+      "title": "判断重复写入机制",
+      "prompt": "根据 trace 与延迟分布，第一项安全处置是什么？",
+      "skillWeights": {
+        "agents.evaluation": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-01-evidence-01",
+          "type": "log",
+          "title": "Agent 调用 trace",
+          "content": "run=run-204 tool=create_work_order attempt=1 timeout_ms=2000 client=timeout\nrun=run-204 tool=create_work_order attempt=2 status=201 work_order=wo-882\nserver_audit request_attempt=1 status=201 duration_ms=2380 work_order=wo-881",
+          "language": "text"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-01-evidence-02",
+          "type": "metric",
+          "title": "工具调用延迟与重试",
+          "content": "create_work_order p50=920ms p95=1800ms p99=2700ms; client_timeout=2000ms; retry_rate rose from 0.4% to 7.8% after rollout."
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-01-option-a",
+          "label": "把所有工具超时统一提高到 10 秒，并保留当前三次重试",
+          "explanation": "延长超时可能减少部分重试，但没有解决写操作缺少幂等性与结果不确定时的重复提交，仍可能创建重复工单。",
+          "errorType": "timeout-only-remediation"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-01-option-b",
+          "label": "暂停写工具自动重试，用 run 与 attempt 标识核对服务端结果后再决定是否补偿",
+          "explanation": "证据显示第一次调用在客户端超时后仍成功写入；先停止非幂等重试并关联服务端审计，可以立即缩小重复副作用。",
+          "errorType": "none"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-01-option-c",
+          "label": "把重试提高到八次并并行发送，以最快获得一个成功响应",
+          "explanation": "并行重试会放大非幂等写入和备件预留，可能把单个超时升级为大规模数据与库存错误。",
+          "errorType": "retry-amplification"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-timeout-retry-001-node-01-option-b"
+      },
+      "feedback": {
+        "firstWrong": "先区分“客户端没有收到结果”和“服务端没有执行操作”，两者不是同一事实。",
+        "secondWrong": "审计记录显示 attempt 1 在 2380ms 完成，而客户端在 2000ms 已开始重试。",
+        "revealedAnswer": "应暂停写工具自动重试，使用 run/attempt 与服务端审计核对结果；验证重复创建率停止上升后，再设计幂等恢复。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-tool-timeout-retry-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-01-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "尾延迟症状减轻，但重复写入风险仍未被控制。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-01-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "重复写入被遏制，团队保留了确认已完成请求的证据。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "并行写入制造更多重复工单和库存预留。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "agent-tool-timeout-retry-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "建立可观测的重试预算",
+      "prompt": "团队应如何验证新的超时与重试策略不会再次放大故障？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "当前仪表盘",
+          "content": "Dashboard exposes average tool latency and final run success only; it does not expose attempts per run, late successes, or duplicate side effects."
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-02-evidence-02",
+          "type": "text",
+          "title": "预发布约束",
+          "content": "Staging has a synthetic work-order tenant. A one-percent production canary is allowed after staging proves no duplicate side effect for delayed responses."
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-02-option-a",
+          "label": "增加每 run 尝试数、晚到成功和重复副作用指标，并用延迟注入后再做小流量 canary",
+          "explanation": "这些信号直接覆盖故障机制；延迟注入可重现不确定结果，小流量 canary 提供可回滚的生产验证。",
+          "errorType": "none"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-02-option-b",
+          "label": "取消所有工具超时，让 Agent 永久等待直至 API 返回",
+          "explanation": "无界等待会耗尽并发槽位并阻塞其他客户请求，在依赖真正卡死时形成级联故障。",
+          "errorType": "unbounded-wait"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-02-option-c",
+          "label": "只监控最终 run 成功率，因为用户最终看到成功即可",
+          "explanation": "最终成功率会掩盖重复副作用和额外尝试，无法发现本案的数据完整性故障。",
+          "errorType": "aggregate-metric-blindness"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-timeout-retry-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "监控信号必须能直接观察本次故障的重试放大和副作用。",
+        "secondWrong": "平均延迟与最终成功率都无法显示同一 run 创建了两张工单。",
+        "revealedAnswer": "应补齐尝试数、晚到成功和重复副作用指标，先在 staging 注入尾延迟，再以小流量 canary 和明确回滚阈值验证。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-tool-timeout-retry-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-02-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "重试策略获得了与故障机制一致的验证信号和回滚门槛。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "并发资源被长期占用，新的可用性风险扩大。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-02-option-c",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "表面成功率正常，但重复工单仍可能积累。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "agent-tool-timeout-retry-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "agent-tool-timeout-retry-001-node-03",
+      "type": "configuration-review",
+      "title": "修复写 API 契约",
+      "prompt": "哪项集成设计能在响应丢失时安全恢复？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-03-evidence-01",
+          "type": "http",
+          "title": "工单 API 行为",
+          "content": "POST /work-orders returns 201 with workOrderId, but accepts no idempotency key. GET /work-orders/by-client-request/{requestId} is available in staging.",
+          "language": "http"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-03-evidence-02",
+          "type": "text",
+          "title": "失败注入结果",
+          "content": "When the response is dropped after commit, a second POST creates a new work order. Querying by clientRequestId returns the first committed record."
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-timeout-retry-001-node-03-option-a",
+          "label": "响应超时后立即重复 POST，直到任意一次返回 201",
+          "explanation": "重复 POST 没有幂等保护，已证明会产生多个已提交工单和重复库存副作用。",
+          "errorType": "blind-non-idempotent-retry"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-03-option-b",
+          "label": "把每次超时都当作失败并取消整个 Agent run，不查询服务端状态",
+          "explanation": "这避免了再次写入，却会把已经提交的工单报告为失败，造成状态分歧和人工重复操作。",
+          "errorType": "missing-outcome-reconciliation"
+        },
+        {
+          "id": "agent-tool-timeout-retry-001-node-03-option-c",
+          "label": "用稳定 clientRequestId 作为幂等键；结果不确定时先查询该键，再决定重试",
+          "explanation": "稳定键让服务端去重，状态查询能区分已提交与未提交；两者共同覆盖提交后响应丢失窗口。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-timeout-retry-001-node-03-option-c"
+      },
+      "feedback": {
+        "firstWrong": "设计必须同时处理“请求已提交但响应丢失”与真正未提交。",
+        "secondWrong": "staging 已证明 clientRequestId 可以查询第一次提交，而重复 POST 会创建新记录。",
+        "revealedAnswer": "应把稳定 clientRequestId 作为服务端幂等键，并在超时后先查询结果；通过丢响应测试确认只产生一个工单。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "agent-tool-timeout-retry-001-node-03-option-a"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-03-option-a",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "响应丢失继续转化为重复业务写入。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "客户端与服务端状态分裂，人工补单风险增加。"
+        },
+        {
+          "optionId": "agent-tool-timeout-retry-001-node-03-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "同一业务请求只产生一个工单，并能安全恢复未知结果。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "过短的工具超时把正常尾延迟误判为失败，Agent 随即对非幂等写 API 盲目重试，造成重复工单与库存副作用。正确路径是先停止放大，再建立故障机制级观测，最后补齐幂等与结果核对契约。",
+    "rootCause": "Agent 超时低于 API 尾延迟，且写工具缺少幂等键和未知结果核对机制。",
+    "correctApproach": [
+      "暂停非幂等写工具的自动重试，并关联 run、attempt 与服务端审计。",
+      "增加晚到成功、每 run 尝试数和重复副作用指标，使用延迟注入复现。",
+      "为写 API 增加稳定幂等键和按 clientRequestId 查询结果的契约。",
+      "以 staging 和小流量 canary 验证后再逐步恢复自动重试。"
+    ],
+    "keyLessons": [
+      "客户端超时不等于服务端未提交。",
+      "重试策略必须与操作幂等性和总超时预算共同设计。",
+      "最终成功率不能替代副作用与尝试级可观测性。"
+    ],
+    "interviewerPerspective": "观察候选人是否识别未知结果窗口、先控制重试放大，并用幂等键、状态核对和故障注入闭环验证。",
+    "customerRiskPerspective": "盲目重试会制造重复工单、库存错误和对自动化的不信任；可解释的遏制与验证能保护业务连续性。",
+    "remediation": [
+      "实现服务端幂等键存储与重复请求响应复用。",
+      "为 Agent 写工具配置操作级超时、重试预算和可重试错误分类。",
+      "建立重复副作用检测与自动告警。"
+    ],
+    "verification": [
+      "丢弃提交后的响应并确认第二次调用返回同一 workOrderId。",
+      "确认每个 clientRequestId 最多产生一条工单和一次库存预留。",
+      "确认 canary 的晚到成功率、重试率和重复率均在阈值内。"
+    ],
+    "knowledgePoints": [
+      "agent tool retry policy",
+      "idempotent write APIs",
+      "unknown outcome reconciliation",
+      "tail-latency observability"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

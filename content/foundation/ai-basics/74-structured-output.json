@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.structured-output",
+  "type": "foundation",
+  "title": "结构化输出：把生成结果变成可验证契约",
+  "domain": "ai-basics",
+  "track": "ai-basics",
+  "skills": ["llm.applications", "agents.evaluation"],
+  "level": "intermediate",
+  "order": 74,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "结构化输出让模型按受限字段和类型交付结果，再由应用执行模式校验、业务规则检查与失败处理，使自然语言的不确定性不会直接越过系统接口。",
+    "analogy": "它像理赔柜台的标准表单，申请人必须选择处理类别并填写必填项，柜台系统还会核对金额和权限；表单整齐不代表申请自动获批，但能让后续判断稳定执行。",
+    "technicalExplanation": "应用应定义枚举、必填字段、长度和嵌套限制，解析后拒绝额外字段并区分格式失败、策略拒绝与模型拒答；校验失败的重试必须有上限，并保存模板和模式版本。",
+    "example": "退款助手可输出处理类型、答复草稿和是否升级人工，由验证器禁止未审批状态出现承诺字段；这能稳定检查结果，但仍需保留高优先级政策和服务端审批边界。",
+    "commonMistakes": "把能解析的 JSON 当成事实正确、让模型自由生成字段名、校验失败后无限重试，或直接执行结构中的动作都很危险；契约只约束形状，证据、权限和副作用仍要另行验证。"
+  },
+  "relatedCases": ["llm-prompt-context-order-001"]
+}

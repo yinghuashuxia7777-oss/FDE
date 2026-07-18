@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.agent.tool-contracts",
+  "version": 1,
+  "status": "draft",
+  "title": "Tool Contract Focused Practice",
+  "summary": "A focused transfer activity for Tool Contract.",
+  "primaryConceptId": "concept.interface-contract",
+  "foundationIds": ["ai.tool-schema"],
+  "primaryLeafSkillId": "agent.tool-contracts",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.agent.tool-contracts",
+    "kind": "decision",
+    "prompt": "Repair a tool schema while preserving caller compatibility.",
+    "stimulus": [
+      {
+        "id": "stimulus.agent.tool-contracts",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.agent.tool-contracts",
+      "skillId": "agent.tool-contracts",
+      "version": 1
+    },
+    "criterionIds": ["criterion.agent.tool-contracts.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "tool-contract",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

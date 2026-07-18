@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "agent.tool-calling",
+  "type": "foundation",
+  "title": "工具调用：把模型意图连接到确定性操作",
+  "domain": "agent",
+  "track": "ai-basics",
+  "skills": [
+    "agents.evaluation",
+    "api.integration",
+    "reliability.observability"
+  ],
+  "level": "intermediate",
+  "order": 29,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "工具调用让模型选择预定义函数并生成结构化参数，真正执行仍由应用控制；应用必须验证参数、权限和重试语义，不能把模型输出直接当成可信命令。",
+    "analogy": "模型像填写作业单的调度员，工具执行器像持证技师。调度员可以建议做什么，但技师仍要核对权限、设备编号和安全条件后才动手。",
+    "technicalExplanation": "工具定义包含名称、用途和参数 Schema，编排器解析模型选择后执行 API。写操作需要幂等键、明确超时、结果存档和失败分类，高风险工具还需审批。",
+    "example": "创建工单工具在响应前超时，Agent 把未知结果当作失败并重新调用，生成重复工单。应复用同一幂等键，并把尝试和最终结果关联到同一 trace。",
+    "commonMistakes": "相信模型生成的参数天然合法、向模型暴露超出任务所需的工具，或每次重试生成新请求 ID，都会扩大安全和重复执行风险。"
+  },
+  "relatedCases": [
+    "agent-tool-timeout-retry-001",
+    "agent-approval-boundary-bypass-001"
+  ]
+}

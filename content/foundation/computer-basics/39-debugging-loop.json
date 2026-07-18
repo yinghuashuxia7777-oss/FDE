@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.debugging-loop",
+  "type": "foundation",
+  "title": "调试闭环：用证据缩小问题范围",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": [
+    "software.foundations",
+    "systems.networking",
+    "reliability.observability"
+  ],
+  "level": "intermediate",
+  "order": 39,
+  "estimatedMinutes": 12,
+  "content": {
+    "simpleExplanation": "调试闭环是先定义可观察症状和影响范围，再提出可证伪假设、收集最小证据、进行低风险实验并验证结果的循环，每一步都应减少不确定性而非扩大变更面。",
+    "analogy": "排查像医生问诊，先确认症状、时间线和受影响人群，再用检查排除假设。一次同时换药、改饮食和停运动，即使病情好转也无法知道哪个动作有效，更无法安全复现。",
+    "technicalExplanation": "高质量循环会固定基线与成功标准，把系统按客户端、解析、网络、进程、配置和依赖分层，并优先比较正常与异常样本。每次实验只改变一个变量，记录预期信号、停止条件与回滚方式，结论则必须由行为证据而非操作完成状态支持。",
+    "example": "私有端点案例中，同一镜像在旧子网正常而新子网超时，且两处使用不同的 DNS 转发配置。应先比较域名解析结果，确认新子网是否得到私有地址，再验证到目标端口和应用协议的连通性，而不是直接开放公网或写死地址。",
+    "commonMistakes": "最常见的问题是同时修改防火墙、DNS 和应用配置，导致结果无法归因；另一种是只收集支持既有猜想的日志。FDE 还应避免无边界地增加日志或重试，先写清假设、所需证据、客户风险和安全停止条件。"
+  },
+  "relatedCases": ["dns-private-endpoint-001"]
+}

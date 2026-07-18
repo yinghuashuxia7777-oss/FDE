@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.chunk",
+  "type": "concept",
+  "category": "ai",
+  "order": 32,
+  "title": "切块：把文档拆成可检索且保留语义的片段",
+  "technicalTerm": "Chunk",
+  "simpleExplanation": "Chunk 是从文档中切出的检索单元，需要足够聚焦，也要保留回答问题所需的上下文。",
+  "analogy": "像把地图裁成便携小页：切得太大难以定位，切得太碎又会把道路名称和路线分开。",
+  "technicalExplanation": "切块策略可按字符、Token、段落、标题或语义边界执行，并通过重叠、父子关系和元数据保留上下文。尺寸会影响嵌入表示、召回精度和上下文预算。",
+  "whyItMatters": "答案证据跨越边界时，目标片段可能只包含结论或条件的一半。FDE 应检查原文位置、实际 Chunk 和召回结果，而非只调 Top-K。",
+  "commonMistakes": "所有文档使用同一固定长度；忽略标题与表格结构；重叠过大造成重复证据；切块策略改变后不重建或不评估。",
+  "relatedFoundation": ["ai.chunking-strategy"],
+  "relatedCases": ["rag-chunk-boundary-answer-loss-001"]
+}

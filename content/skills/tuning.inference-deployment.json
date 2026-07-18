@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "tuning.inference-deployment",
+  "domainId": "fine-tuning-inference",
+  "label": "Fine-tuning and inference deployment",
+  "description": "Design datasets, adapt models, and operate inference deployments.",
+  "status": "active"
+}

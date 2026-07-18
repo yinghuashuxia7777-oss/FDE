@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.token",
+  "type": "foundation",
+  "title": "Token：模型处理文本的基本片段",
+  "domain": "ai-basics",
+  "track": "ai-basics",
+  "skills": ["llm.applications"],
+  "level": "beginner",
+  "order": 22,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "Token 是模型读取和生成文本时使用的片段，可能是一个汉字、词的一部分或标点；字符数不等于 Token 数，输入与输出都会占用上下文和成本。",
+    "analogy": "Token 像拼图块：一句话会被拆成模型词表认识的小块，再逐块处理。不同语言和符号的切分方式不同，所需块数也会不同。",
+    "technicalExplanation": "分词器按固定词表把文本编码为整数 ID，模型在这些 ID 上计算。上下文限制通常以 Token 计量，计费、延迟与内存也会随输入输出 Token 数变化。",
+    "example": "团队只按页面字符数估算提示长度，加入日志和检索片段后请求接近窗口上限，关键约束被截断。应实际测量 Token 并给各段分配预算。",
+    "commonMistakes": "不要假设一个英文单词必然等于一个 Token，也不要只限制用户输入而忽略系统提示、工具结果和输出预算；它们共同占用同一上下文。"
+  },
+  "relatedCases": ["llm-prompt-context-order-001"]
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "rubricSetVersion": "0.1.0",
+  "skillCatalogVersion": "0.1.0",
+  "status": "draft",
+  "rubrics": [
+    {
+      "schemaVersion": 1,
+      "id": "rubric.eng.runtime-debugging",
+      "skillId": "eng.runtime-debugging",
+      "version": 1,
+      "status": "draft",
+      "title": "Runtime debugging evidence rubric",
+      "evidenceTypes": ["diagnosis"],
+      "criteria": [
+        {
+          "criterionId": "criterion.evidence-triage",
+          "description": "Selects the next diagnostic step from observed evidence.",
+          "evidenceTypes": ["diagnosis"],
+          "weight": 1,
+          "critical": true
+        }
+      ],
+      "thresholds": {
+        "learning": 1,
+        "competent": 70,
+        "proficient": 85
+      },
+      "metadata": {
+        "createdAt": "2026-07-17T00:00:00.000Z",
+        "reviewedAt": null,
+        "author": "FDE Arena",
+        "reviewer": null
+      }
+    }
+  ]
+}

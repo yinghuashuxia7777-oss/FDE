@@ -1,0 +1,490 @@
+{
+  "schemaVersion": 1,
+  "id": "zero-downtime-schema-migration-001",
+  "slug": "zero-downtime-schema-migration-001",
+  "title": "订单 Schema 迁移要求零停机",
+  "summary": "为多服务共享订单数据设计 additive migration、双版本兼容 API、分阶段 cutover 与可验证回滚。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "data-engineering",
+    "software-foundations",
+    "api-integration",
+    "reliability"
+  ],
+  "skills": [
+    "data.engineering",
+    "software.foundations",
+    "api.integration",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["design", "deploy", "operate", "incident-response"],
+  "technicalLayers": ["database", "application", "http-api", "observability"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["data-integrity", "availability", "compatibility"],
+  "behaviorPatterns": [
+    "expand-migrate-contract",
+    "backward-compatible-change",
+    "observable-cutover"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的电商平台由订单 API、履约 worker 和分析导出共同读取同一订单数据库。",
+    "background": "新合规需求要求每个订单保存 customer_region，并把内部状态 pending 改为 awaiting_fulfillment。",
+    "initialIncident": "团队提出在周一高峰前执行单次迁移：新增非空列、更新全部行、重命名状态并立即部署所有服务。",
+    "constraints": [
+      "不能停写订单或安排全站维护窗口。",
+      "旧移动客户端必须继续理解 API 响应至少 30 天。",
+      "每个阶段都必须可观察、可暂停，并保留数据回滚或兼容路径。"
+    ],
+    "confirmedFacts": [
+      "orders 表有 4.2 亿行，直接全表更新预计超过 3 小时。",
+      "三个服务的部署不能原子同步完成。",
+      "旧客户端只识别 pending、paid 和 cancelled。"
+    ]
+  },
+  "startNodeId": "zero-downtime-schema-migration-001-node-01",
+  "nodes": [
+    {
+      "id": "zero-downtime-schema-migration-001-node-01",
+      "type": "architecture-tradeoff",
+      "title": "设计数据库扩展阶段",
+      "prompt": "第一阶段 Schema 变更应如何避免长锁和混合版本故障？",
+      "skillWeights": {
+        "data.engineering": 1
+      },
+      "evidence": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "迁移演练",
+          "content": "ADD nullable column without default=1.8s metadata operation\nADD NOT NULL with computed default + rewrite=>3h estimate, replica lag >40m in staging sample."
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-01-evidence-02",
+          "type": "text",
+          "title": "数据来源",
+          "content": "customer_region can be derived from an immutable shipping-country mapping for 99.7% of rows; unresolved rows must enter a review queue."
+        }
+      ],
+      "options": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-01-option-a",
+          "label": "先新增可空 region 与新状态兼容字段，应用双写，再按主键范围限速回补并记录未解析项",
+          "explanation": "additive 变更避免长表重写，双写支持混合版本，分块回补可暂停并把未知数据显式隔离。",
+          "errorType": "none"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-01-option-b",
+          "label": "在一个事务中新增非空列并更新 4.2 亿行，失败就整体回滚",
+          "explanation": "长事务会产生锁、日志和复制延迟，回滚本身也可能持续很久，违反零停机。",
+          "errorType": "monolithic-table-rewrite"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-01-option-c",
+          "label": "先删除旧状态字段，再让各服务按自己的时间适配",
+          "explanation": "服务无法原子部署，先删除会让仍读取旧字段的 API、worker 和导出立即失败。",
+          "errorType": "contract-before-consumer-migration"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "zero-downtime-schema-migration-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "零停机迁移先扩展兼容结构，再搬运数据，最后才收缩旧结构。",
+        "secondWrong": "可空列元数据操作只需 1.8 秒，而非空全表重写预计三小时并造成副本延迟。",
+        "revealedAnswer": "应先 additive 扩展和双写，按主键范围限速回补 region，未知项进入审查；监控锁、复制延迟和回补差异。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "zero-downtime-schema-migration-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "Schema 扩展快速完成，历史数据以有界可观测方式迁移。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "高峰写入被阻塞，副本长时间落后。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "混合版本服务同时出现读取和写入故障。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "zero-downtime-schema-migration-001-node-02",
+      "type": "diff-review",
+      "title": "实现混合版本兼容",
+      "prompt": "应用代码应如何跨越双字段阶段而不隐藏不一致？",
+      "skillWeights": {
+        "software.foundations": 1
+      },
+      "evidence": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-02-evidence-01",
+          "type": "diff",
+          "title": "候选读写逻辑",
+          "content": "+ write legacy_status and status_v2 in one transaction\n+ read status_v2 when present, otherwise map legacy_status\n+ emit mismatch metric when both exist and disagree\n+ keep feature flag for v2 read preference",
+          "language": "diff"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-02-evidence-02",
+          "type": "text",
+          "title": "部署顺序",
+          "content": "Order API may reach v2 first, worker second, analytics export last. Any version must process rows written by the other versions."
+        }
+      ],
+      "options": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-02-option-a",
+          "label": "每个服务自行选择切换日期，不共享映射函数或契约测试",
+          "explanation": "独立实现会产生状态映射漂移，且无法保证任一版本能读其他版本写入的数据。",
+          "errorType": "duplicated-migration-semantics"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-02-option-b",
+          "label": "共享纯映射与契约测试，事务双写、兼容读，并对双字段不一致发指标",
+          "explanation": "共享语义减少分叉，双写与 fallback 支持混合版本，不一致指标让兼容逻辑不会静默掩盖错误。",
+          "errorType": "none"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-02-option-c",
+          "label": "同一版本同时停止旧字段读写并强制所有服务立即升级",
+          "explanation": "部署不能原子完成，任何滞后服务都会在窗口内读取空值或写入不完整状态。",
+          "errorType": "flag-day-application-cutover"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "zero-downtime-schema-migration-001-node-02-option-b"
+      },
+      "feedback": {
+        "firstWrong": "代码兼容层需要跨服务共享语义，并让不一致可见。",
+        "secondWrong": "部署顺序明确不原子；候选 diff 的双写、fallback 和 mismatch 指标支持混合版本。",
+        "revealedAnswer": "应共享状态映射与契约测试，事务双写并兼容读，记录不一致指标；逐服务打开 v2 read flag 且可快速关闭。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "zero-downtime-schema-migration-001-node-02-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "服务间状态解释逐渐分叉且难以检测。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-02-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "不同部署版本能互操作，并可观察数据偏差。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-02-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "部分服务在升级窗口内无法处理订单。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "zero-downtime-schema-migration-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "保持 API 客户端兼容",
+      "prompt": "内部状态变化应如何通过公共 API 演进？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-03-evidence-01",
+          "type": "http",
+          "title": "客户端兼容测试",
+          "content": "old client parses status enum [pending,paid,cancelled]\nresponse status=awaiting_fulfillment -> parse error\nresponse status=pending with statusDetail=awaiting_fulfillment -> success",
+          "language": "http"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-03-evidence-02",
+          "type": "text",
+          "title": "契约窗口",
+          "content": "Public API v1 must remain backward compatible for 30 days. API v2 may expose the new enum after consumer contract tests pass."
+        }
+      ],
+      "options": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-03-option-a",
+          "label": "v1 保留 pending 并可增添可忽略详情，v2 暴露新枚举；用消费者契约测试分阶段迁移",
+          "explanation": "v1 保持旧枚举避免解析失败，additive 详情不破坏客户端；v2 与契约测试提供明确升级路径。",
+          "errorType": "none"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-03-option-b",
+          "label": "在 v1 直接返回新枚举，并在发布说明中提醒客户端升级",
+          "explanation": "已证明旧客户端会解析失败，文档通知不能把破坏性响应变成兼容变更。",
+          "errorType": "breaking-enum-change"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-03-option-c",
+          "label": "同时停止 v1，并让所有旧客户端请求返回 410",
+          "explanation": "这违反 30 天兼容承诺，会立即中断大量客户订单查询。",
+          "errorType": "premature-api-retirement"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "zero-downtime-schema-migration-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "数据库内部语义可以变化，但公共 API 必须遵守已承诺兼容窗口。",
+        "secondWrong": "实测旧客户端无法解析新枚举，但能忽略 additive statusDetail。",
+        "revealedAnswer": "应保持 v1 的 pending 兼容表示，additive 提供详情，并在 v2 暴露新枚举；消费者契约测试通过后逐步迁移。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "zero-downtime-schema-migration-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "旧客户端继续运行，新客户端可采用更精确语义。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "未及时升级的移动客户端无法显示订单。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "所有旧客户端在无迁移窗口下失去服务。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "zero-downtime-schema-migration-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "zero-downtime-schema-migration-001-node-04",
+      "type": "architecture-tradeoff",
+      "title": "执行可观察 cutover 与收缩",
+      "prompt": "何时以及如何停止旧字段，才能保持可回滚？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-04-evidence-01",
+          "type": "metric",
+          "title": "迁移仪表盘",
+          "content": "backfill=99.98%; unresolved=84000; dual_write_mismatch=0.004%; v2_read=20%; replica_lag=12s; old_field_reads analytics=1400/min."
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-04-evidence-02",
+          "type": "text",
+          "title": "收缩门槛草案",
+          "content": "No old-field reads for seven days, zero unexplained mismatches, all consumer contract tests green, backfill exceptions resolved, and restore rehearsal complete."
+        }
+      ],
+      "options": [
+        {
+          "id": "zero-downtime-schema-migration-001-node-04-option-a",
+          "label": "回补超过 99% 就立即删除旧字段，少量异常后续手工修复",
+          "explanation": "仍有 8.4 万未解析行和 analytics 高频旧读，删除会造成真实数据与服务故障。",
+          "errorType": "percentage-only-cutover"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-04-option-b",
+          "label": "先删除旧字段迫使剩余消费者暴露问题，再从备份恢复",
+          "explanation": "用生产破坏发现依赖不可控，备份恢复时间和新写数据丢失都未验证。",
+          "errorType": "destructive-dependency-discovery"
+        },
+        {
+          "id": "zero-downtime-schema-migration-001-node-04-option-c",
+          "label": "逐步提高 v2 读比例，监控 mismatch 与消费者旧读；满足七天门槛和恢复演练后再收缩",
+          "explanation": "渐进 cutover 保留关闭 flag 的回退，门槛覆盖数据、消费者、稳定期和恢复能力。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "zero-downtime-schema-migration-001-node-04-option-c"
+      },
+      "feedback": {
+        "firstWrong": "完成百分比不能证明尾部正确、消费者已迁移或回滚有效。",
+        "secondWrong": "当前仍有 unresolved 行和 analytics 每分钟 1400 次旧字段读取，不满足草案门槛。",
+        "revealedAnswer": "应分阶段提高 v2 读比例并观察差异和旧读，清理全部异常、连续七天满足门槛且恢复演练通过后才删除旧结构。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "zero-downtime-schema-migration-001-node-04-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-04-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "尾部异常与未迁移消费者在收缩时同时失败。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-04-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "分析服务和尾部订单立即失败，恢复风险未知。"
+        },
+        {
+          "optionId": "zero-downtime-schema-migration-001-node-04-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "迁移在证据充分时收缩，并在此前保持快速回退。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "单次非空全表更新和状态改名无法与非原子多服务部署兼容。正确路径是 expand-migrate-contract：additive Schema、共享双写兼容、版本化 API、可观察 cutover，最后证据充分再收缩。",
+    "rootCause": "迁移方案把数据库回填、应用语义、公共 API 和消费者部署误当成可原子执行的一次变更。",
+    "correctApproach": [
+      "新增兼容字段并按主键范围限速、幂等回补。",
+      "部署共享映射、事务双写、兼容读和 mismatch 指标。",
+      "保持 API v1 枚举兼容并通过 v2 与消费者契约迁移。",
+      "渐进切读，满足数据、消费者、稳定期和恢复门槛后收缩。"
+    ],
+    "keyLessons": [
+      "零停机 Schema 迁移依赖阶段兼容而非快速执行。",
+      "数据库、应用和 API 契约各有独立消费者与回滚边界。",
+      "收缩旧结构前必须证明没有隐藏读者和尾部异常。"
+    ],
+    "interviewerPerspective": "观察候选人是否能把迁移拆成可暂停阶段，并为数据、代码、API 与可靠性分别定义证据。",
+    "customerRiskPerspective": "错误迁移可能阻塞订单、破坏旧客户端并造成数据分歧；兼容窗口与可观察 cutover 保护连续交易。",
+    "remediation": [
+      "建立 expand-migrate-contract 标准 runbook 与迁移模板。",
+      "把双写 mismatch、旧字段读取和回补异常纳入仪表盘。",
+      "为 API 枚举与多版本消费者增加契约测试。"
+    ],
+    "verification": [
+      "在持续写入下确认分块回补不造成长锁或不可接受副本延迟。",
+      "混合版本服务互相读写时确认状态语义一致。",
+      "旧客户端在 30 天窗口内继续解析 v1。",
+      "关闭 v2 read flag 和数据库恢复演练均能在目标时间完成。"
+    ],
+    "knowledgePoints": [
+      "expand-migrate-contract",
+      "dual-write compatibility",
+      "consumer-driven API contracts",
+      "observable schema cutover"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

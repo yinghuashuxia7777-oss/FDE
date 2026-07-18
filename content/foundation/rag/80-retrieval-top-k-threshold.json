@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.retrieval-top-k-threshold",
+  "type": "foundation",
+  "title": "召回数量与阈值：平衡漏检和上下文噪声",
+  "domain": "rag",
+  "track": "ai-basics",
+  "skills": ["rag.search", "agents.evaluation", "performance.scaling"],
+  "level": "intermediate",
+  "order": 80,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "召回数量决定最多取多少候选，相似度阈值决定最低接近程度，两者需要按查询类型和证据需求评估，但都不能替代版本过滤、权限控制或回答缓存失效。",
+    "analogy": "它像调查员规定最多调阅几份档案并设定相关性门槛，取得太少会漏证据，取得太多会混入噪声；无论数量如何，作废和未授权档案都应先排除。",
+    "technicalExplanation": "调参应基于标注查询测量召回率、精确率、无答案拒答和最终引用支持度，并记录候选分数分布与上下文成本；不同嵌入版本的原始阈值不可直接沿用。",
+    "example": "差旅政策已经进入新索引，但既有问题仍返回旧阈值，追踪显示请求命中未绑定语料代次的回答缓存；此时修改召回数量或阈值不会经过检索层，也就无法修复。",
+    "commonMistakes": "看到错误答案就盲目增大候选数、把高分当作事实置信度、用单一全局阈值覆盖所有语言，或忽略无答案样本都会制造看似相关却不可证实的上下文。"
+  },
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "rag-top-k-context-dilution-001"
+  ]
+}

@@ -1,0 +1,227 @@
+import type {
+  CaseLevel,
+  CaseStatus,
+  ConsequenceDelta,
+  ErrorType,
+  EvaluationResult,
+  FdeCase,
+  NodeType,
+  NodeSubmission,
+} from '../../domain/cases/types';
+import type { AttemptNumber } from '../../domain/scoring/score-node';
+import type { Verdict } from '../../domain/scoring/case-score';
+import type {
+  ContentManifest,
+  ContentSourceKind,
+  CoveragePlan,
+  DomainDefinition,
+  SkillDefinition,
+} from '../../content/contracts';
+
+export const LOCAL_USER_ID = 'local-user' as const;
+export const ATTEMPT_SCHEMA_VERSION = 1 as const;
+
+export interface CaseSummary {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  level: CaseLevel;
+  status: CaseStatus;
+  version: number;
+  estimatedMinutes: number;
+  domains: string[];
+  skills: string[];
+  riskTypes: string[];
+  scenarioSummary: string;
+  technicalLayers: string[];
+  nodeTypes: NodeType[];
+}
+
+export interface CaseQuery {
+  level?: CaseLevel | undefined;
+  status?: CaseStatus | undefined;
+  domain?: string | undefined;
+}
+
+export type AttemptStatus = 'in-progress' | 'completed' | 'abandoned';
+
+export interface AttemptRoundRecord {
+  nodeId: string;
+  attemptNumber: AttemptNumber;
+  submission: NodeSubmission;
+  evaluation: EvaluationResult;
+  submittedAt: string;
+  revealed: boolean;
+}
+
+interface AttemptRecordBase {
+  id: string;
+  userId: string;
+  caseId: string;
+  caseVersion: number;
+  schemaVersion: typeof ATTEMPT_SCHEMA_VERSION;
+  startedAt: string;
+  updatedAt: string;
+  criticalErrorIds: string[];
+  visitedNodeIds: string[];
+  roundHistory: AttemptRoundRecord[];
+  consequences?: ConsequenceDelta[] | undefined;
+}
+
+export interface InProgressAttemptRecord extends AttemptRecordBase {
+  status: 'in-progress';
+  currentNodeId: string;
+  completedAt?: never;
+  score?: never;
+  verdict?: never;
+}
+
+export interface CompletedAttemptRecord extends AttemptRecordBase {
+  status: 'completed';
+  currentNodeId: null;
+  completedAt: string;
+  score: number;
+  verdict: Verdict;
+}
+
+export interface AbandonedAttemptRecord extends AttemptRecordBase {
+  status: 'abandoned';
+  currentNodeId: string | null;
+  completedAt?: never;
+  score?: never;
+  verdict?: never;
+}
+
+export type AttemptRecord =
+  InProgressAttemptRecord | CompletedAttemptRecord | AbandonedAttemptRecord;
+
+export interface AttemptQuery {
+  userId?: string | undefined;
+  caseId?: string | undefined;
+  status?: AttemptStatus | undefined;
+  completedAfter?: string | undefined;
+}
+
+export interface CaseProgressRecord {
+  userId: string;
+  caseId: string;
+  caseVersion: number;
+  latestAttemptId: string;
+  attemptCount: number;
+  completedCount: number;
+  highestScore: number;
+  latestScore: number;
+  latestVerdict: Verdict;
+  hasCriticalError: boolean;
+  updatedAt: string;
+}
+
+export interface SkillMasteryRecord {
+  userId: string;
+  skillId: string;
+  score: number;
+  sampleCount: number;
+  updatedAt: string;
+}
+
+export interface MistakeRecord {
+  id: string;
+  userId: string;
+  attemptId: string;
+  caseId: string;
+  caseVersion: number;
+  nodeId: string;
+  submission: NodeSubmission;
+  correctSubmission: NodeSubmission;
+  errorTypes: ErrorType[];
+  evidenceIds: string[];
+  skillIds: string[];
+  critical: boolean;
+  createdAt: string;
+  redoScores: number[];
+}
+
+export interface MistakeQuery {
+  userId?: string | undefined;
+  skillId?: string | undefined;
+  errorType?: ErrorType | undefined;
+  critical?: boolean | undefined;
+}
+
+export type ThemePreference = 'light' | 'dark' | 'system';
+
+export interface UserSettings {
+  userId: string;
+  theme: ThemePreference;
+  updatedAt: string;
+}
+
+export interface LocalUser {
+  id: typeof LOCAL_USER_ID;
+  displayName: string;
+  createdAt: string;
+}
+
+export type CoverageStatus =
+  'planned' | 'draft' | 'reviewed' | 'published' | 'deprecated';
+
+export interface CoverageRecord {
+  caseId: string;
+  status: CoverageStatus;
+  level: CaseLevel;
+  domains: string[];
+  skills: string[];
+  updatedAt: string;
+}
+
+export interface ProgressSnapshot {
+  attempt: AttemptRecord;
+  progress: CaseProgressRecord;
+  mastery: SkillMasteryRecord[];
+  mistakes: MistakeRecord[];
+}
+
+export interface CaseVersionRecord {
+  caseId: string;
+  version: number;
+  schemaVersion: number;
+  contentHash: string;
+  status: CaseStatus;
+  level: CaseLevel;
+  canonicalContent: string;
+  content: FdeCase;
+}
+
+export interface InstalledContentPackRecord {
+  packId: string;
+  contentVersion: string;
+  schemaVersion: number;
+  sourceKind: ContentSourceKind;
+  manifest: ContentManifest;
+  domains: DomainDefinition[];
+  skills: SkillDefinition[];
+  coverage: CoveragePlan;
+  installedAt: string;
+  checksum: string;
+}
+
+export interface StoredMistakeRecord extends MistakeRecord {
+  criticalIndex: 'critical' | 'non-critical';
+}
+
+export interface AppMetaRecord {
+  key: string;
+  value: unknown;
+  updatedAt: string;
+}
+
+/** User-owned portable data. Installed case content is deliberately excluded. */
+export interface LocalDataBundle {
+  userId: typeof LOCAL_USER_ID;
+  attempts: AttemptRecord[];
+  progress: CaseProgressRecord[];
+  mastery: SkillMasteryRecord[];
+  mistakes: MistakeRecord[];
+  settings: UserSettings | null;
+}

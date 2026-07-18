@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.rerank",
+  "type": "concept",
+  "category": "ai",
+  "order": 35,
+  "title": "重排：对召回候选进行二次精排",
+  "technicalTerm": "Rerank",
+  "simpleExplanation": "重排先接收一批候选，再用更精细的模型重新判断哪些证据最值得放在前面。",
+  "analogy": "像初筛简历后由面试官按岗位细节再次排序：初筛负责不漏人，精排负责把最合适的人放到前面。",
+  "technicalExplanation": "重排模型通常同时读取查询与候选文本，计算更准确但更昂贵的相关性分数。候选规模、截断、语言与领域分布会影响延迟和排序质量。",
+  "whyItMatters": "产品代码、缩写或多区域版本可能让纯向量排序不稳定。FDE 应对比召回前后排名，并确认重排不会跨越权限或版本过滤。",
+  "commonMistakes": "让重排器处理整个语料库；在权限过滤前重排敏感内容；只看相关性不看延迟；候选文本被截断却不记录。",
+  "relatedFoundation": ["ai.hybrid-search-reranking"],
+  "relatedCases": [
+    "rag-hybrid-search-product-code-001",
+    "multi-region-rag-consistency-001"
+  ]
+}

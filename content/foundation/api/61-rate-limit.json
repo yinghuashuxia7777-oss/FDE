@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "api.rate-limit",
+  "type": "foundation",
+  "title": "API 限流：在共享容量内安排调用",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "intermediate",
+  "order": 61,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "API 限流通过单位时间配额、并发上限或成本额度保护共享服务，客户端应识别限流响应并按服务提示减速而不是持续施压。",
+    "analogy": "限流像展馆按时段控制入场人数，票有效也不代表可以立刻进门；闸机提示下一时段后继续反复刷票，只会让入口更加拥堵。",
+    "technicalExplanation": "服务可按租户、密钥、用户或资源实施令牌桶等策略，常以 429 和 Retry-After 表达暂时限流。客户端还需设置并发边界、队列和全局重试预算。",
+    "example": "FDE 检查 Agent 工具失败时没有看到 429、Retry-After 或配额耗尽信号，却发现客户端两秒超时后自动重试；限流证据被排除后，调查转向晚到成功与写操作缺少幂等保护。",
+    "commonMistakes": "把 429 当成普通 500 立即重试，或只限制单进程而忽略整个租户流量，都会延长限流。也不要假定响应头中的剩余额度适用于所有端点和时间窗口。"
+  },
+  "relatedCases": [
+    "agent-tool-timeout-retry-001",
+    "api-rate-limit-retry-after-001"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "http.method-semantics",
+  "type": "foundation",
+  "title": "HTTP 方法语义：把业务意图放在正确动作里",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "software.foundations"],
+  "level": "beginner",
+  "order": 41,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "HTTP 方法说明调用者想读取、创建、替换、局部修改还是删除资源，也影响缓存和重试判断，因此必须遵循接口契约而不能只看请求是否能发出。",
+    "analogy": "HTTP 方法像仓库单据上的操作类型，同一箱货写查询、入库或报废会触发完全不同的流程；地址正确却选错单据，执行结果仍会偏离真实意图。",
+    "technicalExplanation": "GET 和 HEAD 通常应当安全且无副作用，PUT 与 DELETE 按规范具有幂等语义，POST 往往不天然幂等。真实 API 可能进一步约束方法、路径和幂等键，客户端必须以契约为准。",
+    "example": "FDE 排查 Agent 创建工单后超时的问题时，发现编排器把 POST 当成可随意重放的读取请求，每次超时都产生新工单。修复需要保留原方法语义，并为创建动作贯穿同一幂等键。",
+    "commonMistakes": "看到 405 就轮流尝试各种方法，或认为 PUT 一定不会产生重复副作用，都会绕过契约分析。还应避免用 GET 承载修改操作，否则缓存、预取和重放都可能意外触发写入。"
+  },
+  "relatedCases": ["agent-tool-timeout-retry-001"]
+}

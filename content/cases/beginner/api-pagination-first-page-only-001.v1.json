@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "api-pagination-first-page-only-001",
+  "slug": "api-pagination-first-page-only-001",
+  "title": "同步任务只读取 API 第一页",
+  "summary": "利用响应分页信息与同步计数定位首屏截断，并通过完整遍历、唯一键和对账验证修复。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["api-integration", "data-engineering"],
+  "skills": ["api.integration", "data.engineering"],
+  "lifecycleStages": ["integrate", "operate"],
+  "technicalLayers": ["rest-api", "pagination", "data-sync"],
+  "environments": ["sandbox", "production"],
+  "riskTypes": ["data-completeness", "customer-trust"],
+  "behaviorPatterns": ["contract-driven-debugging", "reconciliation"],
+  "scenario": {
+    "customerProfile": "一家虚构的学习平台每天从合作方 CRM 同步已授权的企业联系人。",
+    "background": "首次全量同步显示任务成功且没有错误日志，但客户后台只出现部分联系人。",
+    "initialIncident": "源系统有 740 条符合条件的记录，目标系统每次同步后都恰好只有 100 条。",
+    "constraints": [
+      "必须使用 API 返回的官方分页方式，不能猜测未文档化参数。",
+      "同步写入必须按稳定 contactId 去重，避免验证时制造重复联系人。",
+      "先使用 235 条合成联系人验证，再回补生产缺失数据。"
+    ],
+    "confirmedFacts": [
+      "源系统过滤条件与目标租户都已核对无误。",
+      "同步任务收到 HTTP 200 且没有解析异常。",
+      "合作方文档规定单页最大 100 条并通过 nextCursor 继续读取。"
+    ]
+  },
+  "startNodeId": "api-pagination-first-page-only-001-node-01",
+  "nodes": [
+    {
+      "id": "api-pagination-first-page-only-001-node-01",
+      "type": "log-analysis",
+      "title": "识别分页截断",
+      "prompt": "根据响应和同步代码，下一步应如何修复数据读取逻辑？",
+      "skillWeights": {
+        "api.integration": 0.6,
+        "data.engineering": 0.4
+      },
+      "evidence": [
+        {
+          "id": "api-pagination-first-page-only-001-node-01-evidence-01",
+          "type": "http",
+          "title": "第一页响应",
+          "content": "GET /v2/contacts?status=active&limit=100 HTTP/1.1\n\nHTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"items\":[\"...100 contacts...\"],\"count\":100,\"total\":740,\"nextCursor\":\"c_next_100\"}"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-01-evidence-02",
+          "type": "config",
+          "title": "当前同步伪代码",
+          "content": "response = get('/v2/contacts?status=active&limit=100')\nfor contact in response.items:\n    upsert(contact.contactId, contact)\nlog('sync_complete', count=len(response.items))",
+          "language": "python"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-pagination-first-page-only-001-node-01-option-a",
+          "label": "持续使用 nextCursor 请求下一页，直到响应不再返回游标，并按 contactId upsert",
+          "explanation": "响应明确给出 total=740 和 nextCursor，而代码只处理一次；因此按官方游标遍历并用稳定 ID 写入可以补全数据且控制重复。"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-01-option-b",
+          "label": "把 limit 改成 10000，假设服务器会一次返回全部记录",
+          "explanation": "文档规定单页上限为 100，超大 limit 可能被截断或拒绝，无法替代按 nextCursor 遍历的契约。",
+          "errorType": "ignore-documented-page-limit"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-01-option-c",
+          "label": "保留现有代码并告诉客户源系统实际只有 100 条",
+          "explanation": "响应中的 total=740 与源系统计数共同反驳该结论，忽略证据会把客户端截断错误错误归因给客户。",
+          "errorType": "dismiss-server-total-evidence"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-pagination-first-page-only-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较服务器声明的 total、当前 items 数量和是否存在继续标记。",
+        "secondWrong": "total 是 740，当前页是 100，并且响应包含 nextCursor。",
+        "revealedAnswer": "应按 nextCursor 遍历到终点，并以 contactId 做幂等 upsert，而不是扩大 limit 或忽略总数。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": []
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-pagination-first-page-only-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-pagination-first-page-only-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "api-pagination-first-page-only-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证完整性与幂等性",
+      "prompt": "分页循环在沙箱完成后，哪项验证最能支持安全生产回补？",
+      "skillWeights": {
+        "api.integration": 0.4,
+        "data.engineering": 0.6
+      },
+      "evidence": [
+        {
+          "id": "api-pagination-first-page-only-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "合成数据首次同步",
+          "content": "source_total=235 pages_fetched=3 page_sizes=100,100,35 rows_written=235 unique_contact_ids=235 terminal_cursor=null"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-02-evidence-02",
+          "type": "json",
+          "title": "第二次同步对账",
+          "content": "{\"sourceTotal\":235,\"targetTotal\":235,\"inserted\":0,\"updated\":235,\"duplicates\":0,\"missingIds\":[]}"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-pagination-first-page-only-001-node-02-option-a",
+          "label": "核对页数、源目标总数和唯一 ID，并重跑确认没有新增重复后再分批回补",
+          "explanation": "首次对账证明遍历完整，第二次运行的零新增和零重复证明幂等，分批回补又保留了观察与暂停空间。"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-02-option-b",
+          "label": "只确认抓取了三页，不比较源目标记录与唯一 ID",
+          "explanation": "页数不能证明页面之间没有重复或遗漏，也不能证明目标写入成功，因此无法验证数据完整性。",
+          "errorType": "page-count-only-validation"
+        },
+        {
+          "id": "api-pagination-first-page-only-001-node-02-option-c",
+          "label": "清空生产联系人表后重新全量导入，以便容易比较总数",
+          "explanation": "清空有效数据会造成不可逆服务中断和引用破坏；当前稳定 ID upsert 与对账已经提供安全回补路径。",
+          "errorType": "destructive-full-table-reload"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-pagination-first-page-only-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "分页验证要同时覆盖读取完整性、写入完整性和重跑幂等性。",
+        "secondWrong": "比较源目标总数与唯一 ID，并用第二次运行确认零重复。",
+        "revealedAnswer": "应完成总数、唯一 ID 和重跑对账，再分批回补并向客户报告缺失范围与恢复进度。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-pagination-first-page-only-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "同步代码只处理第一页，尽管响应明确提供总数和 nextCursor。正确修复是遍历游标，并用稳定 ID 与源目标对账验证完整性。",
+    "rootCause": "客户端实现忽略了响应中的 nextCursor，只遍历第一页 items，因单页上限为 100 而稳定丢失其余联系人。",
+    "correctApproach": [
+      "按 API 返回的 nextCursor 逐页读取，直到游标为空，并按 contactId 幂等写入。",
+      "核对页数、源目标总数和唯一 ID，重跑确认零重复后分批回补生产。"
+    ],
+    "keyLessons": [
+      "HTTP 200 只表示单次请求成功，不代表整个数据集已经同步完整。",
+      "FDE 应向客户量化缺失记录范围、说明数据未被删除，并持续更新回补与对账进度。"
+    ],
+    "interviewerPerspective": "观察候选人是否读取分页契约、拒绝猜测超大 limit，并把技术成功连接到数据完整性。",
+    "customerRiskPerspective": "联系人缺失会造成企业用户无法获得服务，破坏客户对同步结果和业务报表的信任。",
+    "remediation": [
+      "实现游标分页循环、终点检测和基于 contactId 的幂等 upsert。",
+      "为每次同步记录源总数、目标总数、唯一 ID、页数和终端游标。"
+    ],
+    "verification": [
+      "确认合成数据的页大小为 100、100、35，源目标总数和唯一 ID 都为 235。",
+      "确认第二次同步新增与重复均为零，生产分批回补后缺失 ID 列表为空。"
+    ],
+    "knowledgePoints": [
+      "cursor pagination",
+      "data completeness",
+      "idempotent synchronization"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

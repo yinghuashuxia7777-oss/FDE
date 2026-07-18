@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.agent.tool-calling",
+  "version": 1,
+  "status": "draft",
+  "title": "Tool Calling Focused Practice",
+  "summary": "A focused transfer activity for Tool Calling.",
+  "primaryConceptId": "concept.tool-function-calling",
+  "foundationIds": ["agent.tool-calling"],
+  "primaryLeafSkillId": "agent.tool-calling",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.agent.tool-calling",
+    "kind": "decision",
+    "prompt": "Select the narrow tool and reject an unsafe side effect.",
+    "stimulus": [
+      {
+        "id": "stimulus.agent.tool-calling",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.agent.tool-calling",
+      "skillId": "agent.tool-calling",
+      "version": 1
+    },
+    "criterionIds": ["criterion.agent.tool-calling.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "tool-decision",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

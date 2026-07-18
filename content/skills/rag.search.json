@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "rag.search",
+  "domainId": "rag-search",
+  "label": "RAG and search",
+  "description": "Build and diagnose secure, grounded retrieval systems.",
+  "status": "active"
+}

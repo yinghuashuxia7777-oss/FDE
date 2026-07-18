@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "cloud-deployment",
+  "label": "Cloud, containers & Kubernetes",
+  "description": "Deployment, container, orchestration, and cloud operations.",
+  "status": "active"
+}

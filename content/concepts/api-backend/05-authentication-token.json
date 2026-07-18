@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.authentication-token",
+  "type": "concept",
+  "category": "api-backend",
+  "order": 5,
+  "title": "认证令牌：携带身份与访问声明",
+  "technicalTerm": "Authentication Token",
+  "simpleExplanation": "认证令牌是系统签发的临时通行凭证，携带调用方身份和允许使用的范围。",
+  "analogy": "像会议中心的临时胸卡，上面记录持有人、可进入区域和失效时间；胸卡泄露后，捡到的人可能冒用。",
+  "technicalExplanation": "令牌可能是不可读的随机串，也可能包含可验证声明。服务端需要检查签名或内省结果、到期时间、受众、Scope 与撤销状态；客户端需要安全存储并按刷新流程续期。",
+  "whyItMatters": "客户集成常因过期、受众或 Scope 错误失败。保留脱敏声明和时间线，既能定位问题，也能避免在调试日志中造成新的凭据泄露。",
+  "commonMistakes": "把完整令牌写入日志；只刷新页面不刷新令牌；混用不同环境或受众的令牌；用长期令牌规避正确的续期流程。",
+  "relatedFoundation": [
+    "api.token-authentication",
+    "api.bearer-token",
+    "api.token-expiry-refresh"
+  ],
+  "relatedCases": [
+    "api-oauth-scope-mismatch-001",
+    "security-log-pii-exposure-001"
+  ]
+}

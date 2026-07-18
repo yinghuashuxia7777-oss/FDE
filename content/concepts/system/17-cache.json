@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.cache",
+  "type": "concept",
+  "category": "system",
+  "order": 17,
+  "title": "缓存：用可失效副本换取读取速度",
+  "technicalTerm": "Cache",
+  "simpleExplanation": "缓存保存一份更快读取的副本，以减少重复计算或远程访问，但副本可能落后于真实来源。",
+  "analogy": "像把常用资料打印在桌边：查阅很快，但原文件更新后，旧打印件不会自动变新。",
+  "technicalExplanation": "缓存设计需要明确键、值来源、有效期、失效事件、一致性要求与回源策略。RAG 中缓存可能位于文档、Chunk、Embedding、检索结果或生成结果等多个层次。",
+  "whyItMatters": "客户看到旧政策答案时，重新索引并不必然清除所有缓存。FDE 应绘制数据路径，逐层确认版本与命中来源。",
+  "commonMistakes": "只清除浏览器缓存；使用无限有效期；更新源数据却不改变缓存键或版本；把一次正确回答当成缓存已全面刷新。",
+  "relatedFoundation": ["ai.vector-indexing", "ai.hallucination-detection"],
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "large-scale-rag-reindex-cutover-001"
+  ]
+}

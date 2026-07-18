@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "id": "third-party-egress-allowlist-001",
+  "slug": "third-party-egress-allowlist-001",
+  "title": "第三方地址轮换后出站连接被拒绝",
+  "summary": "根据 DNS、网络拒绝与供应商变更通知定位过期 IP 白名单，并以受控 FQDN 出站、TLS 校验和负向测试安全恢复。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 22,
+  "domains": ["security-governance", "systems-networking", "reliability"],
+  "skills": [
+    "security.governance",
+    "systems.networking",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["integrate", "operate", "incident-response"],
+  "technicalLayers": ["dns", "network-egress", "tls"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "network-exposure", "third-party-dependency"],
+  "behaviorPatterns": [
+    "layered-network-debugging",
+    "least-privilege-egress",
+    "change-feed-monitoring"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的受监管保险平台调用第三方文档转换 API 生成客户保单 PDF。",
+    "background": "生产工作负载只能经受管出站代理访问批准的第三方，旧配置把供应商域名解析出的单个 IP 固定到防火墙规则。",
+    "initialIncident": "供应商完成地址轮换后，预发布和生产转换任务开始超时，待处理保单队列持续增长。",
+    "constraints": [
+      "不得开放任意互联网出站或关闭 TLS 主机名验证。",
+      "必须核对供应商已签名的网络变更通知，不能仅凭一次 DNS 结果放行。",
+      "保单文档仍在内部队列中，恢复过程不得把内容复制到非批准服务。"
+    ],
+    "confirmedFacts": [
+      "转换应用、凭据和请求正文在故障前后没有变化。",
+      "供应商状态页和从批准诊断网络发出的合成请求均显示服务健康。",
+      "生产出站代理日志在 TLS 握手前拒绝了新的目标 IP。"
+    ]
+  },
+  "startNodeId": "third-party-egress-allowlist-001-node-01",
+  "nodes": [
+    {
+      "id": "third-party-egress-allowlist-001-node-01",
+      "type": "log-analysis",
+      "title": "验证地址轮换与拒绝层",
+      "prompt": "结合 DNS、代理日志和供应商通知，下一步应采取哪项最小风险行动？",
+      "skillWeights": {
+        "systems.networking": 0.5,
+        "security.governance": 0.3,
+        "reliability.observability": 0.2
+      },
+      "evidence": [
+        {
+          "id": "third-party-egress-allowlist-001-node-01-evidence-01",
+          "type": "terminal",
+          "title": "解析与受控诊断",
+          "content": "$ dig +short api.convert.example\n203.0.113.70\n$ curl --connect-timeout 3 https://api.convert.example/health\ncurl: (28) Connection timed out after 3000 milliseconds"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-01-evidence-02",
+          "type": "log",
+          "title": "受管出站代理记录",
+          "content": "destination_fqdn=api.convert.example resolved_ip=203.0.113.70 port=443 decision=deny reason=ip_not_in_rule rule_ip=203.0.113.12 tls_started=false"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-01-evidence-03",
+          "type": "customer-message",
+          "title": "已验证的供应商通知",
+          "content": "签名验证通过。供应商通知：api.convert.example 已从 203.0.113.12 迁移到受管网段 203.0.113.64/28；服务仍使用 TCP 443 和同一 TLS 主机名。"
+        }
+      ],
+      "options": [
+        {
+          "id": "third-party-egress-allowlist-001-node-01-option-a",
+          "label": "按已验证通知临时放行供应商受管网段的 443，并用合成请求验证后小批恢复",
+          "explanation": "代理明确在旧 IP 规则处拒绝，新地址属于已签名通知的最小供应商网段；限定端口和合成 canary 可恢复服务且控制暴露。"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-01-option-b",
+          "label": "只把当前 203.0.113.70 写成新的永久单 IP 规则",
+          "explanation": "单次解析地址可能继续轮换，永久固定当前 IP 会重复同类故障，也没有利用供应商明确发布的受管范围。",
+          "errorType": "replace-one-brittle-vendor-ip-with-another"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-01-option-c",
+          "label": "临时允许工作负载访问所有公网地址和端口，恢复后再收紧",
+          "explanation": "全开放远超已确认的供应商 443 需求，会让受监管文档工作负载具备任意外传路径，违反最小权限约束。",
+          "errorType": "open-unrestricted-internet-egress"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "third-party-egress-allowlist-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先确认失败发生在 DNS、代理、TLS 还是应用层，并验证新地址的权威来源。",
+        "secondWrong": "DNS 已返回新 IP，代理在 TLS 前拒绝，且签名通知给出了该 IP 所属的受管网段。",
+        "revealedAnswer": "应通过变更控制最小放行供应商网段的 443，先用合成请求和小批任务验证。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "third-party-egress-allowlist-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "third-party-egress-allowlist-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "third-party-egress-allowlist-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "third-party-egress-allowlist-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "third-party-egress-allowlist-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "替换脆弱的单 IP 规则",
+      "prompt": "恢复 canary 后，哪种长期出站控制最能兼顾地址轮换与安全边界？",
+      "skillWeights": {
+        "security.governance": 0.5,
+        "systems.networking": 0.4,
+        "reliability.observability": 0.1
+      },
+      "evidence": [
+        {
+          "id": "third-party-egress-allowlist-001-node-02-evidence-01",
+          "type": "config",
+          "title": "受管代理能力",
+          "content": "supportsFqdnPolicy: true\ndnsResolver: controlled\nallowedPorts: [443]\ntlsSniEnforcement: true\ncertificateHostnameVerification: true\nrejectPrivateAndLinkLocalResolution: true\nauditLog: enabled"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-02-evidence-02",
+          "type": "text",
+          "title": "供应商网络契约",
+          "content": "客户应连接 api.convert.example，不应固定单个地址。供应商通过已签名变更 feed 发布域名、CIDR 和证书更新，并至少提前七天通知。"
+        }
+      ],
+      "options": [
+        {
+          "id": "third-party-egress-allowlist-001-node-02-option-a",
+          "label": "用受控解析的 FQDN 代理策略限制 api.convert.example:443，并校验 SNI、证书和解析地址类别",
+          "explanation": "该方案允许供应商在契约域名后轮换地址，同时把目的域名、端口、TLS 身份和 DNS 安全约束集中在可审计代理上。"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-02-option-b",
+          "label": "允许所有 203.0.113.0/24 地址和任意端口，减少未来变更",
+          "explanation": "供应商只声明 /28 和 443，扩大到整个 /24 与任意端口会放行无关目的地，违反最小权限。",
+          "errorType": "overbroad-vendor-network-and-port-rule"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-02-option-c",
+          "label": "只检查请求 Host 头，不验证 TLS SNI、证书或 DNS 解析结果",
+          "explanation": "Host 头可由应用任意设置，不能证明网络对端身份；缺少 TLS 和解析约束会留下重定向与 DNS 滥用风险。",
+          "errorType": "host-header-only-egress-identity"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "third-party-egress-allowlist-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "长期方案需要允许合法地址轮换，但仍约束域名、端口、TLS 身份和危险解析范围。",
+        "secondWrong": "代理已支持受控 DNS、FQDN、SNI、证书与 private/link-local 拒绝。",
+        "revealedAnswer": "应建立 api.convert.example:443 的受控 FQDN 出站策略，并强制 TLS 与解析安全检查。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": []
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "third-party-egress-allowlist-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "third-party-egress-allowlist-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "third-party-egress-allowlist-001-node-03",
+      "type": "configuration-review",
+      "title": "验证正向连接和负向隔离",
+      "prompt": "FQDN 策略在预发布启用后，哪组验证最能支持生产发布？",
+      "skillWeights": {
+        "security.governance": 0.35,
+        "systems.networking": 0.25,
+        "reliability.observability": 0.4
+      },
+      "evidence": [
+        {
+          "id": "third-party-egress-allowlist-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "预发布连接矩阵",
+          "content": "vendor_current_ip_success=20/20 vendor_rotated_ip_success=20/20 wrong_hostname_denied=20/20 private_ip_resolution_denied=20/20 non_443_denied=20/20"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-03-evidence-02",
+          "type": "http",
+          "title": "合成转换结果",
+          "content": "POST /v1/convert HTTP/1.1\nHost: api.convert.example\nX-Synthetic-Request: policy-44\n\nHTTP/1.1 202 Accepted\nLocation: /v1/jobs/syn-44\nTLS hostname_verify=ok certificate_chain=trusted"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-03-evidence-03",
+          "type": "metric",
+          "title": "小批队列恢复",
+          "content": "canary_documents=50 converted=50 egress_denied_expected_vendor=0 conversion_error_rate=0 queue_age_trend=decreasing audit_events=50 rollback_rule_ready=1"
+        }
+      ],
+      "options": [
+        {
+          "id": "third-party-egress-allowlist-001-node-03-option-a",
+          "label": "验证地址轮换与 TLS 成功、未批准目的失败，再小批恢复并监控队列和代理拒绝",
+          "explanation": "正向轮换测试证明策略不会再次固定单 IP，负向测试证明边界仍有效，小批任务与审计指标支持可暂停恢复。"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-03-option-b",
+          "label": "只验证当前一个供应商 IP 成功，就立即恢复全部生产队列",
+          "explanation": "单 IP 测试不能证明 FQDN 轮换或负向隔离，直接全量恢复会在策略仍脆弱时扩大客户影响。",
+          "errorType": "single-ip-positive-only-egress-validation"
+        },
+        {
+          "id": "third-party-egress-allowlist-001-node-03-option-c",
+          "label": "为降低拒绝告警数量，关闭出站代理审计日志后再全量发布",
+          "explanation": "关闭审计会失去对意外目的地和策略变化的证据，也无法向受监管客户证明文档只发送到批准供应商。",
+          "errorType": "disable-regulated-egress-audit"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "third-party-egress-allowlist-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证要同时覆盖供应商轮换的正向路径和未批准目的地的负向路径。",
+        "secondWrong": "测试当前与轮换地址、错误主机名、私有地址和非 443，再观察小批转换与审计日志。",
+        "revealedAnswer": "应完成正负连接矩阵与合成转换，随后小批恢复并监控队列、拒绝和审计事件。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "third-party-egress-allowlist-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "供应商地址轮换后，生产仍使用旧单 IP 出站规则，连接在 TLS 前被拒绝。恢复应先最小放行已验证范围，再迁移到受控 FQDN 策略。",
+    "rootCause": "团队把动态第三方域名解析结果固化为单个永久 IP，且没有消费供应商网络变更 feed，导致合法地址轮换后代理拒绝新目的地。",
+    "correctApproach": [
+      "验证供应商签名通知后最小放行受管网段的 443，并用合成 canary 控制恢复。",
+      "迁移到受控 DNS 的 FQDN 出站代理，强制端口、SNI、证书和解析地址约束。",
+      "完成地址轮换与未批准目的地正负测试后小批恢复并监控队列。"
+    ],
+    "keyLessons": [
+      "第三方域名背后的地址会轮换，安全出站控制应依据可验证契约而非一次 DNS 快照。",
+      "客户沟通应说明文档仍在内部队列、没有发送到未批准目的地、当前回补速度和下一次更新时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否分层判断 DNS、代理与 TLS，拒绝全开放捷径，并设计可轮换、可审计的最小权限出站。",
+    "customerRiskPerspective": "过宽出站会形成敏感保单外传路径，过窄单 IP 规则又会在供应商正常轮换时造成业务中断。",
+    "remediation": [
+      "用受控 FQDN 代理策略替换单 IP 规则，并订阅和验签供应商变更 feed。",
+      "为地址轮换、TLS 身份、异常解析、代理拒绝和队列年龄建立监控与演练。"
+    ],
+    "verification": [
+      "确认当前与轮换地址的合法 HTTPS 请求成功，错误主机名、私有地址和非 443 均被拒绝。",
+      "确认小批和后续生产转换成功、队列持续下降、审计事件完整且无未批准目的地。"
+    ],
+    "knowledgePoints": [
+      "egress allowlisting",
+      "FQDN proxy policy",
+      "TLS and DNS validation"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

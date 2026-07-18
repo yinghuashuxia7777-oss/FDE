@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.eng.automated-testing",
+  "version": 1,
+  "status": "draft",
+  "title": "Automated Testing Focused Practice",
+  "summary": "A focused transfer activity for Automated Testing.",
+  "primaryConceptId": "concept.eval",
+  "foundationIds": ["ai.eval-dataset"],
+  "primaryLeafSkillId": "eng.automated-testing",
+  "difficulty": "beginner",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.eng.automated-testing",
+    "kind": "decision",
+    "prompt": "Design one deterministic regression test for the observed failure.",
+    "stimulus": [
+      {
+        "id": "stimulus.eng.automated-testing",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.eng.automated-testing",
+      "skillId": "eng.automated-testing",
+      "version": 1
+    },
+    "criterionIds": ["criterion.eng.automated-testing.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "test-plan",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

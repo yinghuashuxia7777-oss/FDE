@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "network.https-tls",
+  "type": "foundation",
+  "title": "HTTPS 与 TLS：传输加密和端点身份",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["security.governance", "api.integration"],
+  "level": "beginner",
+  "order": 17,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "HTTPS 是运行在 TLS 保护下的 HTTP；TLS 会加密传输、检测篡改，并通过证书帮助客户端确认连接的是预期服务，而不是陌生端点。",
+    "analogy": "TLS 像带防拆封条、并核验收件方证件的密封通道。旁观者难以读取内容，发送方也能降低把资料交给冒名者的风险。",
+    "technicalExplanation": "握手阶段协商协议和密钥，客户端验证证书链、有效期与主机名。证书正确只保护传输端点，API 仍需单独执行用户认证和资源授权。",
+    "example": "集成端点能建立 HTTPS 连接，但调用仍因 scope 不足返回 403。TLS 已证明通道与服务器身份，不能替代 OAuth 对调用者权限的判断。",
+    "commonMistakes": "关闭证书验证来消除报错会破坏身份保证，不应作为生产修复。另一个误区是认为使用 HTTPS 后日志、令牌存储和服务端授权就无需治理。"
+  },
+  "relatedCases": [
+    "api-oauth-scope-mismatch-001",
+    "k8s-secret-rotation-rollout-001"
+  ]
+}

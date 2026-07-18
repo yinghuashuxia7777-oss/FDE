@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.customer-communication",
+  "type": "concept",
+  "category": "fde",
+  "order": 50,
+  "title": "客户沟通：分开事实、影响、行动与未知",
+  "technicalTerm": "Customer Communication",
+  "simpleExplanation": "客户沟通用清晰语言说明已知事实、业务影响、当前行动、下一次更新时间和仍未知的部分。",
+  "analogy": "像航班延误广播：乘客需要知道影响、正在处理什么和何时再更新，而不是听未经确认的故障猜测。",
+  "technicalExplanation": "高质量更新按固定节奏提供时间、受影响范围、已确认事实、缓解措施、客户可采取行动和下一步。技术细节应转成业务含义，同时避免泄露敏感信息或把假设描述成结论。",
+  "whyItMatters": "FDE 是客户与工程之间的信任接口。即使根因尚未确定，准确、稳定和可行动的沟通也能降低客户风险并保留调查空间。",
+  "commonMistakes": "长时间沉默直到根因确定；承诺未经验证的恢复时间；每次更新口径变化却不说明；只讲技术错误而不讲客户影响。",
+  "relatedFoundation": ["fde.customer-communication"],
+  "relatedCases": [
+    "customer-pilot-production-gap-001",
+    "customer-success-criteria-001"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "fde.requirement-evidence",
+  "type": "foundation",
+  "title": "需求证据：把意见转成可追溯约束",
+  "domain": "fde-methodology",
+  "track": "computer-basics",
+  "skills": ["customer.discovery"],
+  "level": "beginner",
+  "order": 92,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "高质量需求必须说明由谁在什么场景下需要什么结果，并用访谈、样本、日志或流程证据标记来源和置信度，而不是只记录一句客户想要。",
+    "analogy": "它像建筑图纸上的承重要求，每个数字都要能追溯到法规、现场测量或使用人数，而不能因为某个人觉得结实就随意加一堵墙。",
+    "technicalExplanation": "需求记录应包含主体、触发、期望结果、约束、验收方式、来源和未决问题；冲突需求需要显式列出决策人及取舍，避免在实现阶段暗中猜测。",
+    "example": "支持团队要求回答更快，合规团队要求每条回答带来源。FDE 用真实工单确认两者都重要，并把延迟门槛和引用覆盖率分别写入验收条件。",
+    "commonMistakes": "只保存会议结论、不记录原始样本和反例，会让需求在转述中失真；也不要把技术实现细节伪装成客户目标，应保留可替换方案空间。"
+  },
+  "relatedCases": ["customer-success-criteria-001"]
+}

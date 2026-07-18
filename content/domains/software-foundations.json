@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "software-foundations",
+  "label": "Software foundations & structure",
+  "description": "Programming foundations, maintainability, testing, and software structure.",
+  "status": "active"
+}

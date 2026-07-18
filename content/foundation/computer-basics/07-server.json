@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.server",
+  "type": "foundation",
+  "title": "服务器：承载工作负载的计算环境",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["cloud.deployment"],
+  "level": "beginner",
+  "order": 7,
+  "estimatedMinutes": 7,
+  "content": {
+    "simpleExplanation": "服务器可以是物理机、虚拟机或容器所在的计算节点，它为程序提供 CPU、内存、网络和存储；服务器可达不代表其中的应用已经就绪。",
+    "analogy": "服务器像一栋办公楼，应用像其中的团队。楼有电、有门牌，只能证明建筑存在；团队是否到岗、电话是否接通，还需要单独确认。",
+    "technicalExplanation": "现代部署会把工作负载调度到节点并通过端口提供服务。平台常分别检查存活、就绪和启动状态，只有就绪实例才应接收生产流量。",
+    "example": "容器进程正常启动，但 Readiness 探针检查了错误端口，实例一直不接流量。应对照应用监听日志与部署清单修正端口，再观察滚动发布期间的就绪率。",
+    "commonMistakes": "常见误区是登录机器后看到进程就认定一切正常，或把探针失败简单关闭。探针代表流量门禁，修复应对齐真实服务行为而不是移除保护。"
+  },
+  "relatedCases": ["container-readiness-port-001"]
+}

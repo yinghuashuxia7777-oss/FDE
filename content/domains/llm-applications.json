@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "llm-applications",
+  "label": "LLM foundations & AI applications",
+  "description": "LLM application design, prompting, safety, and product integration.",
+  "status": "active"
+}

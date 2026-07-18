@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "fde.rollout-verification",
+  "type": "foundation",
+  "title": "发布验证：用分阶段证据确认改变有效",
+  "domain": "fde-methodology",
+  "track": "computer-basics",
+  "skills": ["fde.adoption", "git.delivery", "reliability.observability"],
+  "level": "intermediate",
+  "order": 100,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "安全发布把变更绑定到版本、分阶段扩大影响范围，并在每一阶段比较预先定义的技术与业务信号，使团队能够及时停止、回滚和验证恢复。",
+    "analogy": "它像更换城市供水设备时先在一个可隔离区域试运行，持续检测水压和水质，确认稳定后才逐区切换并保留旧线路回退。",
+    "technicalExplanation": "发布计划应包含制品身份、目标环境、流量阶段、观察窗口、护栏指标、决策人、暂停阈值、回滚步骤和回滚后的验证查询。",
+    "example": "数据库迁移先部署兼容读写代码，再对小比例流量启用新字段，监测错误率和数据一致性，满足窗口后扩大范围并最后移除旧路径。",
+    "commonMistakes": "一次性全量发布、只看部署工具显示成功、发现异常后回滚却不验证数据状态，都会留下隐藏影响；发布完成必须由用户路径和系统证据共同确认。"
+  },
+  "relatedCases": [
+    "zero-downtime-schema-migration-001",
+    "k8s-secret-rotation-rollout-001"
+  ]
+}

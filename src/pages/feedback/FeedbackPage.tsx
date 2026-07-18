@@ -1,0 +1,77 @@
+import { CheckCircle, ChatCircleText } from '@phosphor-icons/react';
+import { useState, type FormEvent } from 'react';
+
+import {
+  feedbackStore,
+  type FeedbackCategory,
+} from '../../application/practice/beta-sidecar';
+import { useI18n } from '../../i18n';
+import { PageHeader } from '../shared';
+
+export function FeedbackPage() {
+  const { t } = useI18n();
+  const [saved, setSaved] = useState(false);
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const messageValue = form.get('message');
+    const message = typeof messageValue === 'string' ? messageValue.trim() : '';
+    if (message === '') return;
+    const categoryValue = form.get('category');
+    const category =
+      typeof categoryValue === 'string'
+        ? (categoryValue as FeedbackCategory)
+        : 'feature-suggestion';
+    feedbackStore.write([
+      {
+        id: `feedback:${Date.now().toString()}`,
+        category,
+        message,
+        contextPath: window.location.hash.replace(/^#/, '') || '/',
+        createdAt: new Date().toISOString(),
+      },
+      ...feedbackStore.read(),
+    ]);
+    event.currentTarget.reset();
+    setSaved(true);
+  };
+  return (
+    <section className="product-page beta-detail" aria-labelledby="page-title">
+      <PageHeader
+        eyebrow={t('feedback.eyebrow')}
+        title={t('feedback.title')}
+        description={t('feedback.description')}
+      />
+      <article className="growth-card beta-action-card">
+        <div className="growth-card__heading">
+          <h2>{t('feedback.prompt')}</h2>
+          <ChatCircleText aria-hidden="true" size={22} />
+        </div>
+        <form onSubmit={submit}>
+          <label htmlFor="feedback-category">{t('feedback.category')}</label>
+          <select id="feedback-category" name="category">
+            <option value="content-issue">
+              {t('feedback.category.content')}
+            </option>
+            <option value="case-difficulty">
+              {t('feedback.category.difficulty')}
+            </option>
+            <option value="feature-suggestion">
+              {t('feedback.category.feature')}
+            </option>
+          </select>
+          <label htmlFor="feedback-message">{t('feedback.message')}</label>
+          <textarea id="feedback-message" name="message" required rows={6} />
+          <button className="button button--primary" type="submit">
+            {t('feedback.submit')}
+          </button>
+        </form>
+        {saved ? (
+          <p role="status">
+            <CheckCircle aria-hidden="true" size={18} /> {t('feedback.saved')}
+          </p>
+        ) : null}
+      </article>
+    </section>
+  );
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.prod.cloud-architecture",
+  "version": 1,
+  "status": "draft",
+  "title": "Cloud Architecture Focused Practice",
+  "summary": "A focused transfer activity for Cloud Architecture.",
+  "primaryConceptId": "concept.production-environment",
+  "foundationIds": ["fde.production-readiness"],
+  "primaryLeafSkillId": "prod.cloud-architecture",
+  "difficulty": "advanced",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.prod.cloud-architecture",
+    "kind": "decision",
+    "prompt": "Choose a deployment boundary and one isolation control.",
+    "stimulus": [
+      {
+        "id": "stimulus.prod.cloud-architecture",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.prod.cloud-architecture",
+      "skillId": "prod.cloud-architecture",
+      "version": 1
+    },
+    "criterionIds": ["criterion.prod.cloud-architecture.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "cloud-architecture",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

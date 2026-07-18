@@ -1,0 +1,151 @@
+export const onboardingUiZhCN: Record<string, string> = {
+  'onboarding.mode.label': 'FDE ARENA · 学习模式',
+  'onboarding.welcome.title': '欢迎来到 FDE Arena',
+  'onboarding.welcome.description':
+    '从零开始，训练成为能够解决真实 AI 工程问题的 FDE。',
+  'onboarding.welcome.value':
+    '这里不是普通刷题网站。你的第一步是找到合适起点，再沿真实工程任务逐步建立判断力。',
+  'onboarding.start.legend': '你的当前情况？',
+  'onboarding.start.zero.title': '完全零基础',
+  'onboarding.start.zero.description': '我还不了解 API、Docker 或 RAG。',
+  'onboarding.start.programming.title': '有编程基础',
+  'onboarding.start.programming.description': '我会编程，但不了解 AI 工程。',
+  'onboarding.start.aiProject.title': '已经做过 AI 项目',
+  'onboarding.start.aiProject.description': '我想提升真实 FDE 交付能力。',
+  'onboarding.method.title': 'FDE Arena 的正确学习方式',
+  'onboarding.method.description':
+    '先建立技术世界的心智模型，再用真实客户场景验证判断。',
+  'onboarding.method.foundation': 'Foundation · 理解技术世界',
+  'onboarding.method.concept': 'Concept · 理解工程语言',
+  'onboarding.method.case': 'Case · 解决真实问题并复盘',
+  'onboarding.method.mastery': 'Mastery · 用训练证据观察成长',
+  'onboarding.mission.title': '你的第一个任务',
+  'onboarding.mission.why': '为什么学：{reason}',
+  'onboarding.mission.start': '开始学习 {title}',
+  'onboarding.mission.complete': '完成本次引导步骤',
+  'onboarding.mission.minutes': '预计 {minutes} 分钟',
+  'onboarding.mission.completion.title': '已完成新手引导步骤。',
+  'onboarding.mission.completion.flow':
+    '这代表你完成了学习流程，不代表已经达到 Mastery（掌握）。',
+  'onboarding.mission.completion.mastery': '完成关联 Case 后会更新 Mastery。',
+  'onboarding.exploreLater.title': '稍后探索',
+  'onboarding.exploreLater.description':
+    '先完成你的第一个任务；今日训练、推荐与成长数据会保留在这里。',
+  'onboarding.roadmap.title': 'FDE 成长路线',
+  'onboarding.roadmap.level0.label': 'LEVEL 0',
+  'onboarding.roadmap.level0.title': '理解软件世界',
+  'onboarding.roadmap.level0.description': '软件、服务与数据',
+  'onboarding.roadmap.level1.label': 'LEVEL 1',
+  'onboarding.roadmap.level1.title': '系统连接',
+  'onboarding.roadmap.level1.description': 'API、HTTP 与数据库',
+  'onboarding.roadmap.level2.label': 'LEVEL 2',
+  'onboarding.roadmap.level2.title': 'AI 应用',
+  'onboarding.roadmap.level2.description': 'LLM、RAG 与 Agent',
+  'onboarding.roadmap.level3.label': 'LEVEL 3',
+  'onboarding.roadmap.level3.title': '真实 FDE',
+  'onboarding.roadmap.level3.description': '解决客户问题并验证结果',
+  'onboarding.roadmap.metrics':
+    '{foundations} 个 Foundation · {concepts} 个 Concept · {skills} 个 Skill',
+  'onboarding.roadmap.metricsConceptPending':
+    '{foundations} 个 Foundation · Concept 覆盖加载中 · {skills} 个 Skill',
+  'onboarding.guide.title': 'FDE Guide',
+  'onboarding.guide.current': '当前任务：{title}',
+  'onboarding.guide.next': '推荐理解：{title}',
+  'onboarding.guide.reason': '原因：{reason}',
+  'onboarding.guide.empty': '先选择你的起点，我会解释下一步及其原因。',
+  'onboarding.guide.pending': '关联 Concept 指引可用后会在这里显示。',
+  'onboarding.guide.noRelated': '当前任务暂无直接关联的 Concept。',
+  'onboarding.nextStep.title': '下一步',
+  'onboarding.nextStep.foundationLead': '理解当前知识后，建议继续学习：',
+  'onboarding.nextStep.conceptLead': '理解这些工程概念后，建议挑战：',
+  'onboarding.nextStep.openFoundation': '学习 {title}',
+  'onboarding.nextStep.openCase': '挑战案例：{title}',
+  'onboarding.nextStep.reason': '为什么：{reason}',
+  'onboarding.debrief.title': '继续成长',
+  'onboarding.debrief.completed': '你已完成：{title}',
+  'onboarding.debrief.learn': '继续学习',
+  'onboarding.debrief.challenge': '继续挑战',
+  'onboarding.debrief.openFoundation': '打开基础知识',
+  'onboarding.debrief.openCases': '浏览更多案例',
+};
+
+export const onboardingUiEnUS: Record<string, string> = {
+  'onboarding.mode.label': 'FDE ARENA · LEARNING MODE',
+  'onboarding.welcome.title': 'Welcome to FDE Arena',
+  'onboarding.welcome.description':
+    'Start from zero and train to solve real AI engineering problems as an FDE.',
+  'onboarding.welcome.value':
+    'This is not a conventional quiz site. Choose the right starting point, then build judgment through real engineering work.',
+  'onboarding.start.legend': 'What is your current starting point?',
+  'onboarding.start.zero.title': 'Completely new to engineering',
+  'onboarding.start.zero.description':
+    'I do not yet understand API, Docker, or RAG.',
+  'onboarding.start.programming.title': 'Programming background',
+  'onboarding.start.programming.description':
+    'I can program, but AI engineering is new to me.',
+  'onboarding.start.aiProject.title': 'Built an AI project',
+  'onboarding.start.aiProject.description':
+    'I want to improve real FDE delivery judgment.',
+  'onboarding.method.title': 'How to learn in FDE Arena',
+  'onboarding.method.description':
+    'Build a model of the technical world, then validate your judgment in customer scenarios.',
+  'onboarding.method.foundation': 'Foundation · Understand the technical world',
+  'onboarding.method.concept': 'Concept · Understand engineering language',
+  'onboarding.method.case': 'Case · Solve and debrief real problems',
+  'onboarding.method.mastery': 'Mastery · See growth through training evidence',
+  'onboarding.mission.title': 'Your First Mission',
+  'onboarding.mission.why': 'Why this mission: {reason}',
+  'onboarding.mission.start': 'Start learning {title}',
+  'onboarding.mission.complete': 'Complete this onboarding step',
+  'onboarding.mission.minutes': '{minutes} min',
+  'onboarding.mission.completion.title': 'Onboarding step complete.',
+  'onboarding.mission.completion.flow':
+    'You completed the learning flow; this does not mean you have achieved Mastery.',
+  'onboarding.mission.completion.mastery':
+    'Completing the related Case will update Mastery.',
+  'onboarding.exploreLater.title': 'Explore later',
+  'onboarding.exploreLater.description':
+    'Complete your First Mission first. Daily practice, recommendations, and growth signals remain available here.',
+  'onboarding.roadmap.title': 'FDE Growth Roadmap',
+  'onboarding.roadmap.level0.label': 'LEVEL 0',
+  'onboarding.roadmap.level0.title': 'Understand the software world',
+  'onboarding.roadmap.level0.description': 'Software, services, and data',
+  'onboarding.roadmap.level1.label': 'LEVEL 1',
+  'onboarding.roadmap.level1.title': 'Connect systems',
+  'onboarding.roadmap.level1.description': 'API, HTTP, and databases',
+  'onboarding.roadmap.level2.label': 'LEVEL 2',
+  'onboarding.roadmap.level2.title': 'Build AI applications',
+  'onboarding.roadmap.level2.description': 'LLM, RAG, and agents',
+  'onboarding.roadmap.level3.label': 'LEVEL 3',
+  'onboarding.roadmap.level3.title': 'Practice real FDE work',
+  'onboarding.roadmap.level3.description':
+    'Solve customer problems and verify outcomes',
+  'onboarding.roadmap.metrics':
+    '{foundations} Foundations · {concepts} Concepts · {skills} Skills',
+  'onboarding.roadmap.metricsConceptPending':
+    '{foundations} Foundations · Concept coverage pending · {skills} Skills',
+  'onboarding.guide.title': 'FDE Guide',
+  'onboarding.guide.current': 'Current mission: {title}',
+  'onboarding.guide.next': 'Recommended concept: {title}',
+  'onboarding.guide.reason': 'Why: {reason}',
+  'onboarding.guide.empty':
+    'Choose your starting point and I will explain the next step and why it matters.',
+  'onboarding.guide.pending':
+    'Related Concept guidance will appear here when available.',
+  'onboarding.guide.noRelated':
+    'No directly related Concept is available for this mission yet.',
+  'onboarding.nextStep.title': 'Next Step',
+  'onboarding.nextStep.foundationLead':
+    'After understanding this knowledge, continue with:',
+  'onboarding.nextStep.conceptLead':
+    'After understanding these engineering concepts, challenge:',
+  'onboarding.nextStep.openFoundation': 'Learn {title}',
+  'onboarding.nextStep.openCase': 'Challenge Case: {title}',
+  'onboarding.nextStep.reason': 'Why: {reason}',
+  'onboarding.debrief.title': 'Keep growing',
+  'onboarding.debrief.completed': 'You completed: {title}',
+  'onboarding.debrief.learn': 'Continue learning',
+  'onboarding.debrief.challenge': 'Continue the challenge',
+  'onboarding.debrief.openFoundation': 'Open Foundation Knowledge',
+  'onboarding.debrief.openCases': 'Browse more Cases',
+};

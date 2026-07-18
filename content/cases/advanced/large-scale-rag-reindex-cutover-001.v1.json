@@ -1,0 +1,392 @@
+{
+  "schemaVersion": 1,
+  "id": "large-scale-rag-reindex-cutover-001",
+  "slug": "large-scale-rag-reindex-cutover-001",
+  "title": "大规模 RAG 重建索引提前切换",
+  "summary": "处置五千万文档重建过程中不完整索引切换，建立完整性、删除传播、影子评估和可回滚发布门禁。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "rag-search",
+    "performance-scale",
+    "reliability",
+    "data-engineering"
+  ],
+  "skills": [
+    "rag.search",
+    "performance.scaling",
+    "reliability.observability",
+    "data.engineering"
+  ],
+  "lifecycleStages": ["build", "deploy", "operate"],
+  "technicalLayers": ["vector-index", "data-pipeline", "retrieval", "cutover"],
+  "environments": ["staging", "production", "multi-tenant"],
+  "riskTypes": [
+    "retrieval-quality",
+    "data-freshness",
+    "authorization",
+    "availability"
+  ],
+  "behaviorPatterns": [
+    "completeness-gates",
+    "shadow-evaluation",
+    "atomic-cutover"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的全球制药企业使用 RAG 助手检索已批准的研究流程与实验室 SOP。",
+    "background": "平台正在把约五千万文档迁移到新嵌入模型和新向量索引，旧索引仍在线并持续接收内容更新与删除事件。",
+    "initialIncident": "索引别名切换后，高频查询延迟下降，但部分地区无法召回权威 SOP，引用覆盖率在十分钟内明显下降。",
+    "constraints": [
+      "已撤销或删除的文档绝不能因回滚或混合查询重新出现。",
+      "内容发布仍在继续，不能通过长时间冻结所有写入完成迁移。",
+      "必须保留旧索引作为可回滚版本，并记录切换时的内容水位。",
+      "客户要求按地区、文档类型和权限层级给出质量影响，而不是单一平均指标。"
+    ],
+    "confirmedFacts": [
+      "源文档库和内容授权服务没有故障。",
+      "旧索引在切换前满足当前召回和删除传播 SLO。",
+      "新索引的进程、端口和查询健康检查均为绿色。",
+      "失败查询集中在尚未完成回填的三个大分片。"
+    ]
+  },
+  "startNodeId": "large-scale-rag-reindex-cutover-001-node-01",
+  "nodes": [
+    {
+      "id": "large-scale-rag-reindex-cutover-001-node-01",
+      "type": "architecture-tradeoff",
+      "title": "控制不完整索引影响",
+      "prompt": "在保持删除语义和持续写入的前提下，哪项立即处置最安全？",
+      "skillWeights": {
+        "rag.search": 0.35,
+        "reliability.observability": 0.35,
+        "data.engineering": 0.3
+      },
+      "evidence": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "切换前后检索指标",
+          "content": "old_index_docs=50184220 new_index_docs=41151060 new_index_completion=82.0% citation_coverage_before=94.1% citation_coverage_after=71.8% deleted_doc_hits=0"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-01-evidence-02",
+          "type": "config",
+          "title": "当前别名与写入路径",
+          "content": "readAlias: rag-index-v2\noldIndex: rag-index-v1\nwriteTargets: [rag-index-v1, rag-index-v2]\ndeleteTargets: [rag-index-v1, rag-index-v2]\nsourceWatermark: 2026-07-14T06:00:00Z",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-01-option-a",
+          "label": "把读别名原子切回完整旧索引，继续双写与删除传播，并冻结新索引切换状态供调查",
+          "explanation": "旧索引仍满足质量和删除 SLO，新索引只有 82% 完整；回切读流量并继续双写可以恢复召回且不丢失迁移期间的更新。"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-01-option-b",
+          "label": "继续使用新索引并把 Top-K 从 10 提高到 100",
+          "explanation": "未回填文档不在候选集合中，提高 Top-K 无法召回不存在的分片内容，还会增加延迟和上下文噪声。",
+          "errorType": "increase-topk-for-missing-index-data"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-01-option-c",
+          "label": "删除旧索引以避免团队误回滚，然后等待新索引回填完成",
+          "explanation": "删除已验证旧索引会移除唯一即时恢复与对照路径，使客户继续使用不完整索引且无法安全回滚。",
+          "errorType": "delete-only-known-good-index"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "large-scale-rag-reindex-cutover-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "进程健康与数据完整是不同信号，先恢复可验证的完整读取路径。",
+        "secondWrong": "旧索引完整且仍接收更新和删除，新索引只完成 82%。",
+        "revealedAnswer": "应原子回切旧索引、继续双写与删除传播，并保留新索引快照调查切换门禁。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "large-scale-rag-reindex-cutover-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "large-scale-rag-reindex-cutover-001-node-02",
+      "type": "log-analysis",
+      "title": "定位切换门禁缺失",
+      "prompt": "根据分片状态和发布记录，哪项结论与修复方向最符合证据？",
+      "skillWeights": {
+        "data.engineering": 0.35,
+        "rag.search": 0.3,
+        "reliability.observability": 0.2,
+        "performance.scaling": 0.15
+      },
+      "evidence": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-02-evidence-01",
+          "type": "json",
+          "title": "新索引分片清单",
+          "content": "{\"readyShards\":17,\"totalShards\":20,\"missing\":[{\"id\":\"eu-sop\",\"completion\":0.31},{\"id\":\"apac-sop\",\"completion\":0.44},{\"id\":\"archive\",\"completion\":0.02}],\"deleteWatermarkLagSeconds\":18}"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-02-evidence-02",
+          "type": "log",
+          "title": "自动切换决策",
+          "content": "release=reindex-v2 gate=query_health status=pass\nrelease=reindex-v2 gate=p95_latency status=pass value=118ms\nrelease=reindex-v2 action=switch_alias reason=all_query_nodes_healthy\nrelease=reindex-v2 gate=shard_completeness status=not_configured"
+        }
+      ],
+      "options": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-02-option-a",
+          "label": "切换只检查查询健康与延迟，必须新增分片完整性、源水位和删除水位门禁",
+          "explanation": "日志明确没有完整性门禁，三个分片又未完成；把源文档、分片和删除水位纳入条件才能证明索引具备正确数据状态。"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-02-option-b",
+          "label": "新模型嵌入质量较差，应立即重新训练嵌入模型",
+          "explanation": "失败集中在未完成分片而不是已索引样本的相似度，当前证据首先支持数据缺失和切换门禁问题。",
+          "errorType": "misattribute-missing-shards-to-embedding-quality"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-02-option-c",
+          "label": "查询时把新旧索引结果无条件合并，且忽略租户和删除过滤以提高召回",
+          "explanation": "无条件合并会让已删除或无权访问的文档重新出现，把质量事故升级为授权与合规事件。",
+          "errorType": "merge-indexes-without-security-filters"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "large-scale-rag-reindex-cutover-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "检查发布决策实际使用了哪些数据就绪信号。",
+        "secondWrong": "自动化只看查询进程和延迟，没有检查 20 个分片是否完成。",
+        "revealedAnswer": "根因是切换门禁只验证服务健康，必须加入分片完整性、源数据与删除水位。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "large-scale-rag-reindex-cutover-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "large-scale-rag-reindex-cutover-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "建立可回滚重建发布",
+      "prompt": "新索引追平水位后，哪种切换方案能同时验证质量、权限和规模性能？",
+      "skillWeights": {
+        "rag.search": 0.35,
+        "performance.scaling": 0.3,
+        "reliability.observability": 0.2,
+        "data.engineering": 0.15
+      },
+      "evidence": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "影子查询分层结果",
+          "content": "queries=12000 regions=6 doc_types=9 auth_tiers=4 recall_at_10_old=0.912 recall_at_10_new=0.918 citation_coverage_new=94.4% unauthorized_hits=0 deleted_hits=0 p95_new=126ms"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-03-evidence-02",
+          "type": "config",
+          "title": "候选切换门禁",
+          "content": "requirements:\n  shardCompletion: 100%\n  sourceWatermarkLag: <= 60s\n  deleteWatermarkLag: <= 60s\n  unauthorizedHits: 0\n  deletedHits: 0\nrouting:\n  mainReadAlias: rag-index-v1\n  v2CanaryAlias: rag-index-v2-canary\n  v2CanaryTraffic: 1%\n  selection: stable_query_hash\nfullCutover:\n  action: atomic_swap_main_read_alias\n  target: rag-index-v2\n  rollbackAlias: rag-index-v1",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-03-option-a",
+          "label": "保持主 read alias 指向 v1，由 Router 将 1% 稳定流量送到 v2 canary alias，并按门禁扩大",
+          "explanation": "独立 canary alias 让 Router 在不改变主读别名时分流，门禁覆盖数据、删除、授权、质量和性能；全量达标后才原子交换主别名并保留 v1 回滚。"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-03-option-b",
+          "label": "只要新索引平均 Recall 高于旧索引就立即切换全部流量",
+          "explanation": "平均 Recall 无法证明地区、文档类型、授权和删除语义均正确，全量切换会重现本次覆盖缺口。",
+          "errorType": "aggregate-recall-only-full-cutover"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-03-option-c",
+          "label": "为减少存储成本，在切换前删除旧索引和删除事件日志",
+          "explanation": "提前删除会移除回滚与删除传播证据，在发现权限或召回回归时无法安全恢复。",
+          "errorType": "remove-index-and-delete-audit-before-cutover"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "large-scale-rag-reindex-cutover-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "安全切换需要质量、权限、删除、规模性能和回滚五类证据。",
+        "secondWrong": "候选门禁已满足，应保持主 alias 在 v1，并由 Router 向 v2 canary alias 分配 1% 流量。",
+        "revealedAnswer": "应通过独立 v2 canary alias 从 1% 分流灰度；只有全量门禁达标后才原子交换主 read alias，并保留 v1 rollback alias。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "large-scale-rag-reindex-cutover-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "large-scale-rag-reindex-cutover-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "large-scale-rag-reindex-cutover-001-node-04",
+      "type": "customer-response",
+      "title": "验证恢复并解释质量影响",
+      "prompt": "灰度达到 25% 且指标稳定后，哪项客户更新和继续条件最合适？",
+      "skillWeights": {
+        "rag.search": 0.3,
+        "performance.scaling": 0.2,
+        "reliability.observability": 0.3,
+        "data.engineering": 0.2
+      },
+      "evidence": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-04-evidence-01",
+          "type": "metric",
+          "title": "25% 灰度结果",
+          "content": "v2_canary_traffic=25% main_read_alias=rag-index-v1 canary_alias=rag-index-v2-canary duration=90m citation_coverage=94.3% regional_recall_floor=0.901 unauthorized_hits=0 deleted_hits=0 source_lag_p99=42s error_rate=0.12%"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-04-evidence-02",
+          "type": "customer-message",
+          "title": "客户项目负责人问题",
+          "content": "哪些地区受到影响、是否有已删除内容重新出现、为什么健康检查没有阻止切换，以及何时可以确认新索引完全稳定？"
+        }
+      ],
+      "options": [
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-04-option-a",
+          "label": "报告受影响分片与回切，按地区门禁扩大 Router 灰度；全量达标后才原子交换主 read alias",
+          "explanation": "当前 25% 只经过独立 canary alias，主别名仍在 v1；继续按地区、安全和水位门禁扩流，全部通过后再原子切主别名并保留 v1 回滚。"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-04-option-b",
+          "label": "只报告总体 Recall 已恢复，不披露三个未完成分片",
+          "explanation": "总体指标会掩盖地区影响，省略已知分片范围会阻碍客户复核受影响查询并削弱信任。",
+          "errorType": "hide-regional-reindex-impact"
+        },
+        {
+          "id": "large-scale-rag-reindex-cutover-001-node-04-option-c",
+          "label": "承诺新索引永远不会返回错误引用，并立即删除旧索引",
+          "explanation": "绝对承诺超出观测证据，删除旧索引又会在后续分层回归时失去回滚和对照能力。",
+          "errorType": "unsupported-perfect-retrieval-guarantee"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "large-scale-rag-reindex-cutover-001-node-04-option-a"
+      },
+      "feedback": {
+        "firstWrong": "客户需要影响范围、安全结果、门禁缺口和后续验证时间。",
+        "secondWrong": "明确三个分片受影响、没有删除或越权命中，并按地区门槛继续灰度。",
+        "revealedAnswer": "应透明报告分片影响和回切，说明新增门禁并按分层指标逐步扩大。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "large-scale-rag-reindex-cutover-001-node-04-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "新索引仅完成 82% 回填，自动化却因查询节点健康和低延迟提前切换。恢复需要回切旧索引，并以数据与删除水位、分层质量门禁，通过 canary 灰度与最终主别名原子切换重新发布。",
+    "rootCause": "索引发布门禁只检查查询进程健康和延迟，没有验证所有分片完整性、源内容水位与删除水位，导致不完整索引被视为生产就绪。",
+    "correctApproach": [
+      "原子回切完整旧索引并继续向新旧索引传播更新和删除事件。",
+      "新增分片完整性、源水位、删除水位、授权和分层检索质量门禁。",
+      "保持主 read alias 指向 v1，通过 v2 canary alias 由 Router 从 1% 扩到 25%；全量门禁达标后才原子交换主 alias，并保留 v1 rollback alias。"
+    ],
+    "keyLessons": [
+      "服务健康不等于索引数据完整，重建系统必须观测内容状态。",
+      "RAG 发布评估必须按地区、文档类型和授权层级分层，并验证删除语义。",
+      "FDE 应向客户说明受影响分片、已排除的安全风险、门禁修复和稳定性确认时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否跨数据流水线、检索质量、授权删除与生产切换建立可验证的恢复方案。",
+    "customerRiskPerspective": "不完整索引会让关键 SOP 无法召回，而错误混合或回滚还可能重新暴露已删除或无权内容。",
+    "remediation": [
+      "把分片计数、源与删除水位、权限过滤和质量分层加入自动切换门禁。",
+      "实现新旧双写、独立 v2 canary alias、Router 分流、最终主 alias 原子交换和版本化回滚水位。",
+      "建立按地区、文档类型和授权层级的召回、引用与删除命中监控。"
+    ],
+    "verification": [
+      "确认 20 个分片全部完成，源与删除水位延迟满足 SLO。",
+      "确认影子与灰度查询的分层召回和引用覆盖达标，越权与删除命中为零。",
+      "确认 Router 可在主 alias 保持 v1 时完成 1% 到 25% canary 分流，并在全量门禁后演练主 alias 原子交换与 v1 回滚。"
+    ],
+    "knowledgePoints": [
+      "vector index cutover",
+      "data completeness watermarks",
+      "stratified RAG evaluation"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

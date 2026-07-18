@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.sla",
+  "type": "concept",
+  "category": "fde",
+  "order": 46,
+  "title": "SLA：面向客户约定的服务承诺",
+  "technicalTerm": "SLA",
+  "simpleExplanation": "SLA 是服务提供方与客户约定的可用性、响应或补偿等正式承诺。",
+  "analogy": "像快递合同写明送达时限、适用范围和未达标处理，而不是配送团队内部希望达到的目标。",
+  "technicalExplanation": "服务级别协议定义承诺指标、测量方法、统计周期、适用服务、例外、支持响应与违约处理。内部 SLO 通常应比外部 SLA 更严格，以保留运营缓冲。",
+  "whyItMatters": "FDE 在方案与事故沟通中必须区分产品目标、支持政策和合同承诺，避免用未经授权的口头保证制造新的客户风险。",
+  "commonMistakes": "把 SLO 与 SLA 混用；只写百分比不写计算方式；忽略维护窗口与适用边界；在事故中承诺无法确认的恢复时间。",
+  "relatedFoundation": ["fde.success-criteria", "fde.customer-communication"],
+  "relatedCases": [
+    "customer-success-criteria-001",
+    "customer-ai-workflow-adoption-collapse-001"
+  ]
+}

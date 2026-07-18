@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "software.foundations",
+  "domainId": "software-foundations",
+  "label": "Software foundations",
+  "description": "Build maintainable, tested, and well-structured software.",
+  "status": "active"
+}

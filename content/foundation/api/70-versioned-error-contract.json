@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "api.versioned-error-contract",
+  "type": "foundation",
+  "title": "版本化错误契约：让失败也能稳定集成",
+  "domain": "api",
+  "track": "network-api",
+  "skills": [
+    "api.integration",
+    "software.foundations",
+    "reliability.observability"
+  ],
+  "level": "intermediate",
+  "order": 70,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "版本化错误契约用稳定机器码、可读消息、关联标识和结构化详情描述失败，让客户端无需解析易变化文案也能安全决定提示或重试。",
+    "analogy": "错误契约像标准化维修单，故障编号供系统分流，文字说明给人阅读，版本号说明字段规则；只看维修员自由书写的描述，很难可靠自动处理。",
+    "technicalExplanation": "响应应把 HTTP 状态与稳定业务错误码分开，并定义字段可选性、详情结构、重试提示和兼容规则。新增可选字段通常可兼容，删除或改义则需要版本策略。",
+    "example": "FDE 发现 Agent 解析英文错误文案来判断超时重试，服务升级改写文案后所有失败都被当成可重试。改用版本化错误码和 retryable 字段后行为恢复可控。",
+    "commonMistakes": "把内部堆栈、数据库文本或敏感输入直接放入错误详情会泄露实现与数据。客户端也不应穷举完整消息字符串，未知错误版本应采取保守策略并保留关联 ID。"
+  },
+  "relatedCases": [
+    "agent-tool-timeout-retry-001",
+    "observability-correlation-id-001",
+    "api-error-contract-version-drift-001"
+  ]
+}

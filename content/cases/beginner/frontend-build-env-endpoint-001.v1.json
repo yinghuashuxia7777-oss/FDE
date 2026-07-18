@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "id": "frontend-build-env-endpoint-001",
+  "slug": "frontend-build-env-endpoint-001",
+  "title": "前端制品写入了错误 API 地址",
+  "summary": "根据浏览器请求、构建元数据与静态制品内容定位构建时环境变量，并通过不可变重建和灰度请求验证修复。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["software-foundations", "cloud-deployment", "api-integration"],
+  "skills": ["software.foundations", "cloud.deployment", "api.integration"],
+  "lifecycleStages": ["build", "deploy", "operate"],
+  "technicalLayers": ["frontend", "configuration", "http"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["environment-isolation", "data-integrity"],
+  "behaviorPatterns": ["artifact-provenance", "environment-verification"],
+  "scenario": {
+    "customerProfile": "一家虚构的客户支持平台向企业客服提供浏览器单页应用。",
+    "background": "团队把已在预发布验证的前端静态制品直接提升到生产，并在容器环境中设置了生产 API 地址。",
+    "initialIncident": "生产页面可以打开，但所有工单请求仍发往预发布 API，客服看不到真实生产工单。",
+    "constraints": [
+      "不得让生产页面继续访问预发布数据或把两个环境的认证混用。",
+      "静态文件必须通过构建流水线生成，不能在 CDN 上手工编辑压缩 JavaScript。",
+      "修复要保留当前制品摘要以便快速回滚。"
+    ],
+    "confirmedFacts": [
+      "生产 API 本身健康，使用合成令牌调用返回 200。",
+      "页面加载的前端制品摘要与预发布验证时完全相同。",
+      "浏览器请求在认证前就指向 api-staging.support.example。"
+    ]
+  },
+  "startNodeId": "frontend-build-env-endpoint-001-node-01",
+  "nodes": [
+    {
+      "id": "frontend-build-env-endpoint-001-node-01",
+      "type": "configuration-review",
+      "title": "识别构建时配置",
+      "prompt": "根据请求与构建证据，下一步应如何生成正确的生产制品？",
+      "skillWeights": {
+        "software.foundations": 0.4,
+        "cloud.deployment": 0.35,
+        "api.integration": 0.25
+      },
+      "evidence": [
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-evidence-01",
+          "type": "http",
+          "title": "生产浏览器请求",
+          "content": "GET https://api-staging.support.example/v1/tickets HTTP/1.1\nOrigin: https://app.support.example\n\nHTTP/1.1 401 Unauthorized\nX-Environment: staging"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-evidence-02",
+          "type": "config",
+          "title": "构建与运行配置",
+          "content": "build:\n  VITE_API_BASE_URL: https://api-staging.support.example\n  artifactDigest: sha256:1111111111111111111111111111111111111111111111111111111111111111\nruntimeContainer:\n  API_BASE_URL: https://api.support.example\nframeworkNote: VITE_* values are replaced during bundle build",
+          "language": "yaml"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-evidence-03",
+          "type": "terminal",
+          "title": "静态制品字符串检查",
+          "content": "$ grep -o 'https://api-[^\" ]*' dist/assets/app.js | sort -u\nhttps://api-staging.support.example"
+        }
+      ],
+      "options": [
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-option-a",
+          "label": "以生产 VITE_API_BASE_URL 重新构建制品，记录新摘要并通过流水线发布",
+          "explanation": "框架在构建时替换 VITE 值，静态文件也明确包含预发布地址；重新构建不可变制品才能让生产地址真正生效并保留来源记录。"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-option-b",
+          "label": "只重启当前生产容器，让 API_BASE_URL 再读取一次",
+          "explanation": "运行变量不会改变已经写入 JavaScript 的构建时常量，重启仍会加载同一摘要并继续请求预发布。",
+          "errorType": "restart-static-build-time-config"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-01-option-c",
+          "label": "直接在 CDN 上搜索替换压缩 JavaScript 中的域名",
+          "explanation": "手工修改会让制品与摘要和发布记录不一致，难以验证完整性或回滚，并违反必须由流水线生成的约束。",
+          "errorType": "mutate-deployed-static-artifact"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "frontend-build-env-endpoint-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "确认这个框架是在构建时还是运行时读取环境变量。",
+        "secondWrong": "VITE 值已写入静态 Bundle，当前摘要中只能找到 staging 地址。",
+        "revealedAnswer": "应使用生产 VITE_API_BASE_URL 重新构建并记录新摘要，不能靠重启或手改 CDN 文件。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "frontend-build-env-endpoint-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "frontend-build-env-endpoint-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "frontend-build-env-endpoint-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "frontend-build-env-endpoint-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "frontend-build-env-endpoint-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证环境隔离",
+      "prompt": "新生产制品生成后，哪项验证最能证明地址正确且没有跨环境访问？",
+      "skillWeights": {
+        "software.foundations": 0.3,
+        "cloud.deployment": 0.35,
+        "api.integration": 0.35
+      },
+      "evidence": [
+        {
+          "id": "frontend-build-env-endpoint-001-node-02-evidence-01",
+          "type": "terminal",
+          "title": "候选制品检查",
+          "content": "$ grep -R 'api-staging.support.example' dist/; echo $?\n1\n$ grep -R 'api.support.example' dist/assets/app.js | wc -l\n1\n$ sha256sum dist/assets/app.js\n2222222222222222222222222222222222222222222222222222222222222222  dist/assets/app.js"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "灰度浏览器合成结果",
+          "content": "canary_sessions=100 production_api_requests=400 staging_api_requests=0 ticket_list_success_rate=100% frontend_error_rate=0 rollback_artifact_available=1"
+        }
+      ],
+      "options": [
+        {
+          "id": "frontend-build-env-endpoint-001-node-02-option-a",
+          "label": "扫描制品排除 staging 地址，灰度运行浏览器合成请求并监控两个环境的访问量",
+          "explanation": "静态扫描验证制品内容，双环境请求指标证明实际运行路径，灰度和旧摘要又提供暂停与回滚能力。"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-02-option-b",
+          "label": "只检查页面 HTML 返回 200，不观察浏览器发出的 API 请求",
+          "explanation": "HTML 成功只证明静态入口可用，无法证明 Bundle 内 API 地址或工单请求所到环境正确。",
+          "errorType": "html-only-frontend-validation"
+        },
+        {
+          "id": "frontend-build-env-endpoint-001-node-02-option-c",
+          "label": "删除旧制品和回滚记录后全量刷新 CDN 缓存",
+          "explanation": "删除旧摘要会失去回滚路径，而全量刷新会在 API 路径尚未灰度验证时同时影响所有客服。",
+          "errorType": "remove-artifact-rollback-before-cutover"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "frontend-build-env-endpoint-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "前端环境验证要检查制品内容和浏览器真正请求的目标。",
+        "secondWrong": "同时观察生产与 staging API 请求量，确认跨环境请求为零。",
+        "revealedAnswer": "应排除错误地址、灰度验证实际 API 请求并保留旧摘要，再向客户确认恢复和缓存传播进度。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "frontend-build-env-endpoint-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "生产容器变量无法改变已写入静态 Bundle 的 VITE 构建值。正确修复是用生产地址重建不可变制品，并从内容和实际请求两侧验证环境隔离。",
+    "rootCause": "团队把使用 staging VITE_API_BASE_URL 构建的同一静态制品直接提升到生产，并错误假设运行时容器变量会覆盖 Bundle 常量。",
+    "correctApproach": [
+      "使用生产 VITE_API_BASE_URL 通过流水线重新构建，记录新旧制品摘要。",
+      "扫描候选制品并灰度执行浏览器合成请求，确认 staging 请求为零后逐步发布。"
+    ],
+    "keyLessons": [
+      "环境变量何时被读取决定配置能否通过重启生效。",
+      "FDE 应向客户说明生产数据未丢失、页面错误访问了哪个环境，以及缓存传播与恢复时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否理解构建时配置，拒绝手改制品，并验证浏览器真实网络路径。",
+    "customerRiskPerspective": "跨环境访问可能造成数据混淆、错误授权和客服基于错误信息作出业务判断。",
+    "remediation": [
+      "为每个目标环境独立构建并记录制品摘要与 API 地址元数据。",
+      "在发布门禁中扫描禁用域名，并运行覆盖静态页面和 API 请求的浏览器合成测试。"
+    ],
+    "verification": [
+      "确认生产制品不含 staging 地址，只包含预期生产 API 地址且摘要已登记。",
+      "确认灰度会话的生产请求成功、staging 请求为零并保留可用回滚制品。"
+    ],
+    "knowledgePoints": [
+      "build-time environment variables",
+      "immutable frontend artifacts",
+      "environment isolation"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

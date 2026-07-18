@@ -1,0 +1,119 @@
+{
+  "$id": "https://fde-arena.local/schemas/concept.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analogy": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "category": {
+      "enum": [
+        "api-backend",
+        "system",
+        "ai",
+        "fde"
+      ],
+      "type": "string"
+    },
+    "commonMistakes": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "order": {
+      "maximum": 10000,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "relatedCases": {
+      "items": {
+        "maxLength": 160,
+        "minLength": 1,
+        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "relatedFoundation": {
+      "items": {
+        "maxLength": 160,
+        "minLength": 1,
+        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "simpleExplanation": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "technicalExplanation": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "technicalTerm": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 240,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    },
+    "type": {
+      "const": "concept",
+      "type": "string"
+    },
+    "whyItMatters": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)(?![\\s\\S]*(?:<\\s*\\/?\\s*(?:[sS][cC][rR][iI][pP][tT]|[iI][fF][rR][aA][mM][eE]|[oO][bB][jJ][eE][cC][tT]|[eE][mM][bB][eE][dD]|[aA][pP][pP][lL][eE][tT])\\b|\\b[oO][nN][a-zA-Z]+\\s*=|(?:[jJ][aA][vV][aA]|[vV][bB])[sS][cC][rR][iI][pP][tT]\\s*:|[dD][aA][tT][aA]\\s*:\\s*[tT][eE][xX][tT]\\/[hH][tT][mM][lL]))[\\s\\S]*$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "type",
+    "category",
+    "order",
+    "title",
+    "technicalTerm",
+    "simpleExplanation",
+    "analogy",
+    "technicalExplanation",
+    "whyItMatters",
+    "commonMistakes",
+    "relatedFoundation",
+    "relatedCases"
+  ],
+  "title": "FDE Arena Concept Knowledge",
+  "type": "object"
+}

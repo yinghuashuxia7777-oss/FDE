@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.queue",
+  "type": "concept",
+  "category": "system",
+  "order": 18,
+  "title": "队列：解耦生产者与异步消费者",
+  "technicalTerm": "Queue",
+  "simpleExplanation": "队列先存下待处理消息，让发送方和处理方不必在同一时刻以同一速度工作。",
+  "analogy": "像医院取号机：患者先拿号，窗口按能力处理；号码能缓冲高峰，但不能保证每个人恰好按到达顺序完成。",
+  "technicalExplanation": "消息队列通常提供至少一次投递，因此消费者需幂等处理，并管理确认、重试、死信、分区顺序和积压。数据同步还需保存游标或水位，区分已接收、已处理与已提交。",
+  "whyItMatters": "异步系统的延迟和重复不是偶发异常，而是设计输入。FDE 应用消息 ID、事件时间和检查点还原处理链，避免重复或遗漏数据。",
+  "commonMistakes": "假设全局严格顺序；消费后尚未提交就提前确认；只监控队列长度不监控最老消息年龄；把到达时间当业务事件时间。",
+  "relatedFoundation": [
+    "api.webhook-delivery",
+    "computer.data",
+    "api.pagination"
+  ],
+  "relatedCases": [
+    "warehouse-late-arrival-watermark-001",
+    "data-sync-cursor-checkpoint-gap-001"
+  ]
+}

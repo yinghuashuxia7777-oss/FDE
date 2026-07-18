@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "agents.evaluation",
+  "domainId": "agents-evals",
+  "label": "Agent evaluation",
+  "description": "Evaluate tool-using agents for correctness, safety, and reliability.",
+  "status": "active"
+}

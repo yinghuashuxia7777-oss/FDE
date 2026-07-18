@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "http-request-basic",
+  "type": "foundation",
+  "title": "HTTP 请求：方法、地址、头部与正文",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration"],
+  "level": "beginner",
+  "order": 15,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "HTTP 请求由方法、目标地址、头部和可选正文组成；方法表达意图，头部携带格式与身份上下文，正文承载业务输入，四者必须与 API 契约一致。",
+    "analogy": "HTTP 请求像寄送一份业务表单：信封写收件部门和处理类型，附页说明身份与格式，表单正文给出具体内容；缺一项都可能被退回。",
+    "technicalExplanation": "GET 通常读取资源，POST、PUT 或 PATCH 用于创建或修改，但最终语义由服务契约定义。Authorization、Content-Type、追踪 ID 等头部影响处理和诊断。",
+    "example": "调用新端点时路径和 JSON 都正确，却返回权限错误。脱敏检查 Authorization 对应令牌的 scope 后发现缺少读取范围，说明请求身份上下文不符合契约。",
+    "commonMistakes": "复制生产请求时保留真实令牌或个人数据非常危险。也不要只修改方法碰碰运气；应阅读契约、构造最小合成请求，并记录可关联的请求 ID。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

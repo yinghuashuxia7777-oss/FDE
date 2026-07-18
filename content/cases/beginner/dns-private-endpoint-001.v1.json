@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "id": "dns-private-endpoint-001",
+  "slug": "dns-private-endpoint-001",
+  "title": "工作负载解析到私有服务的公网地址",
+  "summary": "利用 DNS 与连接证据定位私有端点解析问题，并选择分层验证方案。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["systems-networking"],
+  "skills": ["systems.networking"],
+  "lifecycleStages": ["deploy", "operate"],
+  "technicalLayers": ["dns", "network"],
+  "environments": ["staging", "private-network"],
+  "riskTypes": ["connectivity", "security"],
+  "behaviorPatterns": ["layered-diagnostics", "safe-network-change"],
+  "scenario": {
+    "customerProfile": "一家虚构的分析平台把批处理工作负载运行在隔离网络中，并通过私有端点访问托管数据库。",
+    "background": "数据库私有端点已创建，运维控制台显示健康；迁移到新子网的工作负载却无法建立连接。",
+    "initialIncident": "新子网中的任务连接 db.service.example.test 超时，而旧子网中的同一镜像运行正常。",
+    "constraints": [
+      "数据库不得开放公网访问。",
+      "不能通过跳过 TLS 主机名校验解决问题。",
+      "允许从合成调试 Pod 执行只读 DNS 和握手测试。"
+    ],
+    "confirmedFacts": [
+      "新旧子网使用不同的 DNS 转发器配置。",
+      "私有端点地址为 10.40.8.12。",
+      "安全组允许新子网到该私有地址的 5432 端口。"
+    ]
+  },
+  "startNodeId": "dns-private-endpoint-001-node-01",
+  "nodes": [
+    {
+      "id": "dns-private-endpoint-001-node-01",
+      "type": "log-analysis",
+      "title": "确定首个诊断方向",
+      "prompt": "哪项行动最符合现有证据？",
+      "skillWeights": { "systems.networking": 1 },
+      "evidence": [
+        {
+          "id": "dns-private-endpoint-001-node-01-evidence-01",
+          "type": "terminal",
+          "title": "新子网解析结果",
+          "content": "$ dig +short db.service.example.test\n198.51.100.24"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-01-evidence-02",
+          "type": "terminal",
+          "title": "旧子网解析结果",
+          "content": "$ dig +short db.service.example.test\n10.40.8.12"
+        }
+      ],
+      "options": [
+        {
+          "id": "dns-private-endpoint-001-node-01-option-a",
+          "label": "检查私有 DNS 区与新网络的关联及转发规则，再做最小范围修正",
+          "explanation": "同一名称在两个子网得到不同地址，而私有端点本身健康；证据直接指向新网络未使用私有 DNS 视图。"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-01-option-b",
+          "label": "提高数据库客户端连接超时并增加重试次数",
+          "explanation": "客户端正在尝试公网地址，增加等待和重试不会修复解析路径，只会延迟明确失败。",
+          "errorType": "retry-without-network-root-cause"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-01-option-c",
+          "label": "临时启用数据库公网访问并关闭 TLS 主机名校验",
+          "explanation": "该方案同时违反私网与 TLS 约束，会把连接问题转化为严重的暴露和中间人风险。",
+          "errorType": "unsafe-public-endpoint-bypass"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "dns-private-endpoint-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先比较新旧环境在哪一层首次出现差异。",
+        "secondWrong": "相同主机名分别解析为公网与私网地址，差异发生在 DNS 层。",
+        "revealedAnswer": "应检查私有 DNS 区关联和转发规则，修正新网络的私有解析路径，而不是放宽公网或 TLS 控制。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": ["dns-private-endpoint-001-node-01-option-c"]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "dns-private-endpoint-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "dns-private-endpoint-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "dns-private-endpoint-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "dns-private-endpoint-001-node-02",
+      "type": "command-choice",
+      "title": "验证 DNS 修复",
+      "prompt": "私有 DNS 关联修正后，哪组验证最能证明端到端恢复？",
+      "skillWeights": { "systems.networking": 1 },
+      "evidence": [
+        {
+          "id": "dns-private-endpoint-001-node-02-evidence-01",
+          "type": "terminal",
+          "title": "修正后的解析",
+          "content": "$ dig +short db.service.example.test\n10.40.8.12"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-02-evidence-02",
+          "type": "config",
+          "title": "证书身份",
+          "content": "subjectAltName=DNS:db.service.example.test issuer=Example Test Private CA"
+        }
+      ],
+      "options": [
+        {
+          "id": "dns-private-endpoint-001-node-02-option-a",
+          "label": "从新子网确认私有解析，再以原主机名完成 TCP 与 TLS 验证",
+          "explanation": "该组合分别验证 DNS、网络可达性和证书主机名，能证明应用使用预期私有路径而非绕过安全控制。"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-02-option-b",
+          "label": "只 ping 私有 IP，成功后就宣布数据库恢复",
+          "explanation": "ICMP 成功不能证明 5432 端口、TLS 主机名或应用协议正常，也没有验证 DNS 已修复。",
+          "errorType": "incomplete-layer-verification"
+        },
+        {
+          "id": "dns-private-endpoint-001-node-02-option-c",
+          "label": "把私有 IP 写入所有节点的 hosts 文件并永久跳过 DNS",
+          "explanation": "静态 hosts 会造成不可审计的配置漂移并绕过端点地址生命周期，未来变化可能引发大面积中断。",
+          "errorType": "unsafe-static-name-override"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "dns-private-endpoint-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "端到端验证应覆盖名称解析、端口和安全身份。",
+        "secondWrong": "保留原主机名才能验证证书身份，不能只测试一个 IP。",
+        "revealedAnswer": "应从新子网确认主机名解析为私有地址，并用原主机名完成 TCP 与 TLS 握手验证。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": ["dns-private-endpoint-001-node-02-option-c"]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "新子网没有使用私有 DNS 视图，导致数据库主机名解析到公网地址。修复需要恢复私有 DNS 关联，并分层验证解析、端口和 TLS 身份。",
+    "rootCause": "私有 DNS 区未与新网络正确关联，转发器返回了公网记录。",
+    "correctApproach": [
+      "比较新旧子网解析并修正私有 DNS 区关联或转发规则。",
+      "从新子网用原主机名验证私有地址、TCP 端口和 TLS 握手。"
+    ],
+    "keyLessons": [
+      "连接超时要从名称解析到应用协议逐层定位。",
+      "不能用公网开放、TLS 绕过或静态 hosts 代替正确的私有解析。"
+    ],
+    "interviewerPerspective": "观察候选人是否利用对照环境定位首个差异，并设计不绕过安全控制的分层验证。",
+    "customerRiskPerspective": "错误绕过可能暴露数据库、削弱 TLS 或留下长期配置漂移。",
+    "remediation": [
+      "把私有 DNS 区关联纳入新网络创建流程。",
+      "为关键私有主机名增加从各子网执行的解析合成检查。"
+    ],
+    "verification": [
+      "确认新旧子网都把主机名解析为 10.40.8.12。",
+      "确认新子网通过原主机名完成 5432 端口和 TLS 身份验证。"
+    ],
+    "knowledgePoints": [
+      "split-horizon DNS",
+      "private endpoint validation",
+      "layered network diagnostics"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

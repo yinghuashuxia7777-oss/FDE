@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "id": "customer-ai-workflow-adoption-collapse-001",
+  "slug": "customer-ai-workflow-adoption-collapse-001",
+  "title": "技术验收通过但客户周采用率跌破 10%",
+  "summary": "从使用漏斗、现场访谈与工作流证据定位采用崩塌，重新定义低风险路径、运营责任和可量化推广门禁。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "customer-discovery",
+    "fde-adoption",
+    "reliability",
+    "agents-evals"
+  ],
+  "skills": [
+    "customer.discovery",
+    "fde.adoption",
+    "reliability.observability",
+    "agents.evaluation"
+  ],
+  "lifecycleStages": ["discover", "adopt", "operate"],
+  "technicalLayers": [
+    "workflow",
+    "agent-assistance",
+    "telemetry",
+    "change-management"
+  ],
+  "environments": ["pilot", "production"],
+  "riskTypes": ["adoption", "workflow-friction", "safety", "customer-trust"],
+  "behaviorPatterns": [
+    "workflow-discovery",
+    "measurable-adoption",
+    "human-escalation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的能源企业为 400 名现场维护工程师上线设备故障诊断助手。",
+    "background": "离线评估准确率达到 94%，安全审查通过；生产流程要求工程师把建议复制到工单，再由值班主管和区域经理分别审批。",
+    "initialIncident": "上线六周后周活跃率不足 10%，项目委员会认为模型没有价值并考虑终止合同。",
+    "constraints": [
+      "高风险停机与安全操作必须保留人工审批和升级路径。",
+      "不能用强制使用或虚假活跃指标掩盖工作流摩擦。",
+      "改进不得采集完整工单正文或个人绩效数据，只记录必要流程事件。",
+      "八周内需要用真实但低风险的维护场景证明可持续采用价值。"
+    ],
+    "confirmedFacts": [
+      "活跃用户中的建议接受率和准确率仍满足原技术门槛。",
+      "没有助手建议直接控制设备或绕过安全锁定。",
+      "多数流失发生在生成建议之后、提交双重审批之前。",
+      "主管团队没有明确的助手运营负责人或响应时限。"
+    ]
+  },
+  "startNodeId": "customer-ai-workflow-adoption-collapse-001-node-01",
+  "nodes": [
+    {
+      "id": "customer-ai-workflow-adoption-collapse-001-node-01",
+      "type": "evidence-conclusion",
+      "title": "区分模型质量与工作流采用问题",
+      "prompt": "结合使用漏斗和访谈，哪项结论最适合作为下一步客户诊断假设？",
+      "skillWeights": {
+        "customer.discovery": 0.4,
+        "fde.adoption": 0.3,
+        "agents.evaluation": 0.2,
+        "reliability.observability": 0.1
+      },
+      "evidence": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "六周使用漏斗",
+          "content": "invited_users=400 activated=342 weekly_active=36 suggestions_generated=128 suggestions_accepted=101 copied_to_ticket=94 submitted_first_approval=39 submitted_second_approval=12 median_task_time_change=+6m"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-evidence-02",
+          "type": "customer-message",
+          "title": "现场工程师访谈摘要",
+          "content": "建议通常有帮助，但我仍要复制内容并等待两个不同时区的主管。低风险检查以前可以直接记录完成，现在使用助手反而更慢。"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-evidence-03",
+          "type": "customer-message",
+          "title": "区域经理访谈摘要",
+          "content": "我们只想审批可能停机或涉及安全步骤的建议，但当前系统把所有建议都送到我的队列，也没人负责清理积压。"
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-option-a",
+          "label": "主要假设是统一双重审批和缺少运营责任造成摩擦，应按风险拆解流程并验证",
+          "explanation": "活跃用户质量仍达标，流失集中在审批阶段，两类访谈也指向低风险任务被过度审批和无人管理。"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-option-b",
+          "label": "主要假设是模型准确率不足，应先训练更大模型再讨论流程",
+          "explanation": "准确率和接受率仍满足门槛，且漏斗显示用户在生成建议后退出；当前证据不支持把首要根因归为模型能力。",
+          "errorType": "misdiagnose-workflow-friction-as-model-quality"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-01-option-c",
+          "label": "采用失败说明工程师抵触变化，应把助手设为强制入口并计入个人绩效",
+          "explanation": "强制使用和绩效绑定会掩盖真实摩擦、诱导虚假活跃并收集不必要个人数据，可能严重损害劳资信任。",
+          "errorType": "coerce-adoption-through-performance-surveillance"
+        }
+      ],
+      "answer": {
+        "conclusionId": "customer-ai-workflow-adoption-collapse-001-node-01-option-a",
+        "evidenceIds": [
+          "customer-ai-workflow-adoption-collapse-001-node-01-evidence-01",
+          "customer-ai-workflow-adoption-collapse-001-node-01-evidence-02",
+          "customer-ai-workflow-adoption-collapse-001-node-01-evidence-03"
+        ]
+      },
+      "feedback": {
+        "firstWrong": "比较技术质量是否下降，以及用户在哪个具体流程步骤退出。",
+        "secondWrong": "接受率仍高，流失发生在双重审批，两类角色都描述同一摩擦。",
+        "revealedAnswer": "应把过度审批和运营责任缺失作为可验证假设，而不是强制采用或先换模型。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-ai-workflow-adoption-collapse-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "customer-ai-workflow-adoption-collapse-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "重新界定低风险工作流",
+      "prompt": "客户同意开展八周修复试验，哪项范围和成功标准最可判定？",
+      "skillWeights": {
+        "customer.discovery": 0.35,
+        "fde.adoption": 0.35,
+        "agents.evaluation": 0.2,
+        "reliability.observability": 0.1
+      },
+      "evidence": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-02-evidence-01",
+          "type": "config",
+          "title": "客户风险分类",
+          "content": "lowRisk: [visual_inspection_summary, documentation_lookup]\nmediumRisk: [parts_recommendation]\nhighRisk: [equipment_shutdown, safety_procedure_change]\nrequiredApproval:\n  lowRisk: supervisor_sampled_audit\n  mediumRisk: supervisor\n  highRisk: supervisor_and_regional_manager",
+          "language": "yaml"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "基线与客户目标",
+          "content": "low_risk_weekly_users=22 low_risk_task_time_minutes=19 low_risk_accuracy=94.2% safety_incidents=0 target_weekly_adoption=60% target_task_time_change=-15% required_accuracy>=93%"
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-02-option-a",
+          "label": "先优化两类低风险任务，按风险保留审批，并以采用、任务时间、准确率和安全事件共同验收",
+          "explanation": "范围集中在已定义低风险任务，成功标准覆盖用户价值、技术质量和安全边界，八周内能够形成可比较证据。"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-02-option-b",
+          "label": "同时重做所有维护流程，并以登录次数作为唯一成功标准",
+          "explanation": "全流程范围过大且登录不能证明任务完成、时间改善或安全，八周内难以归因和验收。",
+          "errorType": "broad-rescope-with-vanity-adoption-metric"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-02-option-c",
+          "label": "取消所有高风险审批，让助手直接生成设备停机步骤以提高使用率",
+          "explanation": "使用率不能抵消设备与人员安全风险，取消高风险审批违反客户分类和既定人工控制。",
+          "errorType": "remove-high-risk-human-approval"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-ai-workflow-adoption-collapse-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "修复试验需要足够窄的场景和同时覆盖价值、质量与安全的指标。",
+        "secondWrong": "客户已有明确风险分类，低风险两类任务最适合建立可判定证据。",
+        "revealedAnswer": "应先优化低风险任务并保留分级审批，用采用、时间、准确率和安全共同验收。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-ai-workflow-adoption-collapse-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "customer-ai-workflow-adoption-collapse-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "建立运营责任与升级路径",
+      "prompt": "工作流原型完成后，哪项上线方案最能形成可持续采用而不制造虚假使用？",
+      "skillWeights": {
+        "fde.adoption": 0.4,
+        "customer.discovery": 0.2,
+        "reliability.observability": 0.2,
+        "agents.evaluation": 0.2
+      },
+      "evidence": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-03-evidence-01",
+          "type": "diagram",
+          "title": "候选低风险流程",
+          "content": "technician -> assistant suggestion -> edit/accept -> ticket saved\n                              | uncertain/high-risk\n                              v\n                     supervisor queue -> named owner -> 4h response SLO"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-03-evidence-02",
+          "type": "config",
+          "title": "最小遥测方案",
+          "content": "events: [suggestion_shown, accepted, edited, escalated, task_completed]\nexclude: [ticket_body, employee_performance_score]\nowner: maintenance-ai-operations\nescalationSloHours: 4\ntraining: role_based_scenarios",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-03-option-a",
+          "label": "指定客户运营负责人和升级 SLO，开展角色场景培训，并用最小事件遥测观察真实任务完成",
+          "explanation": "明确责任人与响应时间解决队列无人管理，场景培训和最小遥测支持真实使用改进且不采集工单正文或个人绩效。"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-03-option-b",
+          "label": "发送一次通用培训邮件，然后以是否登录判断采用成功",
+          "explanation": "通用邮件不能覆盖现场角色和升级路径，登录也不代表建议被用于完成真实任务。",
+          "errorType": "one-time-training-and-login-metric"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-03-option-c",
+          "label": "记录完整工单、个人使用排名和经理评价，用排行榜迫使团队采用",
+          "explanation": "过度采集与排名违反最小数据约束，可能诱发虚假行为并严重损害员工和客户信任。",
+          "errorType": "invasive-adoption-surveillance"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-ai-workflow-adoption-collapse-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "可持续采用需要明确运营责任、用户能力和真实流程信号。",
+        "secondWrong": "客户当前缺少负责人和响应时限，遥测必须避免工单正文与个人绩效。",
+        "revealedAnswer": "应建立责任人、升级 SLO、场景培训和最小事件遥测，而不是强制排名。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-ai-workflow-adoption-collapse-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "customer-ai-workflow-adoption-collapse-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "customer-ai-workflow-adoption-collapse-001-node-04",
+      "type": "customer-response",
+      "title": "判断推广并重建客户信心",
+      "prompt": "八周低风险试验结束后，哪项决策与客户沟通最符合证据？",
+      "skillWeights": {
+        "fde.adoption": 0.35,
+        "customer.discovery": 0.25,
+        "agents.evaluation": 0.2,
+        "reliability.observability": 0.2
+      },
+      "evidence": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-04-evidence-01",
+          "type": "metric",
+          "title": "八周试验结果",
+          "content": "eligible_users=80 weekly_active=54 weekly_adoption=67.5% task_time_change=-18% low_risk_accuracy=94.0% safety_incidents=0 escalations_within_slo=96% forced_logins=0"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-04-evidence-02",
+          "type": "customer-message",
+          "title": "项目委员会问题",
+          "content": "请说明为什么这次结果可信、哪些流程仍不应扩大、谁负责日常运营，以及下一阶段如何避免又变成只看模型分数。"
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-04-option-a",
+          "label": "报告低风险价值与安全结果，保留高风险审批，按角色逐步推广并持续由客户负责人审查流程指标",
+          "explanation": "采用、任务时间、准确率和安全均满足预设标准且没有强制登录；分阶段推广和明确责任能保留证据质量与运营闭环。"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-04-option-b",
+          "label": "只展示 94% 准确率并宣布所有维护场景都已准备生产",
+          "explanation": "模型分数不能证明采用与流程价值，试验只覆盖低风险任务，也没有证据支持高风险场景取消现有控制。",
+          "errorType": "generalize-low-risk-pilot-to-all-workflows"
+        },
+        {
+          "id": "customer-ai-workflow-adoption-collapse-001-node-04-option-c",
+          "label": "取消高风险审批并强制全员使用，以确保合同续签所需的活跃数字",
+          "explanation": "该行动同时破坏安全边界和指标真实性，会把商业压力转化为设备、人员和客户信任风险。",
+          "errorType": "sacrifice-safety-for-adoption-metric"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-ai-workflow-adoption-collapse-001-node-04-option-a"
+      },
+      "feedback": {
+        "firstWrong": "推广结论必须受试验范围和预设价值、质量、安全标准约束。",
+        "secondWrong": "低风险试验达标，但不能推广为高风险流程已验证。",
+        "revealedAnswer": "应透明报告低风险证据和范围，保留高风险控制，并由明确负责人按角色逐步推广。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-ai-workflow-adoption-collapse-001-node-04-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "模型质量仍达标，但统一双重审批让低风险任务变慢，主管队列又没有运营负责人；采用失败来自工作流和责任模型，而非单纯模型能力。",
+    "rootCause": "生产实施把所有风险级别套用相同双重审批，且缺少客户侧运营责任人与响应 SLO，导致助手增加任务时间并在审批漏斗大量流失。",
+    "correctApproach": [
+      "分析使用漏斗与角色访谈以定位审批摩擦，并按客户风险分类重新界定低风险试验。",
+      "定义采用、任务时间、准确率和安全事件的共同成功标准。",
+      "建立运营负责人、升级 SLO、角色培训和最小事件遥测后分阶段推广。"
+    ],
+    "keyLessons": [
+      "离线质量通过不代表产品进入真实工作流后会产生可采用价值。",
+      "采用指标必须连接到任务完成和用户价值，不能靠强制登录或个人排名制造。",
+      "FDE 应向客户说明试验范围、达标证据、仍保留的风险控制和长期运营责任。"
+    ],
+    "interviewerPerspective": "观察候选人是否把技术质量、流程摩擦、组织责任、数据最小化和客户商业目标放在同一证据链中。",
+    "customerRiskPerspective": "错误采用策略可能增加维护时间、削弱安全审批或引发员工抵触，使技术上可用的系统失去商业价值。",
+    "remediation": [
+      "按风险设计不同审批路径，并把低风险建议直接集成到工单保存流程。",
+      "指定客户运营负责人、升级 SLO 和角色场景培训。",
+      "建立不含工单正文和个人绩效的采用、任务时间、质量与安全遥测。"
+    ],
+    "verification": [
+      "确认低风险周采用率、任务时间和准确率达到预设门槛，安全事件为零。",
+      "确认升级请求在 SLO 内处理且没有强制登录或过度个人数据采集。",
+      "确认客户委员会批准分阶段范围、运营责任人与后续复核节奏。"
+    ],
+    "knowledgePoints": [
+      "workflow-centered adoption",
+      "risk-tiered human approval",
+      "measurable customer outcomes"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

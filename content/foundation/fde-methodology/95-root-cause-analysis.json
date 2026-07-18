@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "fde.root-cause-analysis",
+  "type": "foundation",
+  "title": "根因分析：解释故障为何能够发生",
+  "domain": "fde-methodology",
+  "track": "computer-basics",
+  "skills": [
+    "reliability.observability",
+    "software.foundations",
+    "cloud.deployment"
+  ],
+  "level": "intermediate",
+  "order": 95,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "根因分析不是寻找最后一个报错或某个责任人，而是用时间线和证据说明触发条件如何穿过缺失的防护形成影响，并确定哪些改进能阻止复发。",
+    "analogy": "它像调查仓库进水，不只记录地面有水，还要确认暴雨、排水堵塞、巡检缺失和告警未触发怎样共同造成货物受损。",
+    "technicalExplanation": "有效分析区分触发事件、直接原因、促成条件、检测缺口和响应缺口，每个结论都链接证据，并把纠正措施对应到具体失效环节。",
+    "example": "容器未就绪并非单纯端口写错，完整分析还发现部署前没有契约测试、探针与实际监听端口来源不同、发布门禁未验证运行配置。",
+    "commonMistakes": "把时间上最后出现的错误当根因、使用人为失误结束分析，或列出与失效机制无关的培训动作，都无法降低复发概率；措施必须可验证。"
+  },
+  "relatedCases": [
+    "container-readiness-port-001",
+    "observability-correlation-id-001"
+  ]
+}

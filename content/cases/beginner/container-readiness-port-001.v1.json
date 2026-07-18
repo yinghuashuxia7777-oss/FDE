@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "id": "container-readiness-port-001",
+  "slug": "container-readiness-port-001",
+  "title": "容器健康但 Readiness 探针端口错误",
+  "summary": "根据容器日志与工作负载配置定位探针端口不一致，并安全验证滚动修复。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["cloud-deployment"],
+  "skills": ["cloud.deployment"],
+  "lifecycleStages": ["deploy", "operate"],
+  "technicalLayers": ["containers", "orchestration"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "traffic-routing"],
+  "behaviorPatterns": ["configuration-evidence", "safe-rollout"],
+  "scenario": {
+    "customerProfile": "一家虚构的预约平台在容器编排环境中运行公共 API。",
+    "background": "团队升级基础镜像后发布新版本，进程启动正常，但新 Pod 一直没有进入 Ready。",
+    "initialIncident": "滚动发布停滞，旧 Pod 仍承担全部流量，客户担心下一次扩容失败。",
+    "constraints": [
+      "不能关闭 readiness 机制或强制把流量发给 NotReady Pod。",
+      "必须保持至少两个旧 Pod 提供服务。",
+      "可以先在预发布修改工作负载配置。"
+    ],
+    "confirmedFacts": [
+      "应用进程没有崩溃或重启。",
+      "容器镜像声明服务端口为 8081。",
+      "旧版本仍健康且错误率正常。"
+    ]
+  },
+  "startNodeId": "container-readiness-port-001-node-01",
+  "nodes": [
+    {
+      "id": "container-readiness-port-001-node-01",
+      "type": "configuration-review",
+      "title": "修正 Readiness 配置",
+      "prompt": "根据证据，哪项改动最合理？",
+      "skillWeights": { "cloud.deployment": 1 },
+      "evidence": [
+        {
+          "id": "container-readiness-port-001-node-01-evidence-01",
+          "type": "log",
+          "title": "容器启动日志",
+          "content": "server_started=true listen_address=0.0.0.0 listen_port=8081"
+        },
+        {
+          "id": "container-readiness-port-001-node-01-evidence-02",
+          "type": "config",
+          "title": "工作负载探针",
+          "content": "ports:\n- name: http\n  containerPort: 8081\nreadinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "container-readiness-port-001-node-01-option-a",
+          "label": "让 Readiness 探针引用名为 http 的端口，并在预发布确认 /ready 返回成功",
+          "explanation": "日志和配置共同证明应用监听 8081 而探针访问 8080；引用命名端口可减少未来数字漂移，并能先安全验证。"
+        },
+        {
+          "id": "container-readiness-port-001-node-01-option-b",
+          "label": "删除 Readiness 探针，让编排器把所有启动进程视为可接流量",
+          "explanation": "这会掩盖配置错误并失去流量保护，进程启动不等于依赖和请求处理已经就绪。",
+          "errorType": "disabled-readiness-safety"
+        },
+        {
+          "id": "container-readiness-port-001-node-01-option-c",
+          "label": "强制服务把生产流量发送给当前 NotReady Pod",
+          "explanation": "绕过就绪状态会把客户请求送往尚未验证的实例，可能立即造成大面积失败并违反约束。",
+          "errorType": "forced-traffic-to-unready-pods"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "container-readiness-port-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较应用实际监听端口与探针请求端口。",
+        "secondWrong": "应用和命名端口都是 8081，但 readinessProbe 仍写着 8080。",
+        "revealedAnswer": "应让探针引用 http 命名端口，并先在预发布确认 /ready 成功，而不是关闭或绕过 readiness。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "container-readiness-port-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "container-readiness-port-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "container-readiness-port-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "container-readiness-port-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "container-readiness-port-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证滚动发布",
+      "prompt": "预发布修复成功后，应如何验证生产滚动发布？",
+      "skillWeights": { "cloud.deployment": 1 },
+      "evidence": [
+        {
+          "id": "container-readiness-port-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "预发布结果",
+          "content": "new_pods=3 ready_pods=3 readiness_latency_p95=4s synthetic_status=200"
+        },
+        {
+          "id": "container-readiness-port-001-node-02-evidence-02",
+          "type": "config",
+          "title": "生产滚动策略",
+          "content": "replicas: 4\nmaxUnavailable: 1\nmaxSurge: 1\nrollback: enabled",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "container-readiness-port-001-node-02-option-a",
+          "label": "按现有滚动策略替换一个实例，观察 Ready、合成请求和错误率后继续",
+          "explanation": "单实例步骤保留旧容量，Readiness、请求与错误率提供互补证据，异常时可立即暂停和回滚。"
+        },
+        {
+          "id": "container-readiness-port-001-node-02-option-b",
+          "label": "一次删除全部旧 Pod，再观察新 Pod 是否最终 Ready",
+          "explanation": "同时删除旧容量违反至少保留两个旧 Pod 的约束，并在新版本异常时没有可用缓冲。",
+          "errorType": "all-at-once-capacity-removal"
+        },
+        {
+          "id": "container-readiness-port-001-node-02-option-c",
+          "label": "把 maxUnavailable 改为 4 并关闭回滚以缩短发布时间",
+          "explanation": "允许全部实例不可用并关闭回滚会移除关键安全边界，任何探针或应用问题都可能导致完全中断。",
+          "errorType": "unsafe-rollout-guardrail-removal"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "container-readiness-port-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "发布验证要保留服务容量，并设置可观察的继续条件。",
+        "secondWrong": "现有策略允许一次只不可用一个实例且支持回滚，适合逐步观察。",
+        "revealedAnswer": "应先替换一个实例，确认 Ready、合成请求和错误率，再继续滚动并保留回滚。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "container-readiness-port-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "应用监听 8081，但 Readiness 探针仍请求 8080。修复应引用命名端口，并通过保留容量、可观察、可回滚的滚动发布验证。",
+    "rootCause": "升级后应用端口变为 8081，工作负载的 Readiness 探针端口未同步。",
+    "correctApproach": [
+      "把探针改为引用 http 命名端口并在预发布验证。",
+      "生产先替换一个实例，观察就绪、合成请求和错误率后继续。"
+    ],
+    "keyLessons": [
+      "进程运行不代表实例已经可以接收流量。",
+      "滚动发布安全来自容量保留、可观察继续条件和回滚。"
+    ],
+    "interviewerPerspective": "观察候选人是否从配置证据定位端口漂移，并拒绝绕过 readiness 的危险捷径。",
+    "customerRiskPerspective": "强制流量或移除发布护栏可能把局部配置错误变成全站中断。",
+    "remediation": [
+      "在工作负载中统一使用命名端口。",
+      "为探针端口与容器端口增加部署前策略检查。"
+    ],
+    "verification": [
+      "确认预发布所有新 Pod 在预期时间内 Ready 且 /ready 返回 200。",
+      "确认生产逐步替换期间容量、错误率和合成请求正常。"
+    ],
+    "knowledgePoints": [
+      "container readiness",
+      "named ports",
+      "safe rolling deployment"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

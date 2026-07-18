@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "customer.discovery",
+  "domainId": "customer-discovery",
+  "label": "Customer discovery",
+  "description": "Turn customer evidence into explicit requirements and constraints.",
+  "status": "active"
+}

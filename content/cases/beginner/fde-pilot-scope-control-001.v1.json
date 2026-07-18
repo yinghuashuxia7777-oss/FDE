@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "fde-pilot-scope-control-001",
+  "slug": "fde-pilot-scope-control-001",
+  "title": "试点中途出现范围扩张",
+  "summary": "在不损害客户关系的情况下保护试点目标，并把新增需求转成可控的后续决策。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["fde-adoption"],
+  "skills": ["fde.adoption"],
+  "lifecycleStages": ["pilot", "adoption"],
+  "technicalLayers": ["delivery", "integration"],
+  "environments": ["pilot"],
+  "riskTypes": ["scope", "delivery", "customer-trust"],
+  "behaviorPatterns": ["scope-control", "transparent-stakeholder-alignment"],
+  "scenario": {
+    "customerProfile": "一家虚构的售后服务团队正在试点一个工单摘要工作流，希望减少交接时间。",
+    "background": "双方签署的两周试点只包含合成工单源和一个人工审批工作流，演示将在五个工作日后举行。",
+    "initialIncident": "客户新利益相关者要求在演示前接入生产 CRM、自动发送摘要并加入三个额外报表。",
+    "constraints": [
+      "生产 CRM 接入尚未完成安全和数据审批。",
+      "团队只有五个工作日，不能增加工程人员。",
+      "原试点成功标准是合成工单摘要准确率和人工审批用时。"
+    ],
+    "confirmedFacts": [
+      "原范围内的摘要与人工审批已达到预定测试里程碑。",
+      "新增需求从未估算，也不在签署范围中。",
+      "客户仍把五天后的演示视为关键决策点。"
+    ]
+  },
+  "startNodeId": "fde-pilot-scope-control-001-node-01",
+  "nodes": [
+    {
+      "id": "fde-pilot-scope-control-001-node-01",
+      "type": "architecture-tradeoff",
+      "title": "处理新增需求",
+      "prompt": "团队应如何回应这次范围扩张？",
+      "skillWeights": { "fde.adoption": 1 },
+      "evidence": [
+        {
+          "id": "fde-pilot-scope-control-001-node-01-evidence-01",
+          "type": "text",
+          "title": "已签署试点范围",
+          "content": "包含：合成工单输入、摘要生成、人工审批。排除：生产系统写入、自动发送、定制报表。"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-01-evidence-02",
+          "type": "customer-message",
+          "title": "新利益相关者请求",
+          "content": "如果演示能直接接生产 CRM 并自动发出摘要，会更有说服力。三个报表最好也一起展示。"
+        }
+      ],
+      "options": [
+        {
+          "id": "fde-pilot-scope-control-001-node-01-option-a",
+          "label": "记录新增需求及价值，保持原演示里程碑，并共同评估为审批后的下一阶段",
+          "explanation": "该方案承认客户价值，同时保护已签署成功标准和关键日期；新增工作通过估算、审批和阶段化计划得到可控处理。"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-01-option-b",
+          "label": "直接拒绝讨论所有新增需求，只重复合同不在范围内",
+          "explanation": "守住范围是必要的，但拒绝理解价值或提供后续路径会损害合作关系，也失去采用信号。",
+          "errorType": "scope-rejection-without-alternative"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-01-option-c",
+          "label": "接受全部需求并使用共享管理员凭据直接连接生产 CRM",
+          "explanation": "未审批的生产接入和共享管理员凭据违反安全约束，且会让原里程碑失控，可能造成数据和客户信任事故。",
+          "errorType": "unapproved-production-scope-expansion"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "fde-pilot-scope-control-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "既要保护已承诺结果，也要让新增价值进入一个明确决策路径。",
+        "secondWrong": "生产审批尚未完成，而五天后的原范围演示已经达到里程碑。",
+        "revealedAnswer": "应记录新增需求、保持原演示，并把生产接入和报表放入经过估算与审批的下一阶段。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "fde-pilot-scope-control-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "fde-pilot-scope-control-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "fde-pilot-scope-control-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "fde-pilot-scope-control-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "fde-pilot-scope-control-001-node-02",
+      "type": "customer-response",
+      "title": "设计演示与后续承诺",
+      "prompt": "演示邀请和议程应如何表述？",
+      "skillWeights": { "fde.adoption": 1 },
+      "evidence": [
+        {
+          "id": "fde-pilot-scope-control-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "原范围试点结果",
+          "content": "合成工单摘要准确率=92%，目标>=90%；人工审批中位用时=48秒，目标<=60秒。"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-02-evidence-02",
+          "type": "text",
+          "title": "新增需求状态",
+          "content": "生产 CRM：待安全审批；自动发送：待风险评估；三个报表：待用户优先级确认。"
+        }
+      ],
+      "options": [
+        {
+          "id": "fde-pilot-scope-control-001-node-02-option-a",
+          "label": "展示已达标的原工作流，并安排会后确认新增需求价值、优先级、审批和下一阶段范围",
+          "explanation": "议程以已有证据展示试点价值，同时透明标注新增事项状态，并把后续决策交给合适的利益相关者。"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-02-option-b",
+          "label": "在议程中把所有新增需求写成已完成，演示时再解释尚未接入",
+          "explanation": "把未完成工作描述为完成会制造错误期待；即使演示时澄清，也会削弱对团队承诺的信任。",
+          "errorType": "misrepresented-delivery-status"
+        },
+        {
+          "id": "fde-pilot-scope-control-001-node-02-option-c",
+          "label": "为演示临时导入一份真实生产 CRM 数据快照，绕过审批隐藏新增功能风险",
+          "explanation": "未经审批复制生产数据会引入严重的数据与合规风险，也掩盖功能尚未经过安全设计的事实。",
+          "errorType": "unapproved-production-data-use"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "fde-pilot-scope-control-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "演示应区分已经由数据证明的结果与仍待审批、估算的新增事项。",
+        "secondWrong": "原范围两个指标已达标；生产接入和自动发送仍处于审批前状态。",
+        "revealedAnswer": "应展示原范围的量化结果，并安排下一阶段会议评估新增需求的价值、优先级、风险和审批。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "fde-pilot-scope-control-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "试点中途的新增需求有业务价值，但未估算且涉及生产审批。正确做法是保护已承诺里程碑，透明展示达标结果，并把新增工作转成可评估的下一阶段。",
+    "rootCause": "新利益相关者的采用诉求没有经过范围、风险、成本和审批评估，就被要求塞入当前试点。",
+    "correctApproach": [
+      "记录新增需求和预期价值，维持原试点成功标准与演示日期。",
+      "用量化结果演示原范围，并为新增工作安排优先级、估算和审批决策。"
+    ],
+    "keyLessons": [
+      "范围控制不是拒绝客户，而是让新增价值进入透明、可负责的决策流程。",
+      "不能用未经审批的生产接入或数据换取演示效果。"
+    ],
+    "interviewerPerspective": "观察候选人能否同时维护交付可信度、客户关系和安全边界，并提供具体后续路径。",
+    "customerRiskPerspective": "盲目扩张会让原试点失败并引入生产风险；僵硬拒绝则会损害采用和利益相关者支持。",
+    "remediation": [
+      "建立试点变更记录，包含价值、估算、风险、负责人和阶段决策。",
+      "在演示材料中明确区分已交付、已验证和候选下一阶段事项。"
+    ],
+    "verification": [
+      "确认原范围指标和演示内容与签署成功标准一致。",
+      "确认生产 CRM、自动发送和报表均在审批前没有被实现或使用真实数据。"
+    ],
+    "knowledgePoints": [
+      "pilot scope control",
+      "stakeholder alignment",
+      "adoption planning"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

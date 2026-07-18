@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "categories": {
+    "software": [
+      "python-config-precedence-001",
+      "linux-systemd-runtime-path-001",
+      "api-error-contract-version-drift-001",
+      "api-timeout-budget-cascade-001",
+      "api-webhook-idempotency-001",
+      "api-oauth-scope-mismatch-001",
+      "api-pagination-first-page-only-001",
+      "etl-schema-drift-null-field-001",
+      "git-hotfix-wrong-branch-001",
+      "zero-downtime-schema-migration-001"
+    ],
+    "aiApplication": [
+      "llm-prompt-context-order-001",
+      "llm-eval-dataset-leakage-001",
+      "llm-cost-routing-quality-regression-001",
+      "rag-chunk-boundary-answer-loss-001",
+      "rag-top-k-context-dilution-001",
+      "rag-permission-filter-gap-001",
+      "multi-region-rag-consistency-001",
+      "rag-hybrid-search-product-code-001",
+      "rag-stale-policy-cache-001",
+      "large-scale-rag-reindex-cutover-001",
+      "inference-quantization-regression-001",
+      "inference-gpu-oom-capacity-001",
+      "llm-streaming-backpressure-overload-001",
+      "enterprise-ai-fallback-guardrail-bypass-001",
+      "customer-ai-workflow-adoption-collapse-001"
+    ],
+    "agent": [
+      "agent-tool-schema-enum-drift-001",
+      "agent-tool-timeout-retry-001",
+      "agent-tool-output-prompt-injection-001",
+      "agent-approval-boundary-bypass-001",
+      "multi-agent-delegation-loop-001",
+      "data-sync-cursor-checkpoint-gap-001",
+      "third-party-retry-storm-001",
+      "warehouse-late-arrival-watermark-001",
+      "api-rate-limit-retry-after-001",
+      "linux-service-config-permission-001"
+    ],
+    "production": [
+      "container-readiness-port-001",
+      "observability-correlation-id-001",
+      "docker-loopback-bind-unreachable-001",
+      "docker-runtime-dependency-missing-001",
+      "dns-private-endpoint-001",
+      "frontend-build-env-endpoint-001",
+      "https-custom-domain-hostname-mismatch-001",
+      "k8s-secret-rotation-rollout-001",
+      "security-log-pii-exposure-001",
+      "third-party-egress-allowlist-001"
+    ],
+    "fde": [
+      "customer-success-criteria-001",
+      "customer-pilot-production-gap-001",
+      "fde-pilot-scope-control-001",
+      "git-merge-conflict-config-regression-001",
+      "http-unsupported-media-type-001"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.debugging",
+  "type": "concept",
+  "category": "fde",
+  "order": 49,
+  "title": "调试：用证据循环缩小故障范围",
+  "technicalTerm": "Debugging",
+  "simpleExplanation": "调试是提出可证伪假设、收集证据、做最小实验并逐步缩小问题范围的过程。",
+  "analogy": "像电工分段检查电路：先确认哪一段有电，再测试相邻节点，而不是一次替换所有元件碰运气。",
+  "technicalExplanation": "有效调试建立可重复症状与基线，按系统边界提出假设，每次只改变一个关键变量，记录结果并更新概率。修复后还要验证原症状、负面路径和回归风险。",
+  "whyItMatters": "复杂客户环境中同时改网络、配置和代码会破坏证据。FDE 用最小实验区分 DNS、配置优先级、应用逻辑与观测缺口。",
+  "commonMistakes": "未复现就修改；一次改变多个变量；只寻找支持原假设的日志；症状消失后不做修复验证与根因分析。",
+  "relatedFoundation": [
+    "computer.debugging-loop",
+    "fde.evidence-first-debugging",
+    "fde.root-cause-analysis"
+  ],
+  "relatedCases": [
+    "python-config-precedence-001",
+    "dns-private-endpoint-001",
+    "observability-correlation-id-001"
+  ]
+}

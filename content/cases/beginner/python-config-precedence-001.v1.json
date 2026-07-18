@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "python-config-precedence-001",
+  "slug": "python-config-precedence-001",
+  "title": "Python 服务读取了意外的超时配置",
+  "summary": "根据启动日志和部署配置定位配置优先级问题，并选择安全的验证方式。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["software-foundations"],
+  "skills": ["software.foundations"],
+  "lifecycleStages": ["deploy", "operate"],
+  "technicalLayers": ["application", "configuration"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "secret-exposure"],
+  "behaviorPatterns": ["evidence-before-action", "configuration-traceability"],
+  "scenario": {
+    "customerProfile": "一家虚构的订单协调平台，通过 Python API 将仓库请求转发给外部承运服务。",
+    "background": "团队把请求超时从 5 秒改为 30 秒并发布了新镜像，但生产请求仍在 5 秒左右被取消。",
+    "initialIncident": "发布后十分钟内，承运服务的慢请求继续大量失败，客户要求在不扩大影响面的情况下确认原因。",
+    "constraints": [
+      "不能直接进入生产容器修改文件。",
+      "不得输出完整环境变量或任何凭据。",
+      "可以在预发布环境重放一条合成请求。"
+    ],
+    "confirmedFacts": [
+      "镜像中的 config.yaml 将 request_timeout 设置为 30。",
+      "应用支持默认值、配置文件和环境变量三层配置。",
+      "失败请求都在约 5 秒时终止。"
+    ]
+  },
+  "startNodeId": "python-config-precedence-001-node-01",
+  "nodes": [
+    {
+      "id": "python-config-precedence-001-node-01",
+      "type": "configuration-review",
+      "title": "定位生效配置来源",
+      "prompt": "根据证据，第一步应如何处理？",
+      "skillWeights": { "software.foundations": 1 },
+      "evidence": [
+        {
+          "id": "python-config-precedence-001-node-01-evidence-01",
+          "type": "log",
+          "title": "应用启动摘要",
+          "content": "settings request_timeout=5 source=environment config_file=/app/config.yaml"
+        },
+        {
+          "id": "python-config-precedence-001-node-01-evidence-02",
+          "type": "config",
+          "title": "部署片段",
+          "content": "env:\n  APP_REQUEST_TIMEOUT: \"5\"\nimage: orders-api:v18",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "python-config-precedence-001-node-01-option-a",
+          "label": "通过部署变更移除过期环境覆盖，在预发布确认有效值后再小流量发布",
+          "explanation": "启动日志和部署片段共同证明环境变量覆盖了文件；通过受审部署变更修正来源并先验证，既针对根因又保留回滚路径。"
+        },
+        {
+          "id": "python-config-precedence-001-node-01-option-b",
+          "label": "把 config.yaml 的值提高到 60 秒并重新构建镜像",
+          "explanation": "环境变量优先于配置文件，继续修改文件不会改变生效值，还会引入一个缺乏证据支持的新超时。",
+          "errorType": "ignored-configuration-precedence"
+        },
+        {
+          "id": "python-config-precedence-001-node-01-option-c",
+          "label": "进入所有生产容器手工删除环境变量并立即重启",
+          "explanation": "手工修改运行实例违反约束、不可审计且会造成配置漂移；同时重启全部实例还会扩大可用性风险。",
+          "errorType": "unsafe-manual-production-change"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "python-config-precedence-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较启动日志中的配置来源与部署声明，而不只看仓库里的文件。",
+        "secondWrong": "日志明确写出 source=environment，部署片段也保留了值 5。",
+        "revealedAnswer": "应以受审部署变更移除过期环境覆盖，先在预发布确认有效值，再小流量发布并保留回滚。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "python-config-precedence-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "python-config-precedence-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "python-config-precedence-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "python-config-precedence-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "python-config-precedence-001-node-02",
+      "type": "command-choice",
+      "title": "验证配置修复",
+      "prompt": "部署变更准备完成后，哪种验证最安全且最能证明修复有效？",
+      "skillWeights": { "software.foundations": 1 },
+      "evidence": [
+        {
+          "id": "python-config-precedence-001-node-02-evidence-01",
+          "type": "log",
+          "title": "预发布启动摘要",
+          "content": "settings request_timeout=30 source=config-file config_file=/app/config.yaml"
+        },
+        {
+          "id": "python-config-precedence-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "合成请求结果",
+          "content": "synthetic_duration_seconds=8.2 status=200 timeout_count=0"
+        }
+      ],
+      "options": [
+        {
+          "id": "python-config-precedence-001-node-02-option-a",
+          "label": "核对脱敏的有效配置摘要，并在小流量实例运行超过 5 秒的合成请求",
+          "explanation": "启动摘要证明配置来源和有效值已改变，合成请求则验证运行行为；两项证据互补且不暴露秘密。"
+        },
+        {
+          "id": "python-config-precedence-001-node-02-option-b",
+          "label": "只检查代码仓库中的 config.yaml 已经是 30 秒",
+          "explanation": "仓库文件不能证明部署时没有其他覆盖，也不能证明运行中的请求行为已经改变。",
+          "errorType": "configuration-not-runtime-verified"
+        },
+        {
+          "id": "python-config-precedence-001-node-02-option-c",
+          "label": "打印生产进程的全部环境变量并上传到共享工单",
+          "explanation": "完整环境变量可能包含凭据，违反明确约束；而且无需暴露全部值即可验证超时来源。",
+          "errorType": "secret-exposure-through-diagnostics"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "python-config-precedence-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证既要覆盖配置来源，也要覆盖真实运行行为。",
+        "secondWrong": "脱敏启动摘要加一条超过旧阈值的合成请求，可以同时证明两个层面。",
+        "revealedAnswer": "应核对脱敏有效配置，并在小流量实例执行超过 5 秒的合成请求；不能通过泄露完整环境来换取诊断信息。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "python-config-precedence-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "环境变量覆盖了镜像中的配置文件，使请求继续在 5 秒终止。正确做法是修正唯一配置来源，并用有效配置摘要和合成请求验证。",
+    "rootCause": "部署清单遗留的 APP_REQUEST_TIMEOUT 环境变量优先于 config.yaml。",
+    "correctApproach": [
+      "通过受审部署变更移除过期覆盖并在预发布确认生效来源。",
+      "小流量发布后运行超过旧阈值的合成请求并观察超时指标。"
+    ],
+    "keyLessons": [
+      "配置仓库值不等于运行时有效值。",
+      "诊断输出必须最小化并避免泄露环境中的秘密。"
+    ],
+    "interviewerPerspective": "观察候选人能否追踪配置优先级，并设计同时覆盖声明与行为的低风险验证。",
+    "customerRiskPerspective": "错误修复会延长中断或造成批量重启；过度诊断还可能暴露凭据。",
+    "remediation": [
+      "删除重复配置来源并记录明确的优先级。",
+      "为启动时的非敏感有效配置来源增加结构化摘要。"
+    ],
+    "verification": [
+      "确认启动摘要显示 request_timeout=30 且来源为配置文件。",
+      "确认超过 5 秒的合成请求成功且超时指标未增加。"
+    ],
+    "knowledgePoints": [
+      "Python configuration precedence",
+      "runtime configuration verification"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

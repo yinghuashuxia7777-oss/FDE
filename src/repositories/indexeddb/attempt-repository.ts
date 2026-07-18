@@ -1,0 +1,182 @@
+import type { IDBPDatabase } from 'idb';
+import type { FdeCase } from '../../domain/cases/types';
+
+import type {
+  AttemptQuery,
+  AttemptRecord,
+  AttemptRepository,
+} from '../contracts';
+import {
+  assertAbandonmentProgression,
+  assertAttemptIntrinsic,
+  assertAttemptMatchesCase,
+  assertCheckpointProgression,
+  assertFreshCheckpoint,
+  AttemptProgressionError,
+} from '../attempt-progression';
+import type { FdeArenaDatabase } from '../../storage/database';
+import {
+  compareRfc3339Timestamps,
+  rfc3339SecondIndexPrefix,
+} from '../../storage/timestamps';
+import {
+  normalizeAttemptRecord,
+  normalizeTimestamp,
+} from './attempt-invariants';
+
+export class AttemptCheckpointConflictError extends Error {
+  override readonly name = 'AttemptCheckpointConflictError';
+}
+
+export class IndexedDbAttemptRepository implements AttemptRepository {
+  constructor(private readonly database: IDBPDatabase<FdeArenaDatabase>) {}
+
+  async get(id: string): Promise<AttemptRecord | undefined> {
+    const attempt = await this.database.get('attempts', id);
+    return attempt === undefined ? undefined : normalizeAttemptRecord(attempt);
+  }
+
+  async list(query: AttemptQuery = {}): Promise<AttemptRecord[]> {
+    const completedAfter =
+      query.completedAfter === undefined
+        ? undefined
+        : normalizeTimestamp(query.completedAfter, 'completedAfter');
+    let attempts: AttemptRecord[];
+    if (completedAfter !== undefined) {
+      attempts = await this.database.getAllFromIndex(
+        'attempts',
+        'by-completed-at',
+        IDBKeyRange.lowerBound(
+          rfc3339SecondIndexPrefix(completedAfter, 'completedAfter'),
+          true,
+        ),
+      );
+    } else if (query.caseId !== undefined) {
+      attempts = await this.database.getAllFromIndex(
+        'attempts',
+        'by-case',
+        query.caseId,
+      );
+    } else if (query.status !== undefined) {
+      attempts = await this.database.getAllFromIndex(
+        'attempts',
+        'by-status',
+        query.status,
+      );
+    } else if (query.userId !== undefined) {
+      attempts = await this.database.getAllFromIndex(
+        'attempts',
+        'by-user',
+        query.userId,
+      );
+    } else {
+      attempts = await this.database.getAll('attempts');
+    }
+
+    return attempts
+      .map((attempt) => normalizeAttemptRecord(attempt))
+      .filter(
+        (attempt) =>
+          (query.userId === undefined || attempt.userId === query.userId) &&
+          (query.caseId === undefined || attempt.caseId === query.caseId) &&
+          (query.status === undefined || attempt.status === query.status) &&
+          (completedAfter === undefined ||
+            (attempt.completedAt !== undefined &&
+              compareRfc3339Timestamps(attempt.completedAt, completedAfter) >
+                0)),
+      )
+      .sort((left, right) =>
+        compareRfc3339Timestamps(right.updatedAt, left.updatedAt),
+      );
+  }
+
+  async save(attempt: AttemptRecord, caseContent: FdeCase): Promise<void> {
+    const normalized = normalizeAttemptRecord(attempt);
+    if (normalized.status === 'completed') {
+      throw new AttemptCheckpointConflictError(
+        'Completed attempts can only be written through commitCompletion.',
+      );
+    }
+    try {
+      assertAttemptIntrinsic(normalized);
+      assertAttemptMatchesCase(normalized, caseContent);
+    } catch (error) {
+      if (error instanceof AttemptProgressionError) {
+        throw new AttemptCheckpointConflictError(error.message);
+      }
+      throw error;
+    }
+    const transaction = this.database.transaction('attempts', 'readwrite');
+    const existing = await transaction.store.get(normalized.id);
+    try {
+      if (existing === undefined) {
+        if (normalized.status !== 'in-progress') {
+          throw new AttemptProgressionError(
+            'An abandoned attempt requires an existing in-progress checkpoint.',
+          );
+        }
+        assertFreshCheckpoint(normalized);
+      } else if (existing.status === 'completed') {
+        throw new AttemptProgressionError(
+          'A completed attempt is immutable outside commitCompletion.',
+        );
+      } else if (existing.status === 'abandoned') {
+        throw new AttemptProgressionError(
+          'An abandoned attempt cannot transition to another state.',
+        );
+      } else if (normalized.status === 'in-progress') {
+        assertCheckpointProgression(existing, normalized);
+      } else {
+        assertAbandonmentProgression(existing, normalized);
+      }
+    } catch (error) {
+      if (error instanceof AttemptProgressionError) {
+        throw new AttemptCheckpointConflictError(error.message);
+      }
+      throw error;
+    }
+    await transaction.store.put(normalized);
+    await transaction.done;
+  }
+
+  async delete(id: string): Promise<void> {
+    const transaction = this.database.transaction(
+      ['attempts', 'progress'],
+      'readwrite',
+    );
+    const attempts = transaction.objectStore('attempts');
+    const progress = transaction.objectStore('progress');
+    const [existing, progressRecords] = await Promise.all([
+      attempts.get(id),
+      progress.getAll(),
+    ]);
+    if (existing === undefined) {
+      await transaction.done;
+      return;
+    }
+    if (existing.status !== 'in-progress') {
+      transaction.abort();
+      try {
+        await transaction.done;
+      } catch {
+        // The explicit abort preserves the immutable terminal record.
+      }
+      throw new AttemptCheckpointConflictError(
+        'Only in-progress attempts can be deleted directly; terminal attempts require progress clear.',
+      );
+    }
+    if (progressRecords.some((record) => record.latestAttemptId === id)) {
+      transaction.abort();
+      try {
+        await transaction.done;
+      } catch {
+        // The explicit abort preserves the referenced attempt and progress.
+      }
+      throw new AttemptCheckpointConflictError(
+        'An attempt referenced by progress cannot be deleted directly; use progress clear.',
+      );
+    }
+    await attempts.delete(id);
+    await transaction.done;
+  }
+}

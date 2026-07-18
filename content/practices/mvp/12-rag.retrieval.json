@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.rag.retrieval",
+  "version": 1,
+  "status": "draft",
+  "title": "RAG Retrieval Focused Practice",
+  "summary": "A focused transfer activity for RAG Retrieval.",
+  "primaryConceptId": "concept.retriever",
+  "foundationIds": ["ai.retrieval-top-k-threshold"],
+  "primaryLeafSkillId": "rag.retrieval",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.rag.retrieval",
+    "kind": "decision",
+    "prompt": "Tune retrieval using recall evidence without flooding context.",
+    "stimulus": [
+      {
+        "id": "stimulus.rag.retrieval",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.rag.retrieval",
+      "skillId": "rag.retrieval",
+      "version": 1
+    },
+    "criterionIds": ["criterion.rag.retrieval.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "retrieval-report",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

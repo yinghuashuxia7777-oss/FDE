@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "id": "inference-quantization-regression-001",
+  "slug": "inference-quantization-regression-001",
+  "title": "量化推理发布出现质量回退",
+  "summary": "在推理成本优化中识别校准集偏差，权衡质量、延迟与容量，并使用版本化部署安全回滚。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["fine-tuning-inference", "performance-scale", "cloud-deployment"],
+  "skills": [
+    "tuning.inference-deployment",
+    "performance.scaling",
+    "cloud.deployment"
+  ],
+  "lifecycleStages": ["operate", "incident-response", "validate"],
+  "technicalLayers": ["model-runtime", "evaluation", "container-platform"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["model-quality", "performance", "customer-trust"],
+  "behaviorPatterns": [
+    "quality-gated-optimization",
+    "representative-evaluation",
+    "versioned-rollback"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的法律研究平台运行自托管模型，为多语言案件摘要生成引用说明。",
+    "background": "团队把 FP16 模型转换为 INT4 以降低 GPU 成本；校准集主要由短英文问答组成。",
+    "initialIncident": "5% canary 延迟明显改善，但法语长文档用户报告引用遗漏，离线总平均分只轻微下降。",
+    "constraints": [
+      "不得用客户私有文档扩充校准集。",
+      "任何全量发布都必须同时满足质量与延迟门槛。",
+      "上一 FP16 镜像必须保留，直到新版本稳定。"
+    ],
+    "confirmedFacts": [
+      "引用遗漏集中在法语且上下文超过 12k token 的请求。",
+      "INT4 canary 的 p95 比 FP16 低 34%。",
+      "当前校准集中法语样本占 1%，没有超过 8k token 的样本。"
+    ]
+  },
+  "startNodeId": "inference-quantization-regression-001-node-01",
+  "nodes": [
+    {
+      "id": "inference-quantization-regression-001-node-01",
+      "type": "log-analysis",
+      "title": "判断质量回退来源",
+      "prompt": "哪项结论与证据组合最能解释 canary 结果？",
+      "skillWeights": {
+        "tuning.inference-deployment": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-quantization-regression-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "分层质量指标",
+          "content": "English <=8k citation_recall: FP16 0.93, INT4 0.92\nFrench >12k: FP16 0.89, INT4 0.68\nOverall: FP16 0.91, INT4 0.88"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-01-evidence-02",
+          "type": "json",
+          "title": "校准集构成",
+          "content": "{\n  \"englishPercent\": 91,\n  \"frenchPercent\": 1,\n  \"maxContextTokens\": 8000,\n  \"productionFrenchPercent\": 22\n}",
+          "language": "json"
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-quantization-regression-001-node-01-option-a",
+          "label": "质量差异只是用户主观感受，平均分接近即可继续",
+          "explanation": "分层 citation recall 显示可重复的大幅下降，不是只有主观反馈；总平均掩盖了重要用户段。",
+          "errorType": "aggregate-quality-blindness"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-01-option-b",
+          "label": "校准集缺少法语长上下文，INT4 在该分层出现可测回退",
+          "explanation": "校准分布与生产差异明显，且回退正集中在未覆盖分层；两条证据共同支持校准代表性不足。",
+          "errorType": "none"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-01-option-c",
+          "label": "延迟收益更重要，立即把 INT4 扩到 100% 并隐藏分层指标",
+          "explanation": "已确认关键引用质量显著下降，扩大并隐藏指标会损害客户决策与信任。",
+          "errorType": "suppress-known-quality-regression"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-quantization-regression-001-node-01-option-b"
+      },
+      "feedback": {
+        "firstWrong": "总平均可能被大样本分层主导，应比较生产重要分层与校准覆盖。",
+        "secondWrong": "French >12k recall 从 0.89 降到 0.68，而校准集几乎没有该分层。",
+        "revealedAnswer": "正确结论是校准集代表性不足导致 INT4 分层回退；应暂停扩大并用合成或公开可用的法语长上下文重新校准和评估。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-quantization-regression-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-quantization-regression-001-node-01-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "受影响语言与长上下文继续被平均指标掩盖。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-01-option-b",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "发布被正确暂停，团队转向代表性校准与分层评估。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "所有法语长文档用户暴露于已知质量缺陷。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "inference-quantization-regression-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "inference-quantization-regression-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "inference-quantization-regression-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "inference-quantization-regression-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "选择质量与成本门槛",
+      "prompt": "哪项优化实验最符合当前证据与发布约束？",
+      "skillWeights": {
+        "performance.scaling": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-quantization-regression-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "候选运行时对比",
+          "content": "FP16: p95=2100ms cost_index=1.00 FrenchLongRecall=0.89\nINT8: p95=1600ms cost_index=0.78 recall=0.87\nINT4: p95=1380ms cost_index=0.61 recall=0.68"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-02-evidence-02",
+          "type": "text",
+          "title": "发布门槛",
+          "content": "Required: FrenchLongRecall >=0.85, overall recall >=0.89, p95 <=1800ms, and rollback in under five minutes."
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-quantization-regression-001-node-02-option-a",
+          "label": "以 INT8 做小流量实验，同时按质量分层、p95、成本和回滚时间设联合门槛",
+          "explanation": "INT8 当前同时满足给定质量与延迟门槛；联合 gate 防止只为成本牺牲重要质量段。",
+          "errorType": "none"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-02-option-b",
+          "label": "选择 p95 最低的 INT4，并只用整体 recall 作为质量门槛",
+          "explanation": "整体 recall 会再次掩盖法语长上下文 0.68 的失败，违反明确分层门槛。",
+          "errorType": "latency-first-selection"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-02-option-c",
+          "label": "把单卡并发翻四倍以抵消 FP16 成本，不做显存压力测试",
+          "explanation": "无容量验证的激进并发可能触发 OOM 和请求丢失，形成生产可用性事故。",
+          "errorType": "unsafe-capacity-overcommit"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-quantization-regression-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "发布目标是同时满足质量、延迟、成本和回滚，不是单指标最优。",
+        "secondWrong": "INT8 的 recall 0.87 与 p95 1600ms 都满足已给门槛，INT4 的分层质量不满足。",
+        "revealedAnswer": "应以 INT8 进行小流量联合 gate 实验；按分层 recall、p95、成本和五分钟回滚门槛逐步验证。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-quantization-regression-001-node-02-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-quantization-regression-001-node-02-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "优化候选在明确多目标门槛下安全验证。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-02-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "成本降低但关键用户质量仍不合格。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-02-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "GPU 内存耗尽导致推理实例崩溃和请求失败。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "inference-quantization-regression-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "inference-quantization-regression-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "inference-quantization-regression-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "inference-quantization-regression-001-node-03",
+      "type": "configuration-review",
+      "title": "保留版本化回滚",
+      "prompt": "怎样部署新候选并避免无法恢复的镜像漂移？",
+      "skillWeights": {
+        "cloud.deployment": 1
+      },
+      "evidence": [
+        {
+          "id": "inference-quantization-regression-001-node-03-evidence-01",
+          "type": "config",
+          "title": "当前部署片段",
+          "content": "image: registry.example.invalid/summarizer:latest\nmodel_artifact: /models/current\nreplicas: 8\ncanary_replicas: 1",
+          "language": "yaml"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-03-evidence-02",
+          "type": "text",
+          "title": "制品清单",
+          "content": "FP16 digest sha256:synthetic-fp16 is retained. INT8 digest sha256:synthetic-int8 passed staging. The latest tag currently points to INT4."
+        }
+      ],
+      "options": [
+        {
+          "id": "inference-quantization-regression-001-node-03-option-a",
+          "label": "继续使用 latest，但在发布工单中记录当时的模型名称",
+          "explanation": "可变标签不能保证回滚取回相同镜像与制品，工单文字也不能约束运行时解析结果。",
+          "errorType": "mutable-artifact-reference"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-03-option-b",
+          "label": "覆盖 latest 为 INT8 并删除 FP16 制品以节省存储",
+          "explanation": "删除已验证回滚制品违反约束，一旦 INT8 在生产失败将没有快速恢复路径。",
+          "errorType": "delete-known-good-artifact"
+        },
+        {
+          "id": "inference-quantization-regression-001-node-03-option-c",
+          "label": "按镜像与模型 digest 固定 FP16 和 INT8，单独 canary 部署并保留一键回滚",
+          "explanation": "不可变 digest 保证版本可重复，独立 canary 与保留 FP16 满足小流量验证和五分钟回滚。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "inference-quantization-regression-001-node-03-option-c"
+      },
+      "feedback": {
+        "firstWrong": "回滚能力取决于可重复获取完全相同的镜像、模型和配置。",
+        "secondWrong": "latest 当前指向已失败的 INT4；只有 digest 能固定 FP16 与 INT8 的真实内容。",
+        "revealedAnswer": "应使用不可变 digest 分别固定 FP16 与 INT8，独立部署 canary 并保留 FP16 一键回滚；演练应在五分钟内完成。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "inference-quantization-regression-001-node-03-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "inference-quantization-regression-001-node-03-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "回滚目标可能随标签漂移而改变。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-03-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "已知健康版本被移除，生产故障无法快速回退。"
+        },
+        {
+          "optionId": "inference-quantization-regression-001-node-03-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "候选与已知健康版本都可精确部署和快速切换。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "INT4 校准集缺少生产中的法语长上下文，整体平均掩盖了引用质量回退。正确路径是暂停扩容、使用代表性分层 gate 选择 INT8 候选，并以不可变制品和 canary 保留快速回滚。",
+    "rootCause": "量化校准与评估分布不代表生产关键分层，发布又过度关注总体分数和延迟。",
+    "correctApproach": [
+      "暂停 INT4 扩大并保留受影响分层指标。",
+      "构建脱敏合成或公开样本覆盖法语长上下文。",
+      "以质量、延迟、成本和回滚联合门槛验证 INT8。",
+      "用不可变 digest 做独立 canary 并保留 FP16 回滚。"
+    ],
+    "keyLessons": [
+      "平均质量指标会掩盖重要分层回退。",
+      "推理优化必须在代表性校准与多目标门槛下评估。",
+      "不可变模型与镜像制品是可信回滚基础。"
+    ],
+    "interviewerPerspective": "观察候选人是否能抵抗单纯延迟收益，定位数据代表性问题，并把模型评估与部署可逆性连接起来。",
+    "customerRiskPerspective": "引用遗漏可能影响法律研究判断；透明暂停、分层验证和快速回滚保护客户信任。",
+    "remediation": [
+      "建立语言、上下文长度和任务类型分层的校准与评估集。",
+      "把关键分层质量门槛加入推理发布 gate。",
+      "禁止生产使用可变 latest 标签并规定制品保留期。"
+    ],
+    "verification": [
+      "确认 INT8 在法语长上下文 recall 不低于 0.85。",
+      "确认 overall recall 与 p95 同时满足发布门槛。",
+      "确认 canary 与基线请求可按版本区分。",
+      "演练 digest 级 FP16 回滚并确认五分钟内恢复。"
+    ],
+    "knowledgePoints": [
+      "quantization calibration",
+      "slice-based model evaluation",
+      "multi-objective inference optimization",
+      "immutable deployment artifacts"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

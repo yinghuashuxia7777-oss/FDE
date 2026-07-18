@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.deployment-artifact",
+  "type": "foundation",
+  "title": "部署制品：把源代码变成可追踪交付物",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["git.delivery", "cloud.deployment"],
+  "level": "intermediate",
+  "order": 37,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "部署制品是由确定的源代码、依赖和构建流程产生并实际交付到环境的镜像、压缩包或二进制，FDE 需要证明修复提交确实包含在当前部署的不可变制品中。",
+    "analogy": "源代码像出版社的排版稿，部署制品像印刷后带批次号的成书。稿件已经改正不表示书店货架上的那一批也更新了，只有版次、印次和配送记录连得起来才能证明客户拿到修正版。",
+    "technicalExplanation": "可靠链路会把提交标识、构建任务、测试结果、制品摘要和部署记录关联起来，并优先按不可变摘要发布。分支名或可移动标签只能表达意图，不能单独证明内容；回滚也应选择已知制品，而不是在故障时临时重新构建。",
+    "example": "热修复案例中，提交 7ac91e 已推到开发中的 main 分支，但生产流水线只从 release-2-3 分支构建。应在不改写共享历史的前提下把单一提交移到正确分支，核对差异与测试，再确认流水线生成的新制品摘要被部署。",
+    "commonMistakes": "把代码已合并、流水线已通过或镜像标签相同直接等同于生产已修复，都会在交付链中留下证据断点。另一个风险是用同一标签覆盖不同镜像，使节点缓存到不同内容；应保存不可变标识和逐环境部署记录。"
+  },
+  "relatedCases": [
+    "git-hotfix-wrong-branch-001",
+    "git-merge-conflict-config-regression-001"
+  ]
+}

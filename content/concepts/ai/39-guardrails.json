@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.guardrails",
+  "type": "concept",
+  "category": "ai",
+  "order": 39,
+  "title": "护栏：用分层控制限制模型与工具风险",
+  "technicalTerm": "Guardrails",
+  "simpleExplanation": "护栏是在输入、生成、检索和工具执行各层设置的检查与限制，用来降低不安全或不合规行为。",
+  "analogy": "像山路的多层安全设计：标识提醒驾驶员，护栏阻挡车辆，限速器约束速度，事故记录用于持续改进。",
+  "technicalExplanation": "护栏可包括输入分类、权限过滤、结构校验、内容策略、工具白名单、人工审批、输出验证和运行监控。确定性权限控制应位于模型之外，并为拒绝、降级与审计保留明确路径。",
+  "whyItMatters": "单一过滤器会被路由、回退或新工具绕过。FDE 需要画出所有执行路径，并用对抗与回归用例验证每层控制是否生效。",
+  "commonMistakes": "只在主模型路径加护栏；把提示词当安全边界；阻断后没有安全降级；评估集包含训练或调优数据而高估效果。",
+  "relatedFoundation": [
+    "ai.guardrails",
+    "ai.prompt-instruction-hierarchy",
+    "ai.evaluation-guardrails"
+  ],
+  "relatedCases": [
+    "enterprise-ai-fallback-guardrail-bypass-001",
+    "agent-approval-boundary-bypass-001",
+    "llm-eval-dataset-leakage-001",
+    "agent-tool-output-prompt-injection-001"
+  ]
+}

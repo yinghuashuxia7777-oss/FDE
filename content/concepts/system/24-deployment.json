@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.deployment",
+  "type": "concept",
+  "category": "system",
+  "order": 24,
+  "title": "部署：把可追踪制品安全交付到运行环境",
+  "technicalTerm": "Deployment",
+  "simpleExplanation": "部署是把经过验证的软件版本、配置和依赖送到目标环境并使其可运行的过程。",
+  "analogy": "像把舞台演出从排练室搬到正式剧场：演员相同还不够，灯光、道具、电源和入场流程都要在现场验证。",
+  "technicalExplanation": "部署链应关联源码提交、构建制品、配置版本、目标环境、发布策略和验证结果。不可变制品可减少“同名不同物”，分批发布与健康门禁则限制故障半径。",
+  "whyItMatters": "本地成功但生产失败通常源于环境、权限、路径或运行依赖差异。FDE 需要证明实际运行的是哪个制品、加载了什么配置。",
+  "commonMistakes": "在服务器现场修改文件；使用可变标签却不记录摘要；部署命令成功后不做业务验证；漏掉运行时依赖或服务用户差异。",
+  "relatedFoundation": [
+    "computer.deployment-artifact",
+    "computer.runtime-dependencies",
+    "fde.production-readiness"
+  ],
+  "relatedCases": [
+    "git-merge-conflict-config-regression-001",
+    "docker-runtime-dependency-missing-001",
+    "linux-systemd-runtime-path-001",
+    "k8s-secret-rotation-rollout-001"
+  ]
+}

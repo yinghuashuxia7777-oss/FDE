@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "api-integration",
+  "label": "HTTP, API, auth & integration",
+  "description": "Reliable service integrations, authentication, and API contracts.",
+  "status": "active"
+}

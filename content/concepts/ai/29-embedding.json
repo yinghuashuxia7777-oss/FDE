@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.embedding",
+  "type": "concept",
+  "category": "ai",
+  "order": 29,
+  "title": "嵌入：把内容映射到可比较的向量",
+  "technicalTerm": "Embedding",
+  "simpleExplanation": "Embedding 把文本等内容转换成一串数字，使语义相近的内容在向量空间里更容易被找到。",
+  "analogy": "像把书放到多维主题地图：不是只按书名排序，而是根据主题、用途和语义把相近书籍放得更近。",
+  "technicalExplanation": "嵌入模型输出固定维度向量，检索通过余弦相似度、点积等度量比较查询与文档向量。模型版本、归一化方式、语言覆盖和向量维度必须与索引保持一致。",
+  "whyItMatters": "RAG 召回失败可能来自切块、嵌入版本或过滤，而非生成模型。FDE 应用已知查询与目标文档测量相似度和召回排名。",
+  "commonMistakes": "更换嵌入模型却不重建索引；把相似度当事实正确性；忽略领域缩写和多语言分布；只看单条查询。",
+  "relatedFoundation": ["ai.embedding", "ai.embedding-similarity"],
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "rag-permission-filter-gap-001"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "reliability",
+  "label": "Observability & reliability",
+  "description": "Telemetry, incident response, resilience, and service reliability.",
+  "status": "active"
+}

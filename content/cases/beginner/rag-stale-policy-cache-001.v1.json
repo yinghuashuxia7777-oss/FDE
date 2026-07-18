@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "rag-stale-policy-cache-001",
+  "slug": "rag-stale-policy-cache-001",
+  "title": "政策更新后助手仍返回旧规则",
+  "summary": "根据检索与缓存证据定位过期政策回答，并选择可验证的缓存失效方案。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["rag-search"],
+  "skills": ["rag.search"],
+  "lifecycleStages": ["operate", "incident-response"],
+  "technicalLayers": ["retrieval", "application", "caching"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["decision-quality", "customer-trust", "privacy"],
+  "behaviorPatterns": [
+    "evidence-before-action",
+    "minimum-safe-mitigation",
+    "runtime-verification"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的连锁零售企业使用内部知识助手回答员工的差旅报销政策问题。",
+    "background": "财务团队发布了第 18 版差旅政策，将国内费用的经理审批阈值从 3000 元调整为 5000 元。文档同步任务显示新版本已经进入检索索引。",
+    "initialIncident": "政策发布两小时后，部分员工仍收到 3000 元阈值的回答；同一答案却显示政策助手运行正常。",
+    "constraints": [
+      "不能修改财务团队的政策原文或伪造引用版本。",
+      "可以旁路或清除受影响租户的回答缓存，但不能停止整个知识平台。",
+      "验证只能使用合成问题，不能导出员工的生产查询内容。",
+      "需要在 20 分钟内确认故障层并给出可回滚的缓解措施。"
+    ],
+    "confirmedFacts": [
+      "第 18 版政策已经由财务团队批准并发布。",
+      "只有命中既有回答缓存的问题复现旧阈值。",
+      "新问题和员工历史查询可能包含不同的敏感业务上下文。"
+    ]
+  },
+  "startNodeId": "rag-stale-policy-cache-001-node-01",
+  "nodes": [
+    {
+      "id": "rag-stale-policy-cache-001-node-01",
+      "type": "log-analysis",
+      "title": "定位旧政策回答的来源",
+      "prompt": "结合两条追踪证据，第一项最安全且最有针对性的行动是什么？",
+      "skillWeights": { "rag.search": 1 },
+      "evidence": [
+        {
+          "id": "rag-stale-policy-cache-001-node-01-evidence-01",
+          "type": "log",
+          "title": "检索阶段追踪",
+          "content": "requestId=syn-184 retrievalStatus=OK corpusGeneration=18 sourceVersion=policy-v18 passage=\"国内费用超过 5000 元需经理审批\" indexedAt=2026-07-13T01:10:00Z"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-01-evidence-02",
+          "type": "log",
+          "title": "回答缓存追踪",
+          "content": "requestId=syn-184 cacheStatus=HIT cachedAt=2026-07-12T18:30:00Z answer=\"超过 3000 元需经理审批\" citedSourceVersion=policy-v17 ttlRemaining=17h"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-stale-policy-cache-001-node-01-option-a",
+          "label": "旁路并清除受影响租户的回答缓存，再用合成问题比较未缓存回答与第 18 版原文",
+          "explanation": "检索追踪证明索引已返回第 18 版，而回答追踪证明请求复用了发布前的第 17 版缓存；定向旁路和清除缓存能立即停止旧回答，并以低影响、可回滚的方式验证故障层。"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-01-option-b",
+          "label": "重建全部向量索引，同时保留回答缓存以避免降低命中率",
+          "explanation": "第 18 版段落已经从索引正确返回，重建索引没有证据支持且影响面更大；保留回答缓存还会让旧答案继续绕过新检索结果。",
+          "errorType": "wrong-layer-remediation"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-01-option-c",
+          "label": "继续返回旧缓存答案，但把其引用版本改写为第 18 版以维持服务稳定",
+          "explanation": "改写引用会把 3000 元的错误答案伪装成由第 18 版支持，既掩盖证据冲突，也可能导致错误报销决策并严重破坏客户对回答可追溯性的信任。",
+          "errorType": "falsified-provenance"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-stale-policy-cache-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先分别判断检索阶段和回答阶段使用了哪个政策版本，再选择影响面最小的缓解措施。",
+        "secondWrong": "索引已返回 policy-v18 的 5000 元段落，冲突发生在命中发布前创建的 policy-v17 回答缓存之后。",
+        "revealedAnswer": "应定向旁路并清除受影响租户的回答缓存，再用合成问题核对未缓存回答与第 18 版原文。这样既立即停止旧政策输出，也能在不重建正确索引的情况下验证缓存层根因。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-stale-policy-cache-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "rag-stale-policy-cache-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "rag-stale-policy-cache-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "rag-stale-policy-cache-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "rag-stale-policy-cache-001-node-02",
+      "type": "configuration-review",
+      "title": "防止下次政策发布后复用旧回答",
+      "prompt": "临时清除缓存后，哪项方案能持久修复问题并充分验证行为？",
+      "skillWeights": { "rag.search": 1 },
+      "evidence": [
+        {
+          "id": "rag-stale-policy-cache-001-node-02-evidence-01",
+          "type": "config",
+          "title": "回答缓存配置对比",
+          "content": "current:\n  key: tenantId + normalizedQuery\n  ttl: 24h\n  invalidateOn: []\nproposed:\n  key: tenantId + corpusGeneration + normalizedQuery\n  ttl: 24h\n  invalidateOn: [policy-published]",
+          "language": "yaml"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-02-evidence-02",
+          "type": "log",
+          "title": "合成发布回归结果",
+          "content": "publish generation=18 eventDelivered=true\nquery generation=18 attempt=1 cache=MISS answerThreshold=5000 citedVersion=policy-v18\nquery generation=18 attempt=2 cache=HIT answerThreshold=5000 citedVersion=policy-v18\nreusedGeneration17Entry=false"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-stale-policy-cache-001-node-02-option-a",
+          "label": "让缓存键包含语料代次并在政策发布时失效，用合成发布回归核对首次未命中、后续命中与引用版本",
+          "explanation": "语料代次阻止新政策请求复用旧代次答案，发布事件提供主动失效；回归结果同时证明第 18 代首次重算、后续安全复用且答案与引用版本一致。"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-02-option-b",
+          "label": "只把缓存 TTL 从 24 小时缩短到 30 分钟，并以缓存数量下降作为成功信号",
+          "explanation": "缩短 TTL 只能缩小而不能消除发布后的错误窗口，缓存数量下降也不能证明答案来自当前政策版本或发布事件能够失效旧条目。",
+          "errorType": "time-based-mitigation-only"
+        },
+        {
+          "id": "rag-stale-policy-cache-001-node-02-option-c",
+          "label": "导出员工的完整生产问题与回答来批量预热第 18 代缓存",
+          "explanation": "生产问题可能包含敏感业务上下文，导出它们违反明确约束并扩大隐私暴露；合成问题已经足以验证版本化键、失效事件和回答一致性。",
+          "errorType": "sensitive-query-export"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-stale-policy-cache-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "持久修复应把缓存有效性与政策版本绑定，而不只是等待时间过去。",
+        "secondWrong": "关注 proposed key 中的 corpusGeneration、policy-published 事件，以及回归中 generation=17 条目没有被复用。",
+        "revealedAnswer": "应在缓存键中加入语料代次并由政策发布事件主动失效旧条目，再用合成发布回归确认新代次首次未命中、后续正确命中，且回答和引用均指向当前版本。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-stale-policy-cache-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "第 18 版政策已经正确进入检索索引，但未绑定语料代次的回答缓存继续复用了第 17 版答案。正确处置先定向停止旧缓存输出，再以版本化缓存键、发布失效事件和合成回归防止复发。",
+    "rootCause": "回答缓存键不包含语料代次，且政策发布时没有失效事件，因此发布前生成的第 17 版回答在第 18 版上线后仍被命中。",
+    "correctApproach": [
+      "旁路并清除受影响租户的旧回答缓存，用合成问题确认未缓存回答来自第 18 版政策。",
+      "将语料代次加入缓存键，并在政策发布事件到达时主动失效旧代次条目。",
+      "运行合成发布回归，验证首次重新生成、后续安全命中以及答案与引用版本一致。"
+    ],
+    "keyLessons": [
+      "检索结果新鲜不代表最终回答没有被下游缓存覆盖。",
+      "知识缓存的有效性必须与来源版本或语料代次绑定。",
+      "验证缓存修复要同时观察未命中、命中、答案内容和引用来源。"
+    ],
+    "interviewerPerspective": "观察候选人能否用互补追踪区分索引层与回答缓存层，优先选择定向可回滚的缓解，并设计能证明版本一致性的回归。",
+    "customerRiskPerspective": "继续提供旧政策或伪造引用会导致员工做出错误报销决策并破坏可追溯性；过度使用生产查询做验证还会扩大隐私风险。",
+    "remediation": [
+      "让回答缓存键包含租户和当前语料代次。",
+      "为政策发布事件增加缓存失效处理、投递监控和失败告警。",
+      "对回答内容与引用版本不一致建立运行时检测。"
+    ],
+    "verification": [
+      "确认新语料代次不会命中旧代次缓存条目。",
+      "确认同一代次的第二次合成查询可以安全命中并返回相同当前版本。",
+      "确认政策发布事件会清除受影响范围且不波及其他租户。",
+      "确认验证流程没有读取或导出员工生产查询。"
+    ],
+    "knowledgePoints": [
+      "RAG response caching",
+      "corpus versioning",
+      "cache invalidation",
+      "provenance verification"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "reviewedAt": "2026-07-13T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

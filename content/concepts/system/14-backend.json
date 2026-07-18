@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.backend",
+  "type": "concept",
+  "category": "system",
+  "order": 14,
+  "title": "后端：承载业务规则与数据访问的服务侧",
+  "technicalTerm": "Backend",
+  "simpleExplanation": "后端是在服务器环境中处理业务规则、权限、数据和外部集成的部分。",
+  "analogy": "像餐厅后厨：前台把订单传来，后厨根据规则、原料与设备完成处理，再把结果交还前台。",
+  "technicalExplanation": "后端进程在特定主机、网络接口与端口监听请求，依赖 DNS、TCP、配置和外部服务。排障要从名称解析、连通性、监听地址、进程状态到应用日志逐层验证。",
+  "whyItMatters": "“服务打不开”可能是 DNS、网络策略、端口绑定或应用自身问题。FDE 用分层证据定位，可避免在错误层反复改配置。",
+  "commonMistakes": "把本机 localhost 可访问当成外部可访问；混淆域名、IP 和端口；只看到进程存在就认定服务健康。",
+  "relatedFoundation": [
+    "computer.software-program",
+    "computer.server",
+    "network.ip-address",
+    "network.dns",
+    "network.port",
+    "network.tcp",
+    "computer.port-binding"
+  ],
+  "relatedCases": [
+    "dns-private-endpoint-001",
+    "docker-loopback-bind-unreachable-001",
+    "third-party-egress-allowlist-001",
+    "python-config-precedence-001"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.requirement",
+  "type": "concept",
+  "category": "fde",
+  "order": 42,
+  "title": "需求：把用户目标转成可追溯约束",
+  "technicalTerm": "Requirement",
+  "simpleExplanation": "需求说明谁在什么条件下需要什么结果，以及如何证明结果满足业务目标。",
+  "analogy": "像装修清单不仅写“做得高级”，还写使用者、空间限制、预算、验收尺寸和不能破坏的设施。",
+  "technicalExplanation": "高质量需求包含业务背景、用户工作流、功能行为、非功能约束、优先级、验收标准和来源证据。每项设计与测试应能追溯到需求，冲突和变更也要显式记录。",
+  "whyItMatters": "FDE 连接客户语言与工程实现。把“更准确”“更快”等表述转成有数据集、阈值和场景的标准，才能避免双方在验收时理解不同。",
+  "commonMistakes": "只记录客户提出的功能；用实现细节代替目标；没有负面场景与约束；成功标准无法测量或没有基线。",
+  "relatedFoundation": ["fde.requirement-evidence"],
+  "relatedCases": ["customer-success-criteria-001"]
+}

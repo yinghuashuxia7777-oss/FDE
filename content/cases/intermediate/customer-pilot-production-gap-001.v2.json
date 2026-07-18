@@ -1,0 +1,382 @@
+{
+  "schemaVersion": 1,
+  "id": "customer-pilot-production-gap-001",
+  "slug": "customer-pilot-production-gap-001",
+  "title": "客户试点成功掩盖生产差距",
+  "summary": "识别试点中人工补位造成的虚假成功，重新定义可扩展验收标准，并建立采用与可靠性门禁。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["customer-discovery", "fde-adoption", "reliability"],
+  "skills": ["customer.discovery", "fde.adoption", "reliability.observability"],
+  "lifecycleStages": ["discover", "validate", "operate"],
+  "technicalLayers": ["workflow", "application", "operations"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["adoption", "reliability", "customer-trust"],
+  "behaviorPatterns": [
+    "assumption-to-evidence",
+    "phased-adoption",
+    "production-readiness-gate"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的物流企业试点 AI 异常分拣助手，目标是让夜班调度员在十分钟内处理积压。",
+    "background": "两周试点报告显示 92% 建议被接受，但现场 FDE 每晚人工修正模型输入并在发送前复核所有建议。",
+    "initialIncident": "客户准备下周扩到五个仓库，却发现没有 FDE 值守的周末班次处理时间恢复到 35 分钟。",
+    "constraints": [
+      "不能把人工补位隐藏在成功指标中。",
+      "客户只能先选择一个额外仓库做受控扩展。",
+      "生产方案必须明确告警、支持责任和回退到人工流程。",
+      "扩大到下一仓库前，所有班次必须连续 14 天满足双方书面约定的量化门禁。"
+    ],
+    "confirmedFacts": [
+      "FDE 值守班次中有 61% 的输入在模型前被人工修正。",
+      "无 FDE 班次的建议接受率为 54%。",
+      "客户成功标准同时要求十分钟处理和调度员可独立操作。",
+      "量化门禁为输入修正率不高于 10%、人工回退率不高于 5%、队列 p95 年龄不高于 15 分钟，并要求 100% P1 告警在 10 分钟内确认且每个班次有明确负责人。"
+    ]
+  },
+  "startNodeId": "customer-pilot-production-gap-001-node-01",
+  "nodes": [
+    {
+      "id": "customer-pilot-production-gap-001-node-01",
+      "type": "log-analysis",
+      "title": "重新解释试点结果",
+      "prompt": "哪项结论最符合班次对照与客户成功标准？",
+      "skillWeights": {
+        "customer.discovery": 1
+      },
+      "evidence": [
+        {
+          "id": "customer-pilot-production-gap-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "班次分层",
+          "content": "FDE-present: median handling=8m, acceptance=92%, input corrections=61%\nFDE-absent: median=35m, acceptance=54%, corrections unavailable"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-01-evidence-02",
+          "type": "customer-message",
+          "title": "原始成功标准",
+          "content": "A successful pilot means a trained dispatcher can independently resolve the queue within ten minutes, including nights and weekends."
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-pilot-production-gap-001-node-01-option-a",
+          "label": "试点证明了有人工专家补位时的潜力，但尚未证明调度员可独立生产使用",
+          "explanation": "分层结果显示性能依赖 FDE 修正，且无值守班次未满足独立与十分钟标准。",
+          "errorType": "none"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-01-option-b",
+          "label": "92% 接受率已证明产品就绪，周末差异只是培训问题",
+          "explanation": "92% 来自高比例人工修正的班次，现有证据无法把全部差异归因于培训。",
+          "errorType": "confounded-pilot-metric"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-01-option-c",
+          "label": "向客户承诺五仓同时上线，并从报告中删除人工修正比例",
+          "explanation": "隐藏已知依赖并扩大范围会造成交付失实、运营中断和严重信任损害。",
+          "errorType": "conceal-production-readiness-gap"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-pilot-production-gap-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "把指标按是否有专家补位分层，并逐字对照原始成功标准。",
+        "secondWrong": "独立操作是明确标准，而 FDE 值守班次有 61% 输入被人工修正。",
+        "revealedAnswer": "应明确试点只验证了专家辅助流程，尚未证明独立生产能力；下一步把人工修正转化为产品或培训需求并重设验收。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-pilot-production-gap-001-node-01-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "customer-pilot-production-gap-001-node-01-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "团队把人工依赖显式纳入差距和下一阶段验收。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-01-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "人工补位继续被错误计入产品能力。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-01-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "客户按虚假就绪假设扩大，多个仓库同时承担风险。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "customer-pilot-production-gap-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "customer-pilot-production-gap-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "customer-pilot-production-gap-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "customer-pilot-production-gap-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "设计受控采用计划",
+      "prompt": "客户仍希望推进时，哪种扩展方式最负责任？",
+      "skillWeights": {
+        "fde.adoption": 1
+      },
+      "evidence": [
+        {
+          "id": "customer-pilot-production-gap-001-node-02-evidence-01",
+          "type": "text",
+          "title": "可用资源",
+          "content": "One additional warehouse can run a four-week controlled rollout. Two dispatcher champions are available for training, and the manual queue remains usable."
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-02-evidence-02",
+          "type": "json",
+          "title": "高频人工修正",
+          "content": "{\n  \"missingFacilityCode\": 44,\n  \"ambiguousPriority\": 31,\n  \"unsupportedCarrier\": 25\n}",
+          "language": "json"
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-pilot-production-gap-001-node-02-option-a",
+          "label": "先培训全部五仓用户，再观察整体接受率是否提升",
+          "explanation": "全量培训没有先修复前三类输入差距，也失去一个仓库的对照与回退边界。",
+          "errorType": "training-before-gap-remediation"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-02-option-b",
+          "label": "取消人工队列，让用户必须采用助手以快速积累数据",
+          "explanation": "移除已知回退会迫使生产用户承受未解决差距，可能造成积压和业务中断。",
+          "errorType": "forced-adoption-without-fallback"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-02-option-c",
+          "label": "先修复高频输入差距，在一个仓库培训 champion，分阶段扩大并保留人工回退",
+          "explanation": "方案针对已知人工补位，利用有限范围建立能力与反馈，同时保留客户可控回退。",
+          "errorType": "none"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-pilot-production-gap-001-node-02-option-c"
+      },
+      "feedback": {
+        "firstWrong": "采用不是强迫使用；先把专家补位转化为产品与赋能计划。",
+        "secondWrong": "客户只批准一个额外仓库，且人工队列是明确可用的回退。",
+        "revealedAnswer": "应先修复高频输入问题，在一个仓库训练 champion 并分阶段扩展，保留人工队列；按周复盘独立操作证据。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-pilot-production-gap-001-node-02-option-b"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "customer-pilot-production-gap-001-node-02-option-a",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "大量用户被带入尚未验证的工作流。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-02-option-b",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "调度员失去安全回退，仓库积压风险显著上升。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-02-option-c",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "采用扩展可观察、可逆，并把现场知识转为可持续能力。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "customer-pilot-production-gap-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "customer-pilot-production-gap-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "customer-pilot-production-gap-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "customer-pilot-production-gap-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "定义生产就绪门禁",
+      "prompt": "四周扩展结束时，应依据什么决定是否继续扩大？",
+      "skillWeights": {
+        "reliability.observability": 1
+      },
+      "evidence": [
+        {
+          "id": "customer-pilot-production-gap-001-node-03-evidence-01",
+          "type": "text",
+          "title": "拟议 SLI",
+          "content": "14-day expansion gate per shift: independent median handling<=10m; input correction<=10%; manual fallback<=5%; queue p95 age<=15m; 100% P1 alerts acknowledged<=10m; named owner for every night/weekend shift."
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-03-evidence-02",
+          "type": "metric",
+          "title": "第一周结果",
+          "content": "median independent handling=13m; correction=18%; fallback=9%; queue p95 age=22m; P1 ack within 10m=67%; P1 ack p95=24m; after-hours alert owner=unassigned."
+        }
+      ],
+      "options": [
+        {
+          "id": "customer-pilot-production-gap-001-node-03-option-a",
+          "label": "连续 14 天要求处理≤10m、修正≤10%、回退≤5%、队列 p95≤15m、全部 P1 告警 10m 内确认且有人负责",
+          "explanation": "门禁同时覆盖客户结果、人工依赖和可运维性；当前 13 分钟、18% 修正、9% 回退、22 分钟队列和仅 67% 告警按时确认均未达标。",
+          "errorType": "none"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-03-option-b",
+          "label": "只要建议接受率超过 80% 就扩到五仓",
+          "explanation": "接受率不能证明十分钟独立处理、队列健康或班后支持，重复了原试点的单指标错误。",
+          "errorType": "single-adoption-metric"
+        },
+        {
+          "id": "customer-pilot-production-gap-001-node-03-option-c",
+          "label": "关闭队列年龄告警并提高接受率统计口径，确保按期通过门禁",
+          "explanation": "操纵指标并移除告警会隐藏已知运营风险，导致客户在错误证据上扩大。",
+          "errorType": "manipulate-readiness-evidence"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "customer-pilot-production-gap-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "生产就绪需要同时证明客户结果、独立性和可运维责任。",
+        "secondWrong": "第一周处理为 13 分钟、修正 18%、回退 9%、队列 p95 22 分钟、P1 按时确认率 67%，且班后告警没有负责人。",
+        "revealedAnswer": "应采用连续 14 天班次级联合门禁：处理≤10 分钟、修正≤10%、回退≤5%、队列 p95≤15 分钟、100% P1 告警 10 分钟内确认且负责人明确；任一项失败就保持单仓整改。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "customer-pilot-production-gap-001-node-03-option-c"
+        ]
+      },
+      "consequences": [
+        {
+          "optionId": "customer-pilot-production-gap-001-node-03-option-a",
+          "timeDelta": 10,
+          "trustDelta": 1,
+          "riskDelta": -2,
+          "message": "扩展决策由客户目标和运营证据驱动。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-03-option-b",
+          "timeDelta": 20,
+          "costDelta": 1,
+          "trustDelta": -1,
+          "riskDelta": 1,
+          "message": "可用性与支持缺口再次被漂亮接受率掩盖。"
+        },
+        {
+          "optionId": "customer-pilot-production-gap-001-node-03-option-c",
+          "timeDelta": 30,
+          "costDelta": 2,
+          "trustDelta": -3,
+          "riskDelta": 4,
+          "message": "风险信号被压制，扩展决策失去可信依据。"
+        }
+      ],
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        },
+        {
+          "key": "critical",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "试点的高接受率依赖 FDE 大量人工修正，与客户“调度员独立十分钟处理”的标准不一致。正确路径是公开差距、单仓分阶段采用，并用连续 14 天的处理、修正、回退、队列和告警数值门禁决定是否扩大。",
+    "rootCause": "试点指标把专家人工补位计入产品表现，未按独立班次分层，也未验证生产支持模型。",
+    "correctApproach": [
+      "按是否有 FDE 补位重新分析并向客户说明差距。",
+      "把高频人工修正转化为产品、数据和培训任务。",
+      "只在一个额外仓库分阶段推广 champion 模式并保留回退。",
+      "以连续 14 天处理≤10 分钟、修正≤10%、回退≤5%、队列 p95≤15 分钟、P1 告警 100% 在 10 分钟内确认且负责人明确的联合门禁决定扩大。"
+    ],
+    "keyLessons": [
+      "试点成功必须扣除不可扩展人工补位。",
+      "采用计划需要能力转移、反馈回路和安全回退。",
+      "生产就绪既是产品指标，也是支持责任和告警响应。"
+    ],
+    "interviewerPerspective": "观察候选人是否敢于纠正好看的试点叙事，并能把客户标准转化为可验证、可逆的采用计划。",
+    "customerRiskPerspective": "过早扩大可能造成仓库积压并损害对团队承诺的信任；透明差距和阶段门禁让客户掌握风险。",
+    "remediation": [
+      "记录并产品化高频人工修正路径。",
+      "建立 dispatcher champion 培训、runbook 和反馈节奏。",
+      "明确每个夜间和周末班次的 P1 告警责任人，并配置 10 分钟确认超时升级。"
+    ],
+    "verification": [
+      "按班次连续 14 天确认无 FDE 值守时独立处理时间中位数不高于 10 分钟。",
+      "按班次连续 14 天确认输入修正率不高于 10%、人工回退率不高于 5%、队列 p95 年龄不高于 15 分钟。",
+      "注入 P1 告警并确认 100% 在 10 分钟内由指定责任人确认，同时演练人工队列回退。",
+      "由客户签署基于联合门禁的下一阶段决定。"
+    ],
+    "knowledgePoints": [
+      "pilot confounding",
+      "customer success criteria",
+      "phased field adoption",
+      "operational readiness"
+    ]
+  },
+  "metadata": {
+    "version": 2,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-13T13:11:51.000Z",
+    "reviewedAt": "2026-07-13T13:11:51.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

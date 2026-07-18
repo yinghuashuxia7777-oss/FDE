@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "llm.applications",
+  "domainId": "llm-applications",
+  "label": "LLM application engineering",
+  "description": "Build grounded, safe, and useful LLM-powered applications.",
+  "status": "active"
+}

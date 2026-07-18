@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "targetCaseCount": 362,
+  "domains": [
+    { "domainId": "agents-evals", "targetCaseCount": 25 },
+    { "domainId": "api-integration", "targetCaseCount": 24 },
+    { "domainId": "cloud-deployment", "targetCaseCount": 24 },
+    { "domainId": "customer-discovery", "targetCaseCount": 24 },
+    { "domainId": "data-engineering", "targetCaseCount": 24 },
+    { "domainId": "fde-adoption", "targetCaseCount": 24 },
+    { "domainId": "fine-tuning-inference", "targetCaseCount": 24 },
+    { "domainId": "git-delivery", "targetCaseCount": 24 },
+    { "domainId": "llm-applications", "targetCaseCount": 24 },
+    { "domainId": "performance-scale", "targetCaseCount": 24 },
+    { "domainId": "rag-search", "targetCaseCount": 25 },
+    { "domainId": "reliability", "targetCaseCount": 24 },
+    { "domainId": "security-governance", "targetCaseCount": 24 },
+    { "domainId": "software-foundations", "targetCaseCount": 24 },
+    { "domainId": "systems-networking", "targetCaseCount": 24 }
+  ]
+}

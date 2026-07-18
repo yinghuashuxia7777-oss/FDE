@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.agent.evaluation",
+  "version": 1,
+  "status": "draft",
+  "title": "Agent Evaluation Focused Practice",
+  "summary": "A focused transfer activity for Agent Evaluation.",
+  "primaryConceptId": "concept.eval",
+  "foundationIds": ["ai.eval-dataset"],
+  "primaryLeafSkillId": "agent.evaluation",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.agent.evaluation",
+    "kind": "evaluate",
+    "prompt": "Design a trajectory test that checks tool choice and outcome.",
+    "stimulus": [
+      {
+        "id": "stimulus.agent.evaluation",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.agent.evaluation",
+      "skillId": "agent.evaluation",
+      "version": 1
+    },
+    "criterionIds": ["criterion.agent.evaluation.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "agent-evaluation",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

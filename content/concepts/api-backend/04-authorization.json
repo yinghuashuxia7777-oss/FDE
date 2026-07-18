@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.authorization",
+  "type": "concept",
+  "category": "api-backend",
+  "order": 4,
+  "title": "授权：限制可执行动作与审批边界",
+  "technicalTerm": "Authorization / Approval Token",
+  "simpleExplanation": "授权回答“已经确认身份的主体可以做什么”，审批令牌则证明某个高风险动作得到了限定范围的批准。",
+  "analogy": "像员工工牌能进入办公楼，但只有带特定审批单的人才能进入机房；审批单还会限定时间、区域和用途。",
+  "technicalExplanation": "授权依据角色、Scope、资源属性、租户元数据和策略决定访问。Agent 场景还需把用户意图转成窄范围、短时效、可审计的审批凭证，工具执行前重新校验目标与参数。",
+  "whyItMatters": "RAG 权限泄露和 Agent 越权通常不是模型“变坏”，而是资源过滤或工具边界缺失。FDE 必须验证身份、策略输入、决策结果与最终数据访问的一致性。",
+  "commonMistakes": "认证通过后默认全部放行；只在界面隐藏按钮而不在服务端校验；复用范围过大的审批令牌；把租户过滤交给提示词约束。",
+  "relatedFoundation": [
+    "api.oauth-scope-audience",
+    "ai.tool-permission-timeout",
+    "computer.file-permissions",
+    "ai.metadata-filtering"
+  ],
+  "relatedCases": [
+    "agent-approval-boundary-bypass-001",
+    "api-oauth-scope-mismatch-001",
+    "rag-permission-filter-gap-001",
+    "linux-service-config-permission-001"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "agents-evals",
+  "label": "Agents, tools & evaluation",
+  "description": "Tool-using agents, orchestration, guardrails, and evaluation.",
+  "status": "active"
+}
