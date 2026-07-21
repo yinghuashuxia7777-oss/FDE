@@ -19,7 +19,10 @@ import {
   mvpCaseAttributions,
   mvpLeafSkills,
 } from '../../content/mvp-capability-content';
-import { isNewLearner } from '../../application/onboarding';
+import {
+  buildDailyGrowthMission,
+  isNewLearner,
+} from '../../application/onboarding';
 import {
   bundledConceptSource,
   type ConceptSource,
@@ -29,6 +32,7 @@ import {
   bundledFoundationSource,
   type FoundationSource,
 } from '../../content/foundation-source';
+import { mvpPractices } from '../../content/mvp-practice-source';
 import { DashboardLearningJourney } from '../../components/onboarding';
 import { useI18n } from '../../i18n';
 import type {
@@ -45,6 +49,8 @@ import {
   type ChallengeSignal,
   EvidenceTimeline,
   type EvidenceSignal,
+  GrowthMissionCard,
+  type GrowthMissionStep,
   JourneyCard,
   MentorCard,
   ReadinessCard,
@@ -178,7 +184,7 @@ export function DashboardPage({
   now,
 }: DashboardPageProps) {
   const { language, t } = useI18n();
-  const { evidence: practiceEvidence } = usePracticeEvidence();
+  const { evidence: practiceEvidence, projectEvidence } = usePracticeEvidence();
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
@@ -384,14 +390,104 @@ export function DashboardPage({
                   value: Math.round(capabilityMap.mapReadiness),
                 });
 
+          const completedProjectIds = projectEvidence
+            .filter(
+              ({ completedMilestones }) => completedMilestones.length === 3,
+            )
+            .map(({ projectId }) => projectId);
+          const growthMission = buildDailyGrowthMission({
+            completedCaseIds: visibleAttempts.map(({ caseId }) => caseId),
+            completedPracticeIds: practiceEvidence.map(
+              ({ practiceId }) => practiceId,
+            ),
+            completedProjectIds,
+          });
+          const foundationById = new Map(
+            foundationItems.map((item) => [item.id, item]),
+          );
+          const practiceById = new Map(
+            mvpPractices.map((item) => [item.id, item]),
+          );
+          const leafSkillById = new Map(
+            mvpLeafSkills.map((item) => [item.id, item]),
+          );
+          const growthMissionSteps: GrowthMissionStep[] =
+            growthMission === undefined
+              ? []
+              : [
+                  {
+                    type: 'learn',
+                    label: t('dashboard.growthMission.learn'),
+                    title:
+                      foundationById.get(growthMission.foundationId)?.title ??
+                      growthMission.foundationId,
+                    to: `/foundation/${growthMission.foundationId}`,
+                  },
+                  {
+                    type: 'practice',
+                    label: t('dashboard.growthMission.practice'),
+                    title:
+                      practiceById.get(growthMission.practiceId)?.title ??
+                      growthMission.practiceId,
+                    to: `/practices/${growthMission.practiceId}`,
+                  },
+                  {
+                    type: 'challenge',
+                    label: t('dashboard.growthMission.challenge'),
+                    title:
+                      casesById.get(growthMission.caseId)?.title ??
+                      growthMission.caseId,
+                    to: `/training/${growthMission.caseId}`,
+                  },
+                  {
+                    type: 'evidence',
+                    label: t('dashboard.growthMission.evidence'),
+                    title:
+                      leafSkillById.get(growthMission.evidenceSkillId)?.name ??
+                      growthMission.evidenceSkillId,
+                    to: '/profile',
+                  },
+                ];
+
           return (
             <div
               className="dashboard-command-center"
               data-dashboard-mode={isNewUserMode ? 'new-user' : 'active'}
             >
+              {isNewUserMode ? (
+                <div className="growth-onboarding">
+                  <div className="growth-onboarding__heading">
+                    <h2>{t('dashboard.onboarding.title')}</h2>
+                    <Link to="/journey">{t('dashboard.journey.start')}</Link>
+                  </div>
+                  <DashboardLearningJourney
+                    attempts={attempts}
+                    cases={visibleCases}
+                    conceptSource={conceptSource}
+                    foundations={foundationItems}
+                    mastery={mastery}
+                    progress={progress}
+                    skills={skillDefinitions}
+                  />
+                </div>
+              ) : null}
+              <GrowthMissionCard
+                complete={growthMission === undefined}
+                completeDescription={t(
+                  'dashboard.growthMission.completeDescription',
+                )}
+                completeTitle={t('dashboard.growthMission.completeTitle')}
+                description={t('dashboard.growthMission.description')}
+                label={t('dashboard.growthMission.label')}
+                steps={growthMissionSteps}
+                title={t('dashboard.growthMission.title', {
+                  day: growthMission?.day ?? 7,
+                })}
+              />
               <div className="growth-os-grid">
                 <JourneyCard
                   actionLabel={t('dashboard.journey.start')}
+                  actionTo="/journey"
                   description={t('dashboard.journey.description')}
                   label={t('dashboard.journey.label')}
                   steps={[
@@ -521,25 +617,13 @@ export function DashboardPage({
                 />
               </div>
 
-              {isNewUserMode ? (
-                <div className="growth-onboarding">
-                  <div className="growth-onboarding__heading">
-                    <h2>{t('dashboard.onboarding.title')}</h2>
-                    <Link to="/foundation">
-                      {t('dashboard.onboarding.openKnowledge')}
-                    </Link>
-                  </div>
-                  <DashboardLearningJourney
-                    attempts={attempts}
-                    cases={visibleCases}
-                    conceptSource={conceptSource}
-                    foundations={foundationItems}
-                    mastery={mastery}
-                    progress={progress}
-                    skills={skillDefinitions}
-                  />
-                </div>
-              ) : null}
+              <aside className="local-feedback-entry">
+                <span>{t('feedback.entry.dashboard')}</span>
+                <Link to="/feedback">
+                  {t('feedback.entry.action')}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </aside>
             </div>
           );
         }}

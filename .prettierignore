@@ -1,0 +1,4 @@
+docs/
+content/schemas/
+src/generated/content-index.ts
+src/generated/foundation-index.ts

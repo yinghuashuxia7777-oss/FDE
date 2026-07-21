@@ -11,6 +11,7 @@ import {
   useAsyncPageData,
   useProductRepositories,
 } from '../../application/product';
+import { Link } from 'react-router-dom';
 import { usePracticeEvidence } from '../../application/practice';
 import {
   mvpCaseAttributions,
@@ -29,7 +30,7 @@ interface ProfilePageProps {
 
 export function ProfilePage({ repositories: override }: ProfilePageProps) {
   const { t } = useI18n();
-  const { evidence: practiceEvidence } = usePracticeEvidence();
+  const { evidence: practiceEvidence, projectEvidence } = usePracticeEvidence();
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
@@ -173,9 +174,18 @@ export function ProfilePage({ repositories: override }: ProfilePageProps) {
                     mvpLeafSkills,
                   ),
                 )}
+                practiceEvidence={practiceEvidence}
+                projectEvidence={projectEvidence}
                 readiness={readiness}
                 skills={skills}
               />
+              <aside className="local-feedback-entry">
+                <span>{t('feedback.entry.profile')}</span>
+                <Link to="/feedback">
+                  {t('feedback.entry.action')}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </aside>
             </div>
           );
         }}

@@ -11,12 +11,19 @@ import {
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
+import projectCatalog from '../../../content/projects/mvp/catalog.json';
+
 import type {
   CapabilityEvidenceRecord,
   CompletedChallengeProfile,
   SkillEvidenceProfile,
   MvpLeafEvidenceProfile,
 } from '../../application/product';
+import type {
+  PracticeCompletionEvidence,
+  ProjectEvidenceRecord,
+} from '../../application/practice';
+import { mvpPractices } from '../../content/mvp-practice-source';
 import { StatusBadge, type FeedbackTone } from '../../components/ui';
 import { useI18n } from '../../i18n';
 import {
@@ -28,6 +35,8 @@ interface CapabilityProfileViewProps {
   challenges: readonly CompletedChallengeProfile[];
   evidence: readonly CapabilityEvidenceRecord[];
   mvpLeafEvidence: readonly MvpLeafEvidenceProfile[];
+  practiceEvidence: readonly PracticeCompletionEvidence[];
+  projectEvidence: readonly ProjectEvidenceRecord[];
   readiness: number | undefined;
   skills: readonly SkillEvidenceProfile[];
 }
@@ -67,6 +76,8 @@ export function CapabilityProfileView({
   challenges,
   evidence,
   mvpLeafEvidence,
+  practiceEvidence,
+  projectEvidence,
   readiness,
   skills,
 }: CapabilityProfileViewProps) {
@@ -113,6 +124,41 @@ export function CapabilityProfileView({
       verdict: t(`product.common.verdict.${record.verdict}`),
     }),
   }));
+  const caseEvidenceByAttempt = new Map(
+    evidence.map((record) => [record.attemptId, record]),
+  );
+  const practiceById = new Map(mvpPractices.map((item) => [item.id, item]));
+  const projectEvidenceById = new Map(
+    projectEvidence.map((item) => [item.projectId, item]),
+  );
+  const capabilityWhy = (skill: MvpLeafEvidenceProfile): string[] => {
+    const caseReasons = skill.sourceAttemptIds
+      .map((attemptId) => caseEvidenceByAttempt.get(attemptId))
+      .filter(
+        (record): record is CapabilityEvidenceRecord => record !== undefined,
+      )
+      .map((record) => t('profile.mvpSkills.whyCase', { title: record.title }));
+    const practiceReasons = practiceEvidence
+      .filter(({ leafSkillId }) => leafSkillId === skill.skillId)
+      .map(({ practiceId }) =>
+        t('profile.mvpSkills.whyPractice', {
+          title: practiceById.get(practiceId)?.title ?? practiceId,
+        }),
+      );
+    const projectReasons = projectCatalog.projects
+      .filter(
+        (project) =>
+          project.requiredLeafSkillIds.includes(skill.skillId) &&
+          (projectEvidenceById.get(project.id)?.completedMilestones.length ??
+            0) > 0,
+      )
+      .map((project) =>
+        t('profile.mvpSkills.whyProject', { title: project.title }),
+      );
+    return [
+      ...new Set([...caseReasons, ...practiceReasons, ...projectReasons]),
+    ].slice(0, 3);
+  };
 
   return (
     <div className="capability-profile">
@@ -217,32 +263,50 @@ export function CapabilityProfileView({
           </div>
         ) : (
           <div className="capability-profile__skill-grid">
-            {mvpLeafEvidence.map((skill) => (
-              <article
-                className="capability-profile__skill-card"
-                key={skill.skillId}
-              >
-                <div className="capability-profile__skill-heading">
-                  <div>
-                    <h3>{skill.label}</h3>
+            {mvpLeafEvidence.map((skill) => {
+              const reasons = capabilityWhy(skill);
+              return (
+                <article
+                  className="capability-profile__skill-card"
+                  key={skill.skillId}
+                >
+                  <div className="capability-profile__skill-heading">
+                    <div>
+                      <h3>{skill.label}</h3>
+                    </div>
+                    <div className="capability-profile__skill-score">
+                      <span>{t('profile.skills.masteryScore')}</span>
+                      <strong>
+                        {skill.score === undefined
+                          ? t('product.common.notAvailable')
+                          : Math.round(skill.score)}
+                      </strong>
+                    </div>
                   </div>
-                  <div className="capability-profile__skill-score">
-                    <span>{t('profile.skills.masteryScore')}</span>
-                    <strong>
-                      {skill.score === undefined
-                        ? t('product.common.notAvailable')
-                        : Math.round(skill.score)}
-                    </strong>
+                  <p>
+                    {t('profile.mvpSkills.evidence', {
+                      primary: skill.primaryEvidenceCount,
+                      supporting: skill.supportingEvidenceCount,
+                    })}
+                  </p>
+                  <div className="capability-profile__why">
+                    <strong>{t('profile.mvpSkills.why')}</strong>
+                    {reasons.length === 0 ? (
+                      <p>{t('profile.mvpSkills.whyUnavailable')}</p>
+                    ) : (
+                      <ul>
+                        {reasons.map((reason) => (
+                          <li key={reason}>
+                            <CheckCircle aria-hidden="true" size={16} />
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                </div>
-                <p>
-                  {t('profile.mvpSkills.evidence', {
-                    primary: skill.primaryEvidenceCount,
-                    supporting: skill.supportingEvidenceCount,
-                  })}
-                </p>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

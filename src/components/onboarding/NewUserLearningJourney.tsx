@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 
 import {
   buildGrowthRoadmap,
+  growthJourneyStages,
   isNewLearner,
   selectFirstMission,
+  type GrowthGoal,
   type LearnerStartingPoint,
 } from '../../application/onboarding';
 import type { SkillDefinition } from '../../content/contracts';
@@ -32,6 +34,12 @@ const startingPoints: LearnerStartingPoint[] = [
   'zero-basics',
   'programming-basics',
   'ai-project',
+];
+
+const goals: readonly GrowthGoal[] = [
+  'become-ai-engineer',
+  'improve-ai-engineering-skills',
+  'prepare-fde-career',
 ];
 
 const startingPointKeys: Record<
@@ -65,6 +73,8 @@ export function NewUserLearningJourney({
   const {
     completedMissionIds,
     completeMission,
+    goal,
+    selectGoal,
     selectStartingPoint,
     startingPoint,
     visitedFoundationIds,
@@ -72,7 +82,7 @@ export function NewUserLearningJourney({
   if (!isNewLearner(progress, mastery, attempts)) return null;
 
   const mission =
-    startingPoint === undefined
+    startingPoint === undefined || goal === undefined
       ? undefined
       : selectFirstMission({
           attempts,
@@ -101,6 +111,27 @@ export function NewUserLearningJourney({
         left.order - right.order || left.id.localeCompare(right.id),
     )[0];
 
+  if (completedMissionIds.size > 0) {
+    return (
+      <section
+        className="onboarding-journey onboarding-journey--complete panel"
+        aria-labelledby="onboarding-complete-title"
+      >
+        <p className="eyebrow">{t('onboarding.mode.label')}</p>
+        <h2 id="onboarding-complete-title">{t('onboarding.complete.title')}</h2>
+        <p>{t('onboarding.complete.description')}</p>
+        <div className="button-row">
+          <Link className="button button--primary" to="/journey">
+            {t('onboarding.complete.journey')}
+          </Link>
+          <Link className="button button--secondary" to="/practices">
+            {t('onboarding.complete.practice')}
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       className="onboarding-journey panel"
@@ -112,6 +143,28 @@ export function NewUserLearningJourney({
         <p>{t('onboarding.welcome.description')}</p>
         <p>{t('onboarding.welcome.value')}</p>
       </header>
+
+      <fieldset className="onboarding-starting-points onboarding-goals">
+        <legend>{t('onboarding.goal.legend')}</legend>
+        <div className="onboarding-starting-points__grid">
+          {goals.map((item) => (
+            <label htmlFor={`onboarding-goal-${item}`} key={item}>
+              <input
+                checked={goal === item}
+                id={`onboarding-goal-${item}`}
+                name="onboarding-goal"
+                onChange={() => selectGoal(item)}
+                type="radio"
+                value={item}
+              />
+              <span>
+                {t(`onboarding.goal.${item}.title`)}
+                <small>{t(`onboarding.goal.${item}.description`)}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="onboarding-starting-points">
         <legend>{t('onboarding.start.legend')}</legend>
@@ -150,6 +203,27 @@ export function NewUserLearningJourney({
         </ol>
       </section>
 
+      <section
+        className="onboarding-journey-preview"
+        aria-labelledby="onboarding-journey-preview-title"
+      >
+        <h3 id="onboarding-journey-preview-title">
+          {t('onboarding.journey.title')}
+        </h3>
+        <p>{t('onboarding.journey.description')}</p>
+        <ol>
+          {growthJourneyStages.map((stage, index) => (
+            <li key={stage.id}>
+              <span>{t('onboarding.journey.stage', { stage: index })}</span>
+              <strong>{t(`journey.stage.${stage.id}.title`)}</strong>
+            </li>
+          ))}
+        </ol>
+        <Link className="text-link" to="/journey">
+          {t('onboarding.journey.open')}
+        </Link>
+      </section>
+
       {mission === undefined ? null : (
         <section
           className="onboarding-first-mission"
@@ -182,14 +256,6 @@ export function NewUserLearningJourney({
             ) : null}
           </div>
         </section>
-      )}
-
-      {completedMissionIds.size === 0 ? null : (
-        <div className="onboarding-mission-feedback" role="status">
-          <strong>{t('onboarding.mission.completion.title')}</strong>
-          <p>{t('onboarding.mission.completion.flow')}</p>
-          <p>{t('onboarding.mission.completion.mastery')}</p>
-        </div>
       )}
 
       <section

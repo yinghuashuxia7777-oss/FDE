@@ -8,12 +8,21 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { LearnerStartingPoint } from '../../application/onboarding';
+import {
+  learnerPreferenceStore,
+  type ExperienceLevel,
+  type GrowthGoal,
+  type LearnerStartingPoint,
+} from '../../application/onboarding';
 
 interface LearningJourneyState {
   completedMissionIds: ReadonlySet<string>;
   completeMission: (missionId: string) => void;
   markFoundationVisited: (foundationId: string) => void;
+  goal: GrowthGoal | undefined;
+  experienceLevel: ExperienceLevel | undefined;
+  selectExperienceLevel: (level: ExperienceLevel) => void;
+  selectGoal: (goal: GrowthGoal) => void;
   selectStartingPoint: (startingPoint: LearnerStartingPoint) => void;
   startingPoint: LearnerStartingPoint | undefined;
   visitedFoundationIds: ReadonlySet<string>;
@@ -22,7 +31,11 @@ interface LearningJourneyState {
 const defaultState: LearningJourneyState = {
   completedMissionIds: new Set(),
   completeMission: () => undefined,
+  experienceLevel: undefined,
+  goal: undefined,
   markFoundationVisited: () => undefined,
+  selectExperienceLevel: () => undefined,
+  selectGoal: () => undefined,
   selectStartingPoint: () => undefined,
   startingPoint: undefined,
   visitedFoundationIds: new Set(),
@@ -32,7 +45,20 @@ const LearningJourneyContext =
   createContext<LearningJourneyState>(defaultState);
 
 export function LearningJourneyProvider({ children }: { children: ReactNode }) {
-  const [startingPoint, setStartingPoint] = useState<LearnerStartingPoint>();
+  const [initialPreference] = useState(() => learnerPreferenceStore.read());
+  const [goal, setGoal] = useState<GrowthGoal | undefined>(
+    initialPreference?.goal,
+  );
+  const [experienceLevel, setExperienceLevel] = useState<
+    ExperienceLevel | undefined
+  >(initialPreference?.experienceLevel);
+  const [startingPoint, setStartingPoint] = useState<
+    LearnerStartingPoint | undefined
+  >(() =>
+    initialPreference === undefined
+      ? undefined
+      : experienceToStartingPoint(initialPreference.experienceLevel),
+  );
   const [completedMissionIds, setCompletedMissionIds] = useState<
     ReadonlySet<string>
   >(() => new Set());
@@ -60,19 +86,59 @@ export function LearningJourneyProvider({ children }: { children: ReactNode }) {
     },
     [visitedFoundationIds],
   );
+  const selectGoal = useCallback(
+    (nextGoal: GrowthGoal) => {
+      setGoal(nextGoal);
+      if (experienceLevel !== undefined) {
+        learnerPreferenceStore.write({
+          goal: nextGoal,
+          experienceLevel,
+        });
+      }
+    },
+    [experienceLevel],
+  );
+  const selectExperienceLevel = useCallback(
+    (nextLevel: ExperienceLevel) => {
+      setExperienceLevel(nextLevel);
+      setStartingPoint(experienceToStartingPoint(nextLevel));
+      if (goal !== undefined) {
+        learnerPreferenceStore.write({
+          goal,
+          experienceLevel: nextLevel,
+        });
+      }
+    },
+    [goal],
+  );
+  const selectStartingPoint = useCallback(
+    (nextStartingPoint: LearnerStartingPoint) => {
+      selectExperienceLevel(startingPointToExperience(nextStartingPoint));
+    },
+    [selectExperienceLevel],
+  );
   const value = useMemo<LearningJourneyState>(
     () => ({
       completedMissionIds,
       completeMission,
+      experienceLevel,
+      goal,
       markFoundationVisited,
-      selectStartingPoint: setStartingPoint,
+      selectExperienceLevel,
+      selectGoal,
+      selectStartingPoint,
       startingPoint,
       visitedFoundationIds,
     }),
     [
       completedMissionIds,
       completeMission,
+      experienceLevel,
+      goal,
       markFoundationVisited,
+      selectExperienceLevel,
+      selectGoal,
+      selectStartingPoint,
       startingPoint,
       visitedFoundationIds,
     ],
@@ -82,6 +148,22 @@ export function LearningJourneyProvider({ children }: { children: ReactNode }) {
       {children}
     </LearningJourneyContext.Provider>
   );
+}
+
+function experienceToStartingPoint(
+  level: ExperienceLevel,
+): LearnerStartingPoint {
+  if (level === 'beginner') return 'zero-basics';
+  if (level === 'developer') return 'programming-basics';
+  return 'ai-project';
+}
+
+function startingPointToExperience(
+  startingPoint: LearnerStartingPoint,
+): ExperienceLevel {
+  if (startingPoint === 'zero-basics') return 'beginner';
+  if (startingPoint === 'programming-basics') return 'developer';
+  return 'experienced';
 }
 
 export function useLearningJourney(): LearningJourneyState {

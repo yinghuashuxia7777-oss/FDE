@@ -4,13 +4,23 @@ export const onboardingUiZhCN: Record<string, string> = {
   'onboarding.welcome.description':
     '从零开始，训练成为能够解决真实 AI 工程问题的 FDE。',
   'onboarding.welcome.value':
-    '这里不是普通刷题网站。你的第一步是找到合适起点，再沿真实工程任务逐步建立判断力。',
+    '这不是课程，而是一套基于证据的 AI 工程师成长系统。你会通过真实动作、挑战和交付证明自己正在变强。',
+  'onboarding.goal.legend': '你想成为谁？',
+  'onboarding.goal.become-ai-engineer.title': '成为 AI Engineer',
+  'onboarding.goal.become-ai-engineer.description':
+    '建立从工程基础到生产 AI 的完整能力。',
+  'onboarding.goal.improve-ai-engineering-skills.title': '提升 AI 工程能力',
+  'onboarding.goal.improve-ai-engineering-skills.description':
+    '用实践和案例补齐真实项目能力。',
+  'onboarding.goal.prepare-fde-career.title': '准备 FDE 职业发展',
+  'onboarding.goal.prepare-fde-career.description':
+    '训练需求发现、方案设计与客户交付。',
   'onboarding.start.legend': '你的当前情况？',
-  'onboarding.start.zero.title': '完全零基础',
+  'onboarding.start.zero.title': '零基础',
   'onboarding.start.zero.description': '我还不了解 API、Docker 或 RAG。',
-  'onboarding.start.programming.title': '有编程基础',
+  'onboarding.start.programming.title': '会编程但刚接触 AI',
   'onboarding.start.programming.description': '我会编程，但不了解 AI 工程。',
-  'onboarding.start.aiProject.title': '已经做过 AI 项目',
+  'onboarding.start.aiProject.title': '已有 AI 项目经验',
   'onboarding.start.aiProject.description': '我想提升真实 FDE 交付能力。',
   'onboarding.method.title': 'FDE Arena 的正确学习方式',
   'onboarding.method.description':
@@ -19,6 +29,16 @@ export const onboardingUiZhCN: Record<string, string> = {
   'onboarding.method.concept': 'Concept · 理解工程语言',
   'onboarding.method.case': 'Case · 解决真实问题并复盘',
   'onboarding.method.mastery': 'Mastery · 用训练证据观察成长',
+  'onboarding.journey.title': '你的 AI Engineer Journey',
+  'onboarding.journey.description':
+    '这条路线展示需要被证明的能力阶段，不是课程目录。',
+  'onboarding.journey.stage': 'STAGE {stage}',
+  'onboarding.journey.open': '查看完整成长路径',
+  'onboarding.complete.title': '第一步已完成，成长闭环已经启动',
+  'onboarding.complete.description':
+    '继续完成今日 Practice 与 Case，把学习转化为可解释的能力证据。',
+  'onboarding.complete.journey': '查看成长路径',
+  'onboarding.complete.practice': '开始 Practice',
   'onboarding.mission.title': '你的第一个任务',
   'onboarding.mission.why': '为什么学：{reason}',
   'onboarding.mission.start': '开始学习 {title}',
@@ -75,15 +95,26 @@ export const onboardingUiEnUS: Record<string, string> = {
   'onboarding.welcome.description':
     'Start from zero and train to solve real AI engineering problems as an FDE.',
   'onboarding.welcome.value':
-    'This is not a conventional quiz site. Choose the right starting point, then build judgment through real engineering work.',
+    'This is not a course. It is an evidence-based AI Engineer growth system where real actions, challenges, and delivery prove your progress.',
+  'onboarding.goal.legend': 'Who do you want to become?',
+  'onboarding.goal.become-ai-engineer.title': 'Become AI Engineer',
+  'onboarding.goal.become-ai-engineer.description':
+    'Build the complete path from engineering foundations to production AI.',
+  'onboarding.goal.improve-ai-engineering-skills.title':
+    'Improve AI Engineering Skills',
+  'onboarding.goal.improve-ai-engineering-skills.description':
+    'Close real project gaps through practices and cases.',
+  'onboarding.goal.prepare-fde-career.title': 'Prepare FDE Career',
+  'onboarding.goal.prepare-fde-career.description':
+    'Train discovery, solution design, and customer delivery.',
   'onboarding.start.legend': 'What is your current starting point?',
-  'onboarding.start.zero.title': 'Completely new to engineering',
+  'onboarding.start.zero.title': 'Beginner',
   'onboarding.start.zero.description':
     'I do not yet understand API, Docker, or RAG.',
-  'onboarding.start.programming.title': 'Programming background',
+  'onboarding.start.programming.title': 'Developer',
   'onboarding.start.programming.description':
     'I can program, but AI engineering is new to me.',
-  'onboarding.start.aiProject.title': 'Built an AI project',
+  'onboarding.start.aiProject.title': 'Experienced',
   'onboarding.start.aiProject.description':
     'I want to improve real FDE delivery judgment.',
   'onboarding.method.title': 'How to learn in FDE Arena',
@@ -93,6 +124,16 @@ export const onboardingUiEnUS: Record<string, string> = {
   'onboarding.method.concept': 'Concept · Understand engineering language',
   'onboarding.method.case': 'Case · Solve and debrief real problems',
   'onboarding.method.mastery': 'Mastery · See growth through training evidence',
+  'onboarding.journey.title': 'Your AI Engineer Journey',
+  'onboarding.journey.description':
+    'This is a capability growth path, not a course catalog.',
+  'onboarding.journey.stage': 'STAGE {stage}',
+  'onboarding.journey.open': 'View the complete growth path',
+  'onboarding.complete.title': 'First step complete. Your growth loop is live.',
+  'onboarding.complete.description':
+    'Continue with today’s Practice and Case to turn learning into explainable capability evidence.',
+  'onboarding.complete.journey': 'View Journey',
+  'onboarding.complete.practice': 'Start a Practice',
   'onboarding.mission.title': 'Your First Mission',
   'onboarding.mission.why': 'Why this mission: {reason}',
   'onboarding.mission.start': 'Start learning {title}',

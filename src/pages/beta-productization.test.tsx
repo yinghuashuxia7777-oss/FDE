@@ -59,7 +59,8 @@ describe('Beta productization pages', () => {
       container.querySelector('[data-demo-profile="true"]'),
     ).not.toBeNull();
     expect(screen.getByText('72%')).toBeVisible();
-    expect(screen.getByText('Enterprise RAG Assistant')).toBeVisible();
+    expect(screen.getAllByText('Enterprise RAG Assistant')[0]).toBeVisible();
+    expect(screen.getByText('Verified Evidence')).toBeVisible();
     expect(screen.getByText('85')).toBeVisible();
   });
 });

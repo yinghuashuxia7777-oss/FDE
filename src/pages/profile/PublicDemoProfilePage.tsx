@@ -1,4 +1,11 @@
-import { CheckCircle, MapTrifold, ShieldCheck } from '@phosphor-icons/react';
+import {
+  ArrowRight,
+  CheckCircle,
+  FolderOpen,
+  MapTrifold,
+  ShieldCheck,
+} from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 
 import { useI18n } from '../../i18n';
 import { PageHeader } from '../shared';
@@ -8,6 +15,12 @@ const demoSkills = [
   ['Agent', 75],
   ['RAG', 80],
   ['Cloud', 60],
+] as const;
+
+const verifiedEvidence = [
+  'tool-calling-case',
+  'rag-evaluation-practice',
+  'production-readiness-challenge',
 ] as const;
 
 export function PublicDemoProfilePage() {
@@ -23,6 +36,22 @@ export function PublicDemoProfilePage() {
         title={t('demoProfile.nameTitle')}
         description={t('demoProfile.description')}
       />
+      <section className="growth-card demo-profile-hero">
+        <div>
+          <p className="eyebrow">{t('demoProfile.publicLabel')}</p>
+          <h2>{t('demoProfile.publicTitle')}</h2>
+          <p>{t('demoProfile.publicDescription')}</p>
+        </div>
+        <div className="button-row">
+          <Link className="button button--primary" to="/journey">
+            {t('demoProfile.exploreJourney')}
+            <ArrowRight aria-hidden="true" size={17} />
+          </Link>
+          <Link className="button button--secondary" to="/">
+            {t('demoProfile.startOwn')}
+          </Link>
+        </div>
+      </section>
       <div className="capability-profile__top-grid">
         <section className="growth-card capability-profile__readiness">
           <div className="growth-card__heading">
@@ -109,8 +138,50 @@ export function PublicDemoProfilePage() {
           ))}
         </div>
       </section>
+      <section className="growth-card demo-profile-evidence">
+        <div className="growth-card__heading">
+          <div>
+            <h2>{t('demoProfile.verifiedEvidence')}</h2>
+            <p>{t('demoProfile.verifiedEvidenceDescription')}</p>
+          </div>
+          <ShieldCheck aria-hidden="true" size={22} />
+        </div>
+        <ul>
+          {verifiedEvidence.map((item) => (
+            <li key={item}>
+              <CheckCircle aria-hidden="true" size={19} weight="fill" />
+              <span>
+                <strong>{t(`demoProfile.evidence.${item}.title`)}</strong>
+                <small>{t(`demoProfile.evidence.${item}.source`)}</small>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="growth-card demo-profile-projects">
+        <div className="growth-card__heading">
+          <div>
+            <h2>{t('demoProfile.projectsTitle')}</h2>
+            <p>{t('demoProfile.projectsDescription')}</p>
+          </div>
+          <FolderOpen aria-hidden="true" size={22} />
+        </div>
+        <article>
+          <CheckCircle aria-hidden="true" size={22} weight="fill" />
+          <div>
+            <h3>{t('demoProfile.projectName')}</h3>
+            <p>{t('demoProfile.projectProof')}</p>
+          </div>
+        </article>
+      </section>
       <section className="growth-card capability-profile__identity">
-        <h2>{t('demoProfile.journey')}</h2>
+        <div className="growth-card__heading">
+          <div>
+            <p className="eyebrow">{t('demoProfile.journeyCompleted')}</p>
+            <h2>{t('demoProfile.journey')}</h2>
+          </div>
+          <CheckCircle aria-hidden="true" size={22} />
+        </div>
         <ol className="growth-journey__steps">
           {['learn', 'practice', 'challenge', 'project', 'capability'].map(
             (step, index) => (

@@ -6,7 +6,11 @@ export const BETA_STORAGE_KEYS = {
 
 export type ProjectMilestone = 'architecture' | 'evaluation' | 'deployment';
 export type FeedbackCategory =
-  'content-issue' | 'case-difficulty' | 'feature-suggestion';
+  | 'product-feedback'
+  | 'content-issue'
+  | 'difficulty'
+  | 'case-difficulty'
+  | 'feature-suggestion';
 
 export interface PracticeCompletionRecord {
   id: string;
@@ -93,7 +97,9 @@ function isProjectRecord(value: unknown): value is ProjectEvidenceRecord {
 }
 
 const categories: readonly FeedbackCategory[] = [
+  'product-feedback',
   'content-issue',
+  'difficulty',
   'case-difficulty',
   'feature-suggestion',
 ];

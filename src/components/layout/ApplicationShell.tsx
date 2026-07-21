@@ -6,6 +6,7 @@ import {
   Gear,
   House,
   MagnifyingGlass,
+  Path,
   Sparkle,
   UserCircle,
   WarningCircle,
@@ -37,6 +38,7 @@ export function SkipLink() {
 
 const growthDestinations = [
   { to: '/', labelKey: 'nav.dashboard', Icon: House, end: true },
+  { to: '/journey', labelKey: 'nav.journey', Icon: Path, end: false },
   {
     to: '/skills',
     labelKey: 'nav.skillGraph',
@@ -54,6 +56,7 @@ const growthDestinations = [
 ] as const;
 
 const workspaceDestinations = [
+  { to: '/journey', labelKey: 'nav.journey', Icon: Path },
   { to: '/foundation', labelKey: 'nav.knowledge', Icon: BookOpenText },
   { to: '/practices', labelKey: 'nav.practices', Icon: ClipboardText },
   { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },

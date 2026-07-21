@@ -21,7 +21,7 @@ export function FeedbackPage() {
     const category =
       typeof categoryValue === 'string'
         ? (categoryValue as FeedbackCategory)
-        : 'feature-suggestion';
+        : 'product-feedback';
     feedbackStore.write([
       {
         id: `feedback:${Date.now().toString()}`,
@@ -50,14 +50,14 @@ export function FeedbackPage() {
         <form onSubmit={submit}>
           <label htmlFor="feedback-category">{t('feedback.category')}</label>
           <select id="feedback-category" name="category">
+            <option value="product-feedback">
+              {t('feedback.category.product')}
+            </option>
             <option value="content-issue">
               {t('feedback.category.content')}
             </option>
-            <option value="case-difficulty">
+            <option value="difficulty">
               {t('feedback.category.difficulty')}
-            </option>
-            <option value="feature-suggestion">
-              {t('feedback.category.feature')}
             </option>
           </select>
           <label htmlFor="feedback-message">{t('feedback.message')}</label>

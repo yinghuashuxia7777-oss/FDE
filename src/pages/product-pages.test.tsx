@@ -271,8 +271,9 @@ describe('Slice A product pages', () => {
       await screen.findByRole('heading', { name: 'Welcome to FDE Arena' }),
     ).toBeVisible();
     await user.click(
-      screen.getByRole('radio', { name: /completely new to engineering/i }),
+      screen.getByRole('radio', { name: /become ai engineer/i }),
     );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
 
     const firstMission = screen.getByRole('region', {
       name: 'Your First Mission',
@@ -869,8 +870,9 @@ describe('Slice A product pages', () => {
     });
     expect(challenge).toHaveTextContent('Active case');
     await user.click(
-      screen.getByRole('radio', { name: /completely new to engineering/i }),
+      screen.getByRole('radio', { name: /become ai engineer/i }),
     );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
     const firstMission = screen.getByRole('region', {
       name: 'Your First Mission',
     });

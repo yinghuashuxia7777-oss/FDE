@@ -128,6 +128,10 @@ function FoundationVisitControls() {
 }
 
 describe('NewUserLearningJourney', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('requires visiting the matching Foundation before completing a First Mission', async () => {
     const user = userEvent.setup();
     render(
@@ -158,12 +162,16 @@ describe('NewUserLearningJourney', () => {
       }),
     ).toBeVisible();
     expect(
+      screen.getByRole('group', { name: 'Who do you want to become?' }),
+    ).toBeVisible();
+    expect(
       screen.queryByRole('heading', { name: 'Your First Mission' }),
     ).not.toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('radio', { name: /completely new to engineering/i }),
+      screen.getByRole('radio', { name: /become ai engineer/i }),
     );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
 
     const mission = screen.getByRole('region', { name: 'Your First Mission' });
     expect(mission).toHaveTextContent('API foundation');
@@ -200,41 +208,14 @@ describe('NewUserLearningJourney', () => {
         name: 'Complete this onboarding step',
       }),
     );
-    expect(mission).toHaveTextContent('Authentication foundation');
-    expect(mission).toHaveTextContent(
-      'Why this mission: Authentication confirms who is calling.',
-    );
     expect(
-      screen.getByRole('link', {
-        name: 'Start learning Authentication foundation',
-      }),
-    ).toHaveAttribute('href', '/foundation/api.token-authentication');
-    expect(within(mission).queryByRole('button')).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', { name: 'Mark another Foundation visited' }),
-    );
-    expect(
-      within(mission).getByRole('button', {
-        name: 'Complete this onboarding step',
+      screen.getByRole('heading', {
+        name: 'First step complete. Your growth loop is live.',
       }),
     ).toBeVisible();
-
-    expect(
-      screen.getByRole('region', { name: 'FDE Growth Roadmap' }),
-    ).toBeVisible();
-    const completion = screen.getByRole('status');
-    expect(completion).toHaveTextContent('Onboarding step complete.');
-    expect(completion).toHaveTextContent(
-      'You completed the learning flow; this does not mean you have achieved Mastery.',
-    );
-    expect(completion).toHaveTextContent(
-      'Completing the related Case will update Mastery.',
-    );
-    expect(screen.getByText('LEVEL 0')).toBeVisible();
-    expect(screen.getByText('LEVEL 3')).toBeVisible();
-    expect(screen.getByRole('region', { name: 'FDE Guide' })).toHaveTextContent(
-      'No directly related Concept is available for this mission yet.',
+    expect(screen.getByRole('link', { name: 'View Journey' })).toHaveAttribute(
+      'href',
+      '/journey',
     );
   });
 
@@ -416,8 +397,9 @@ describe('NewUserLearningJourney', () => {
       </I18nProvider>,
     );
     await user.click(
-      screen.getByRole('radio', { name: /completely new to engineering/i }),
+      screen.getByRole('radio', { name: /become ai engineer/i }),
     );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
 
     const guide = screen.getByRole('region', { name: 'FDE Guide' });
     expect(guide).toHaveTextContent(

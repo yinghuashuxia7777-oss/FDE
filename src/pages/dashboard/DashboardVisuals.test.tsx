@@ -2,7 +2,59 @@ import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 import type { CapabilitySignal } from './capability-map-data';
-import { CapabilityMapCard } from './DashboardVisuals';
+import { CapabilityMapCard, GrowthMissionCard } from './DashboardVisuals';
+
+it('presents the daily mission as Learn, Practice, Challenge, and Evidence', () => {
+  render(
+    <MemoryRouter>
+      <GrowthMissionCard
+        complete={false}
+        completeDescription="Complete"
+        completeTitle="Complete"
+        description="One evidence loop"
+        label="TODAY'S GROWTH MISSION"
+        steps={[
+          {
+            label: 'Learn',
+            title: 'HTTP Retry',
+            to: '/foundation/retry',
+            type: 'learn',
+          },
+          {
+            label: 'Practice',
+            title: 'Design retry strategy',
+            to: '/practices/retry',
+            type: 'practice',
+          },
+          {
+            label: 'Challenge',
+            title: 'Webhook failure',
+            to: '/training/webhook',
+            type: 'challenge',
+          },
+          {
+            label: 'Evidence',
+            title: 'Backend Reliability',
+            to: '/profile',
+            type: 'evidence',
+          },
+        ]}
+        title="Day 1"
+      />
+    </MemoryRouter>,
+  );
+
+  expect(
+    screen.getByRole('region', { name: "TODAY'S GROWTH MISSION" }),
+  ).toBeVisible();
+  expect(screen.getByRole('link', { name: /HTTP Retry/i })).toHaveAttribute(
+    'href',
+    '/foundation/retry',
+  );
+  expect(
+    screen.getByRole('link', { name: /Backend Reliability/i }),
+  ).toHaveAttribute('href', '/profile');
+});
 
 const baseProps = {
   confidenceLabel: 'Confidence',

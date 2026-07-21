@@ -21,6 +21,7 @@ import { ProjectDetailPage, ProjectListPage } from '../pages/projects';
 import { SettingsPage } from '../pages/settings';
 import { DebriefPage } from '../pages/debrief';
 import { FeedbackPage } from '../pages/feedback';
+import { JourneyPage } from '../pages/journey';
 import {
   FoundationDetailPage,
   FoundationLibraryPage,
@@ -88,6 +89,10 @@ export function createAppRouter() {
             {
               path: 'skills',
               element: <SkillsPage />,
+            },
+            {
+              path: 'journey',
+              element: <JourneyPage />,
             },
             {
               path: 'mistakes',

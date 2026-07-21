@@ -1,14 +1,17 @@
 import {
   ArrowRight,
   ArrowsOutSimple,
+  BookOpenText,
   Brain,
   CheckCircle,
   Cloud,
   Code,
   Database,
+  Flask,
   Network,
   Pulse,
   Robot,
+  ShieldCheck,
   Target,
   WarningCircle,
   XCircle,
@@ -41,8 +44,73 @@ export interface EvidenceSignal {
   verdict: string;
 }
 
+export interface GrowthMissionStep {
+  label: string;
+  title: string;
+  to: string;
+  type: 'learn' | 'practice' | 'challenge' | 'evidence';
+}
+
+interface GrowthMissionCardProps {
+  complete: boolean;
+  completeDescription: string;
+  completeTitle: string;
+  description: string;
+  label: string;
+  steps: readonly GrowthMissionStep[];
+  title: string;
+}
+
+export function GrowthMissionCard({
+  complete,
+  completeDescription,
+  completeTitle,
+  description,
+  label,
+  steps,
+  title,
+}: GrowthMissionCardProps) {
+  const icon = (type: GrowthMissionStep['type']) => {
+    if (type === 'learn') return <BookOpenText aria-hidden="true" size={22} />;
+    if (type === 'practice') return <Flask aria-hidden="true" size={22} />;
+    if (type === 'challenge') return <Target aria-hidden="true" size={22} />;
+    return <ShieldCheck aria-hidden="true" size={22} />;
+  };
+  return (
+    <section className="growth-card growth-mission" aria-label={label}>
+      <div className="growth-mission__heading">
+        <div>
+          <p className="eyebrow">{label}</p>
+          <h2>{complete ? completeTitle : title}</h2>
+          <p>{complete ? completeDescription : description}</p>
+        </div>
+        <span className="growth-mission__day">
+          {complete ? <CheckCircle aria-hidden="true" size={28} /> : '01'}
+        </span>
+      </div>
+      {complete ? null : (
+        <ol className="growth-mission__steps">
+          {steps.map((step) => (
+            <li key={step.type}>
+              <Link to={step.to}>
+                <span className="growth-mission__icon">{icon(step.type)}</span>
+                <span>
+                  <small>{step.label}</small>
+                  <strong>{step.title}</strong>
+                </span>
+                <ArrowRight aria-hidden="true" size={17} />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
 interface JourneyCardProps {
   actionLabel?: string;
+  actionTo?: string;
   description: string;
   label: string;
   steps: readonly { label: string; to: string }[];
@@ -51,6 +119,7 @@ interface JourneyCardProps {
 
 export function JourneyCard({
   actionLabel,
+  actionTo,
   description,
   label,
   steps,
@@ -63,7 +132,7 @@ export function JourneyCard({
       {actionLabel === undefined ? null : (
         <Link
           className="button button--secondary"
-          to={steps[0]?.to ?? '/foundation'}
+          to={actionTo ?? steps[0]?.to ?? '/foundation'}
         >
           {actionLabel}
           <ArrowRight aria-hidden="true" size={16} />

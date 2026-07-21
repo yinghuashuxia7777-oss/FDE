@@ -1,4 +1,55 @@
 export const productPagesZhCN: Record<string, string> = {
+  'journey.eyebrow': 'AI ENGINEER GROWTH PATH',
+  'journey.title': 'AI Engineer Journey',
+  'journey.description':
+    '从工程基础走向客户交付；每个阶段都用 Practice、Case 与 Project 证明能力。',
+  'journey.summary.label': '你的成长目标',
+  'journey.summary.title': '7 天内完成第一次成长闭环',
+  'journey.summary.preference': '{goal} · 当前起点：{level}',
+  'journey.summary.goalFallback': '成为 AI Engineer',
+  'journey.summary.levelFallback': '尚未选择',
+  'journey.summary.daysComplete': '个 Starter Day 已形成完整证据',
+  'journey.path.label': 'CAPABILITY GROWTH PATH',
+  'journey.path.title': '能力成长路径',
+  'journey.path.description':
+    '这里展示需要被证明的能力，不是等待打卡的课程目录。',
+  'journey.stage.label': 'STAGE {stage}',
+  'journey.stage.engineering-foundation.title': 'Engineering Foundation',
+  'journey.stage.engineering-foundation.outcome':
+    '能够理解、设计并调试 AI 系统依赖的软件基础。',
+  'journey.stage.ai-application.title': 'AI Application',
+  'journey.stage.ai-application.outcome': '能够构建可评估的 LLM 与 RAG 应用。',
+  'journey.stage.agent-engineering.title': 'Agent Engineering',
+  'journey.stage.agent-engineering.outcome':
+    '能够设计可控、可验证的工具调用工作流。',
+  'journey.stage.production-ai.title': 'Production AI',
+  'journey.stage.production-ai.outcome': '能够部署、观察并可靠运营 AI 系统。',
+  'journey.stage.fde-delivery.title': 'FDE Delivery',
+  'journey.stage.fde-delivery.outcome':
+    '能够把客户问题转化为可交付、可验收的 AI 方案。',
+  'journey.proof.practice': 'Practice',
+  'journey.proof.case': 'Case Challenge',
+  'journey.proof.project': 'Project Proof',
+  'journey.starter.label': 'FIRST 7 DAYS',
+  'journey.starter.title': 'Starter Journey',
+  'journey.starter.description':
+    '每天完成一个最小动作，最终把知识转化为项目证据。',
+  'journey.starter.day': 'DAY {day}',
+  'journey.starter.start': '开始今天的 Practice',
+  'journey.day1.title': '理解 API 可靠性',
+  'journey.day2.title': '构建第一个 LLM App',
+  'journey.day3.title': '设计 RAG Retrieval',
+  'journey.day4.title': '掌握 Agent Tool Calling',
+  'journey.day5.title': '建立 Evaluation 判断',
+  'journey.day6.title': '解决 Production Case',
+  'journey.day7.title': '完成 Mini Project',
+  'journey.next.title': '下一步由证据决定',
+  'journey.next.description':
+    '回到首页完成 Today’s Growth Mission，让能力地图显示真实变化。',
+  'journey.next.dashboard': '返回今日任务',
+  'onboarding.level.beginner': '零基础',
+  'onboarding.level.developer': '会编程但刚接触 AI',
+  'onboarding.level.experienced': '已有 AI 项目经验',
   'product.common.notAvailable': 'N/A',
   'product.common.none': '无',
   'product.common.completed': '已完成',
@@ -36,6 +87,17 @@ export const productPagesZhCN: Record<string, string> = {
   'product.common.nodeType.architectureTradeoff': '架构权衡',
   'product.common.nodeType.customerResponse': '客户响应',
   'dashboard.eyebrow': '训练概览',
+  'dashboard.growthMission.label': "TODAY'S GROWTH MISSION",
+  'dashboard.growthMission.title': '第 {day} 天 · 完成一个能力闭环',
+  'dashboard.growthMission.description':
+    '学习一个关键知识，完成一次动作，再用真实 Case 获得能力证据。',
+  'dashboard.growthMission.learn': 'Learn',
+  'dashboard.growthMission.practice': 'Practice',
+  'dashboard.growthMission.challenge': 'Challenge',
+  'dashboard.growthMission.evidence': 'Earn Evidence',
+  'dashboard.growthMission.completeTitle': '7 天 Starter Journey 已完成',
+  'dashboard.growthMission.completeDescription':
+    '你的第一轮成长证据已形成。继续从能力地图选择下一个缺口。',
   'dashboard.title': '首页',
   'dashboard.description':
     '依据本地训练证据继续刻意练习，而不是追逐笼统的活跃指标。',
@@ -187,6 +249,12 @@ export const productPagesZhCN: Record<string, string> = {
   'demoProfile.eyebrow': '公开能力档案 · Demo',
   'demoProfile.nameTitle': 'Alex Chen · AI Engineer',
   'demoProfile.description': '用于产品展示的完全隔离示例，不读取本地用户数据。',
+  'demoProfile.publicLabel': 'PUBLIC PRODUCT SHOWCASE',
+  'demoProfile.publicTitle': '一个可以被验证的 AI Engineer Profile',
+  'demoProfile.publicDescription':
+    '不是课程完成率，而是由 Practice、Case 与 Project 组成的可解释能力证明。',
+  'demoProfile.exploreJourney': '查看成长路径',
+  'demoProfile.startOwn': '开始我的成长',
   'demoProfile.readiness': 'AI Engineer Readiness',
   'demoProfile.readinessLabel': '准备度',
   'demoProfile.isolated': 'Demo 数据与真实用户证据完全隔离。',
@@ -200,6 +268,23 @@ export const productPagesZhCN: Record<string, string> = {
   'demoProfile.evidenceScore': '证据分数',
   'demoProfile.capabilityMap': 'Capability Map',
   'demoProfile.capabilityMapDescription': '由隔离的 Demo 证据生成的能力分布。',
+  'demoProfile.verifiedEvidence': 'Verified Evidence',
+  'demoProfile.verifiedEvidenceDescription':
+    '每项能力信号都指向一个已完成的工程动作。',
+  'demoProfile.evidence.tool-calling-case.title': 'Agent Tool Calling Case',
+  'demoProfile.evidence.tool-calling-case.source': 'Case Challenge · 通过',
+  'demoProfile.evidence.rag-evaluation-practice.title':
+    'RAG Evaluation Practice',
+  'demoProfile.evidence.rag-evaluation-practice.source':
+    'Practice · 评分输出已验证',
+  'demoProfile.evidence.production-readiness-challenge.title':
+    'Production Readiness Challenge',
+  'demoProfile.evidence.production-readiness-challenge.source':
+    'Case Challenge · 风险决策已复盘',
+  'demoProfile.projectsTitle': 'Projects',
+  'demoProfile.projectsDescription': '把多项能力组合成可审查的工程交付。',
+  'demoProfile.projectProof': 'Architecture · Evaluation · Deployment 已完成',
+  'demoProfile.journeyCompleted': 'JOURNEY COMPLETED',
   'demoProfile.journey': 'Growth Journey',
   'demoProfile.journey.learn': '学习基础知识',
   'demoProfile.journey.practice': '完成聚焦练习',
@@ -211,12 +296,16 @@ export const productPagesZhCN: Record<string, string> = {
   'feedback.description': '反馈只保存在当前浏览器，不会上传或发送。',
   'feedback.prompt': '记录一条反馈',
   'feedback.category': '反馈类型',
+  'feedback.category.product': '产品反馈',
   'feedback.category.content': '内容问题',
   'feedback.category.difficulty': 'Case 难度',
   'feedback.category.feature': '功能建议',
   'feedback.message': '具体说明',
   'feedback.submit': '保存在本机',
   'feedback.saved': '反馈已保存在本机。',
+  'feedback.entry.dashboard': '今天的成长任务是否清楚？',
+  'feedback.entry.profile': '能力解释是否让你理解自己的成长？',
+  'feedback.entry.action': '留下本地反馈',
   'dashboard.target.productionEngineer': '生产级 AI 工程师',
   'dashboard.readiness.label': 'AI 工程能力准备度',
   'dashboard.readiness.title': '能力准备度',
@@ -341,6 +430,10 @@ export const productPagesZhCN: Record<string, string> = {
   'skills.masterySamples': '{count} 个 Mastery 样本',
   'skills.masterySampleOne': '{count} 个 Mastery 样本',
   'skills.noRelatedCase': '没有已发布的相关案件。',
+  'skills.why.title': '为什么是这个能力水平？',
+  'skills.why.empty': '尚无已完成 Case 或 Mastery 样本。',
+  'skills.why.completedCase': '已完成 Case：{title}',
+  'skills.why.masterySamples': '{count} 个 Mastery 样本参与计算',
   'skills.table.caption': '领域 Mastery 的文本替代信息',
   'skills.table.domain': '领域',
   'skills.table.score': '分数',
@@ -428,6 +521,11 @@ export const productPagesZhCN: Record<string, string> = {
   'profile.mvpSkills.empty':
     '完成一个已映射的核心案件后，这里会显示 Leaf Skill 证据。',
   'profile.mvpSkills.evidence': '主要证据 {primary} · 支持证据 {supporting}',
+  'profile.mvpSkills.why': '为什么是这个能力水平？',
+  'profile.mvpSkills.whyCase': '完成 Case：{title}',
+  'profile.mvpSkills.whyPractice': '通过 Practice：{title}',
+  'profile.mvpSkills.whyProject': '记录 Project 进展：{title}',
+  'profile.mvpSkills.whyUnavailable': '暂时没有可展示的来源证据。',
   'profile.skills.label': '技能证据地图',
   'profile.skills.title': '技能证据地图',
   'profile.skills.description':
@@ -554,6 +652,59 @@ export const productPagesZhCN: Record<string, string> = {
 };
 
 export const productPagesEnUS: Record<string, string> = {
+  'journey.eyebrow': 'AI ENGINEER GROWTH PATH',
+  'journey.title': 'AI Engineer Journey',
+  'journey.description':
+    'Move from engineering foundations to customer delivery, proving every stage through Practices, Cases, and Projects.',
+  'journey.summary.label': 'Your growth target',
+  'journey.summary.title': 'Complete your first growth loop in 7 days',
+  'journey.summary.preference': '{goal} · Starting point: {level}',
+  'journey.summary.goalFallback': 'Become AI Engineer',
+  'journey.summary.levelFallback': 'Not selected',
+  'journey.summary.daysComplete': 'Starter Days backed by complete evidence',
+  'journey.path.label': 'CAPABILITY GROWTH PATH',
+  'journey.path.title': 'Capability Growth Path',
+  'journey.path.description':
+    'This shows capabilities to prove, not lessons to check off.',
+  'journey.stage.label': 'STAGE {stage}',
+  'journey.stage.engineering-foundation.title': 'Engineering Foundation',
+  'journey.stage.engineering-foundation.outcome':
+    'Understand, design, and debug the software foundations beneath AI systems.',
+  'journey.stage.ai-application.title': 'AI Application',
+  'journey.stage.ai-application.outcome':
+    'Build evaluable LLM and RAG applications.',
+  'journey.stage.agent-engineering.title': 'Agent Engineering',
+  'journey.stage.agent-engineering.outcome':
+    'Design governed, testable tool-using workflows.',
+  'journey.stage.production-ai.title': 'Production AI',
+  'journey.stage.production-ai.outcome':
+    'Deploy, observe, and operate AI systems reliably.',
+  'journey.stage.fde-delivery.title': 'FDE Delivery',
+  'journey.stage.fde-delivery.outcome':
+    'Turn customer problems into deliverable, testable AI solutions.',
+  'journey.proof.practice': 'Practice',
+  'journey.proof.case': 'Case Challenge',
+  'journey.proof.project': 'Project Proof',
+  'journey.starter.label': 'FIRST 7 DAYS',
+  'journey.starter.title': 'Starter Journey',
+  'journey.starter.description':
+    'Complete one focused action each day and finish with project evidence.',
+  'journey.starter.day': 'DAY {day}',
+  'journey.starter.start': 'Start today’s Practice',
+  'journey.day1.title': 'Understand API reliability',
+  'journey.day2.title': 'Build your first LLM App',
+  'journey.day3.title': 'Design RAG Retrieval',
+  'journey.day4.title': 'Practice Agent Tool Calling',
+  'journey.day5.title': 'Build Evaluation judgment',
+  'journey.day6.title': 'Solve a Production Case',
+  'journey.day7.title': 'Complete a Mini Project',
+  'journey.next.title': 'Let evidence choose the next step',
+  'journey.next.description':
+    'Return home and complete Today’s Growth Mission to move your capability map with real evidence.',
+  'journey.next.dashboard': 'Return to Today’s Mission',
+  'onboarding.level.beginner': 'Beginner',
+  'onboarding.level.developer': 'Developer',
+  'onboarding.level.experienced': 'Experienced',
   'product.common.notAvailable': 'N/A',
   'product.common.none': 'none',
   'product.common.completed': 'Completed',
@@ -591,6 +742,17 @@ export const productPagesEnUS: Record<string, string> = {
   'product.common.nodeType.architectureTradeoff': 'architecture-tradeoff',
   'product.common.nodeType.customerResponse': 'customer-response',
   'dashboard.eyebrow': 'Operational overview',
+  'dashboard.growthMission.label': "TODAY'S GROWTH MISSION",
+  'dashboard.growthMission.title': 'Day {day} · Complete one growth loop',
+  'dashboard.growthMission.description':
+    'Learn one critical idea, complete one action, then earn capability evidence through a real Case.',
+  'dashboard.growthMission.learn': 'Learn',
+  'dashboard.growthMission.practice': 'Practice',
+  'dashboard.growthMission.challenge': 'Challenge',
+  'dashboard.growthMission.evidence': 'Earn Evidence',
+  'dashboard.growthMission.completeTitle': '7-Day Starter Journey complete',
+  'dashboard.growthMission.completeDescription':
+    'Your first growth evidence loop is complete. Use the capability map to choose the next gap.',
   'dashboard.title': 'Dashboard',
   'dashboard.description':
     'Resume deliberate practice from local evidence, not generic activity targets.',
@@ -755,6 +917,12 @@ export const productPagesEnUS: Record<string, string> = {
   'demoProfile.nameTitle': 'Alex Chen · AI Engineer',
   'demoProfile.description':
     'A fully isolated product showcase that never reads local user data.',
+  'demoProfile.publicLabel': 'PUBLIC PRODUCT SHOWCASE',
+  'demoProfile.publicTitle': 'A verifiable AI Engineer Profile',
+  'demoProfile.publicDescription':
+    'Not course completion. This is clear capability proof built from Practices, Cases, and Projects.',
+  'demoProfile.exploreJourney': 'Explore the Journey',
+  'demoProfile.startOwn': 'Start my growth',
   'demoProfile.readiness': 'AI Engineer Readiness',
   'demoProfile.readinessLabel': 'Readiness',
   'demoProfile.isolated':
@@ -770,6 +938,24 @@ export const productPagesEnUS: Record<string, string> = {
   'demoProfile.capabilityMap': 'Capability Map',
   'demoProfile.capabilityMapDescription':
     'Capability distribution generated from isolated Demo evidence.',
+  'demoProfile.verifiedEvidence': 'Verified Evidence',
+  'demoProfile.verifiedEvidenceDescription':
+    'Every capability signal points to a completed engineering action.',
+  'demoProfile.evidence.tool-calling-case.title': 'Agent Tool Calling Case',
+  'demoProfile.evidence.tool-calling-case.source': 'Case Challenge · Passed',
+  'demoProfile.evidence.rag-evaluation-practice.title':
+    'RAG Evaluation Practice',
+  'demoProfile.evidence.rag-evaluation-practice.source':
+    'Practice · Scored output verified',
+  'demoProfile.evidence.production-readiness-challenge.title':
+    'Production Readiness Challenge',
+  'demoProfile.evidence.production-readiness-challenge.source':
+    'Case Challenge · Risk decision reviewed',
+  'demoProfile.projectsTitle': 'Projects',
+  'demoProfile.projectsDescription':
+    'Combine multiple capabilities into a reviewable engineering delivery.',
+  'demoProfile.projectProof': 'Architecture · Evaluation · Deployment complete',
+  'demoProfile.journeyCompleted': 'JOURNEY COMPLETED',
   'demoProfile.journey': 'Growth Journey',
   'demoProfile.journey.learn': 'Learn foundations',
   'demoProfile.journey.practice': 'Complete focused practices',
@@ -782,12 +968,17 @@ export const productPagesEnUS: Record<string, string> = {
     'Feedback stays in this browser and is never uploaded or sent.',
   'feedback.prompt': 'Record feedback',
   'feedback.category': 'Feedback type',
+  'feedback.category.product': 'Product feedback',
   'feedback.category.content': 'Content issue',
   'feedback.category.difficulty': 'Case difficulty',
   'feedback.category.feature': 'Feature suggestion',
   'feedback.message': 'Details',
   'feedback.submit': 'Save locally',
   'feedback.saved': 'Feedback saved locally.',
+  'feedback.entry.dashboard': 'Was today’s growth mission clear?',
+  'feedback.entry.profile':
+    'Did the capability explanation make your growth clear?',
+  'feedback.entry.action': 'Leave local feedback',
   'dashboard.target.productionEngineer': 'Production AI Engineer',
   'dashboard.readiness.label': 'AI engineering readiness',
   'dashboard.readiness.title': 'Capability readiness',
@@ -919,6 +1110,10 @@ export const productPagesEnUS: Record<string, string> = {
   'skills.masterySamples': '{count} mastery samples',
   'skills.masterySampleOne': '{count} mastery sample',
   'skills.noRelatedCase': 'No published related case.',
+  'skills.why.title': 'Why this capability level?',
+  'skills.why.empty': 'No completed Case or Mastery sample yet.',
+  'skills.why.completedCase': 'Completed Case: {title}',
+  'skills.why.masterySamples': '{count} Mastery samples used',
   'skills.table.caption': 'Text alternative: domain mastery',
   'skills.table.domain': 'Domain',
   'skills.table.score': 'Score',
@@ -1012,6 +1207,11 @@ export const productPagesEnUS: Record<string, string> = {
     'Complete a mapped core Case to create Leaf Skill evidence here.',
   'profile.mvpSkills.evidence':
     'Primary evidence {primary} · supporting evidence {supporting}',
+  'profile.mvpSkills.why': 'Why this capability level?',
+  'profile.mvpSkills.whyCase': 'Completed Case: {title}',
+  'profile.mvpSkills.whyPractice': 'Passed Practice: {title}',
+  'profile.mvpSkills.whyProject': 'Recorded Project progress: {title}',
+  'profile.mvpSkills.whyUnavailable': 'No displayable source evidence yet.',
   'profile.skills.label': 'Skill evidence map',
   'profile.skills.title': 'Skill evidence map',
   'profile.skills.description':
