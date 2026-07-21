@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -158,5 +159,17 @@ describe('readContentSources', () => {
     expect(snapshot.skills.map(({ file }) => file)).toEqual([
       'content/skills/a.json',
     ]);
+  });
+});
+
+describe('repository content packaging', () => {
+  it('does not ignore the required authored coverage plan', () => {
+    const result = spawnSync(
+      'git',
+      ['check-ignore', '--quiet', 'content/coverage/coverage-plan.json'],
+      { cwd: PROJECT_ROOT },
+    );
+
+    expect(result.status).toBe(1);
   });
 });
