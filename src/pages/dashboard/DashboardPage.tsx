@@ -57,7 +57,11 @@ import {
   MentorCard,
   ReadinessCard,
 } from './DashboardVisuals';
-import { provideCapabilityMapData } from './capability-map-data';
+import {
+  buildRealCapabilitySignals,
+  provideCapabilityMapData,
+} from './capability-map-data';
+import { FirstLoopPreview } from './FirstLoopPreview';
 
 export interface DashboardMentorInsight {
   challengeCaseId?: string;
@@ -436,6 +440,15 @@ export function DashboardPage({
                     to: '/profile',
                   },
                 ];
+          const firstLoopPreviewSkillId =
+            growthMission === undefined
+              ? undefined
+              : leafSkillById.get(growthMission.evidenceSkillId)?.parentSkillId;
+          const firstLoopPreviewSignals = buildRealCapabilitySignals(
+            t,
+            skillDefinitions,
+            mastery,
+          );
           const projectById = new Map(
             projectCatalog.projects.map((project) => [project.id, project]),
           );
@@ -502,6 +515,11 @@ export function DashboardPage({
                     mastery={mastery}
                     progress={progress}
                     skills={skillDefinitions}
+                  />
+                  <FirstLoopPreview
+                    previewSkillId={firstLoopPreviewSkillId}
+                    signals={firstLoopPreviewSignals}
+                    steps={growthMissionSteps}
                   />
                 </div>
               ) : (

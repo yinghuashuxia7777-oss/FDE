@@ -310,6 +310,7 @@ interface CapabilityMapCardProps {
   levelLabel: string;
   legendItems: readonly CapabilityLegendItem[];
   linkLabel: string;
+  previewSkillId?: string | undefined;
   signals: readonly CapabilitySignal[];
   sourceLabel: string;
   title: string;
@@ -344,6 +345,7 @@ export function CapabilityMapCard({
   levelLabel,
   legendItems,
   linkLabel,
+  previewSkillId,
   signals,
   sourceLabel,
   title,
@@ -492,6 +494,9 @@ export function CapabilityMapCard({
             className="capability-node"
             data-orbit-index={index}
             data-mastery={signal.mastery}
+            data-preview={
+              signal.skillId === previewSkillId ? 'true' : undefined
+            }
             data-skill-id={signal.skillId}
             key={signal.skillId}
             title={signal.sourceLabel}

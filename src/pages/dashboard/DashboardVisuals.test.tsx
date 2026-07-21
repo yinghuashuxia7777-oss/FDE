@@ -124,6 +124,28 @@ describe('Capability Map evolution feedback', () => {
     ).not.toHaveAttribute('data-evolving');
   });
 
+  it('marks a pending preview node without changing its mastery state', () => {
+    render(
+      <MemoryRouter>
+        <CapabilityMapCard
+          {...baseProps}
+          previewSkillId="llm.applications"
+          signals={[capability('not-started')]}
+        />
+      </MemoryRouter>,
+    );
+
+    const capabilityMap = screen.getByRole('figure', {
+      name: 'Capability map',
+    });
+    const node = capabilityMap.querySelector(
+      '[data-skill-id="llm.applications"]',
+    );
+    expect(node).toHaveAttribute('data-preview', 'true');
+    expect(node).toHaveAttribute('data-mastery', 'not-started');
+    expect(node).not.toHaveAttribute('data-evolving');
+  });
+
   it('marks an upgraded node and the center core for one transient response', () => {
     vi.useFakeTimers();
     const { rerender } = render(map([capability('learning')]));

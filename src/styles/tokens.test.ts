@@ -35,4 +35,26 @@ describe('theme tokens', () => {
 
     expect(systemDarkDeclarations).toContain('color-scheme: dark;');
   });
+
+  it('defines distinct floating-surface shadows in every color mode', () => {
+    const lightDeclarations =
+      /:root,\s*:root\[data-theme=['"]light['"]\],\s*:root\[data-theme=['"]system['"]\]\s*\{([^}]*)\}/.exec(
+        tokensCss,
+      )?.[1];
+    const darkDeclarations =
+      /:root\[data-theme=['"]dark['"]\]\s*\{([^}]*)\}/.exec(tokensCss)?.[1];
+    const systemDarkDeclarations =
+      /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme\]\),\s*:root\[data-theme=['"]system['"]\]\s*\{([^}]*)\}/.exec(
+        tokensCss,
+      )?.[1];
+
+    for (const declarations of [
+      lightDeclarations,
+      darkDeclarations,
+      systemDarkDeclarations,
+    ]) {
+      expect(declarations).toContain('--shadow-float:');
+      expect(declarations).toContain('--shadow-float-front:');
+    }
+  });
 });

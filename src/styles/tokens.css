@@ -26,6 +26,12 @@
   --shadow-card: 0 1.25rem 3.5rem rgb(28 45 78 / 10%);
   --shadow-hero: 0 2rem 6rem rgb(37 99 235 / 14%);
   --shadow-overlay: 0 1.5rem 4rem rgb(23 32 43 / 18%);
+  --shadow-float:
+    0 0.25rem 0.75rem rgb(42 57 83 / 7%), 0 1.75rem 4rem rgb(63 82 113 / 17%),
+    0 4rem 7rem rgb(88 105 132 / 11%);
+  --shadow-float-front:
+    0 0.35rem 1rem rgb(42 57 83 / 9%), 0 2.25rem 4.75rem rgb(52 72 105 / 22%),
+    0 5rem 8rem rgb(79 99 128 / 15%);
 }
 
 :root[data-theme='dark'] {
@@ -54,6 +60,12 @@
   --shadow-card: 0 1.25rem 3.5rem rgb(0 0 0 / 30%);
   --shadow-hero: 0 2rem 7rem rgb(28 72 168 / 24%);
   --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 54%);
+  --shadow-float:
+    0 0.25rem 0.75rem rgb(0 0 0 / 24%), 0 1.75rem 4rem rgb(0 0 0 / 44%),
+    0 4rem 7rem rgb(0 0 0 / 28%);
+  --shadow-float-front:
+    0 0.35rem 1rem rgb(0 0 0 / 28%), 0 2.25rem 4.75rem rgb(0 0 0 / 54%),
+    0 5rem 8rem rgb(0 0 0 / 34%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -84,6 +96,12 @@
     --shadow-card: 0 1.25rem 3.5rem rgb(0 0 0 / 30%);
     --shadow-hero: 0 2rem 7rem rgb(28 72 168 / 24%);
     --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 54%);
+    --shadow-float:
+      0 0.25rem 0.75rem rgb(0 0 0 / 24%), 0 1.75rem 4rem rgb(0 0 0 / 44%),
+      0 4rem 7rem rgb(0 0 0 / 28%);
+    --shadow-float-front:
+      0 0.35rem 1rem rgb(0 0 0 / 28%), 0 2.25rem 4.75rem rgb(0 0 0 / 54%),
+      0 5rem 8rem rgb(0 0 0 / 34%);
   }
 }
 

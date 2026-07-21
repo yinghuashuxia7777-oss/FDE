@@ -248,7 +248,7 @@ describe('Slice A product pages', () => {
     window.localStorage.clear();
   });
 
-  it('makes profile setup and First Mission the only new-user experience', async () => {
+  it('keeps setup and First Mission primary while previewing the first capability unlock', async () => {
     const user = userEvent.setup();
     const source = repositories();
     vi.mocked(source.cases.listActive).mockResolvedValue([
@@ -299,9 +299,19 @@ describe('Slice A product pages', () => {
     expect(
       screen.queryByRole('region', { name: 'AI engineering growth journey' }),
     ).not.toBeInTheDocument();
+    const capabilityPreview = screen.getByRole('region', {
+      name: 'Your capability profile starts here',
+    });
+    const capabilityMap = within(capabilityPreview).getByRole('figure', {
+      name: 'First capability unlock preview',
+    });
+    expect(capabilityMap).not.toHaveTextContent('Demo Profile');
+    expect(capabilityMap).not.toHaveTextContent('72%');
     expect(
-      screen.queryByRole('figure', { name: 'Capability map' }),
-    ).not.toBeInTheDocument();
+      capabilityMap.querySelector(
+        '[data-skill-id="reliability.observability"]',
+      ),
+    ).toHaveAttribute('data-preview', 'true');
     expect(
       screen.queryByRole('region', { name: "Today's challenge" }),
     ).not.toBeInTheDocument();

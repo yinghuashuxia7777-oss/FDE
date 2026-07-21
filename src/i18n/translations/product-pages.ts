@@ -321,6 +321,23 @@ export const productPagesZhCN: Record<string, string> = {
   'dashboard.readiness.stage': 'Stage {stage}',
   'dashboard.readiness.currentStage': '当前阶段',
   'dashboard.readiness.report': '查看详细诊断报告',
+  'dashboard.firstLoopPreview.label': '完成首轮之后',
+  'dashboard.firstLoopPreview.title': '你的能力档案将从这里开始生长',
+  'dashboard.firstLoopPreview.description':
+    '完成 Learn、Practice 与真实 Challenge 后，Evidence 会点亮对应能力，而不是只留下学习记录。',
+  'dashboard.firstLoopPreview.resultLabel': '首个能力证明',
+  'dashboard.firstLoopPreview.resultFallback': '待点亮能力',
+  'dashboard.firstLoopPreview.workflowLabel':
+    'HOW YOUR FIRST LOOP BECOMES EVIDENCE',
+  'dashboard.firstLoopPreview.mapTitle': '首个能力点亮预览',
+  'dashboard.firstLoopPreview.mapSource': '真实空白状态 · 尚未计入任何能力证据',
+  'dashboard.firstLoopPreview.viewLabel': '预览：首轮成长结果',
+  'dashboard.firstLoopPreview.coreEvidence': '等待首个工程证据',
+  'dashboard.firstLoopPreview.pendingStatus': '完成首轮后点亮',
+  'dashboard.firstLoopPreview.pendingEvidence': '即将获得 {skill} 能力证明',
+  'dashboard.firstLoopPreview.legendPending': '首轮待点亮',
+  'dashboard.firstLoopPreview.note':
+    '这是结果预览，不会计入 Mastery。只有真实完成 Practice 与 Case 后，能力证据才会写入你的本地档案。',
   'dashboard.capability.title': '能力地图',
   'dashboard.capability.source': '来源：本地 Mastery 与训练样本',
   'dashboard.capability.demoBadge': '示例档案',
@@ -998,6 +1015,26 @@ export const productPagesEnUS: Record<string, string> = {
   'dashboard.readiness.stage': 'Stage {stage}',
   'dashboard.readiness.currentStage': 'Current stage',
   'dashboard.readiness.report': 'View detailed diagnosis',
+  'dashboard.firstLoopPreview.label': 'AFTER YOUR FIRST LOOP',
+  'dashboard.firstLoopPreview.title': 'Your capability profile starts here',
+  'dashboard.firstLoopPreview.description':
+    'Complete Learn, Practice, and a real Challenge. The resulting Evidence lights up a capability instead of leaving only a course record.',
+  'dashboard.firstLoopPreview.resultLabel': 'First capability evidence',
+  'dashboard.firstLoopPreview.resultFallback': 'Pending capability',
+  'dashboard.firstLoopPreview.workflowLabel':
+    'HOW YOUR FIRST LOOP BECOMES EVIDENCE',
+  'dashboard.firstLoopPreview.mapTitle': 'First capability unlock preview',
+  'dashboard.firstLoopPreview.mapSource':
+    'Real empty state · no capability evidence counted yet',
+  'dashboard.firstLoopPreview.viewLabel': 'Preview: first-loop outcome',
+  'dashboard.firstLoopPreview.coreEvidence':
+    'Waiting for the first engineering evidence',
+  'dashboard.firstLoopPreview.pendingStatus': 'Lights up after the first loop',
+  'dashboard.firstLoopPreview.pendingEvidence':
+    'Pending {skill} capability evidence',
+  'dashboard.firstLoopPreview.legendPending': 'First-loop unlock',
+  'dashboard.firstLoopPreview.note':
+    'This is an outcome preview and does not affect Mastery. Capability evidence enters your local profile only after you complete the real Practice and Case.',
   'dashboard.capability.title': 'Capability map',
   'dashboard.capability.source': 'Source: local Mastery and training samples',
   'dashboard.capability.demoBadge': 'Demo Profile',
