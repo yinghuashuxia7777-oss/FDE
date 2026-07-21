@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.bearer-token",
+  "type": "foundation",
+  "title": "Bearer Token：持有即代表调用权限",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "beginner",
+  "order": 52,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "Bearer Token 通常通过 Authorization 请求头发送，服务端依据令牌声明判断调用身份和权限，因为任何持有者都可使用所以必须严格防止泄露。",
+    "analogy": "Bearer Token 像一张不核对持有人面孔的限时通行票，票面写着可进入区域和截止时间；谁捡到有效票，谁就可能在范围内通行。",
+    "technicalExplanation": "资源服务器需要验证令牌签名或内省结果，并检查签发方、受众、有效期和 scope。传输应使用 TLS，存储、日志和错误响应都不能暴露令牌本体。",
+    "example": "FDE 排查接口 403 时没有复制生产令牌，而是提取脱敏后的 issuer、audience、expiry 与 scope，最终发现令牌虽有效却缺少目标 API 的读取范围，而不是记录或转发凭据本体。",
+    "commonMistakes": "看到令牌格式正确就假定权限完整，或把解码载荷等同于已验证令牌，都可能导致错误判断。记录完整令牌和在聊天中转发令牌同样属于严重泄露风险。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

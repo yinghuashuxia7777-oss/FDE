@@ -14,9 +14,9 @@ describe('content sources', () => {
     expect(first.manifest.activePublishedCaseCount).toBe(
       first.manifest.activeCases.length,
     );
-    expect(first.manifest.activePublishedCaseCount).toBe(24);
+    expect(first.manifest.activePublishedCaseCount).toBe(50);
     expect(first.manifest.caseVersionCount).toBe(first.cases.length);
-    expect(first.cases).toHaveLength(27);
+    expect(first.cases).toHaveLength(53);
     expect(first.domains).toHaveLength(15);
     expect(first.skills).toHaveLength(15);
     expect(first.coverage.targetCaseCount).toBe(362);

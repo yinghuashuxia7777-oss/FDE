@@ -1,16 +1,19 @@
 import { useI18n, type Language } from '../../i18n';
 
 const languageOptions: readonly {
+  headerLabelKey: string;
   language: Language;
   labelKey: string;
   shortLabelKey: string;
 }[] = [
   {
+    headerLabelKey: 'language.zhCNHeader',
     language: 'zh-CN',
     labelKey: 'language.zhCN',
     shortLabelKey: 'language.zhCNShort',
   },
   {
+    headerLabelKey: 'language.enUSHeader',
     language: 'en-US',
     labelKey: 'language.enUS',
     shortLabelKey: 'language.enUSShort',
@@ -19,14 +22,19 @@ const languageOptions: readonly {
 
 interface LanguageSwitcherProps {
   compact?: boolean;
+  variant?: 'default' | 'compact' | 'header';
 }
 
-export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
+export function LanguageSwitcher({
+  compact = false,
+  variant,
+}: LanguageSwitcherProps) {
   const { language, setLanguage, t } = useI18n();
+  const display = variant ?? (compact ? 'compact' : 'default');
 
   return (
     <div
-      className={`language-switcher${compact ? ' language-switcher--compact' : ''}`}
+      className={`language-switcher language-switcher--${display}`}
       role="group"
       aria-label={t('language.switcherLabel')}
     >
@@ -44,7 +52,13 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
           }
           onClick={() => setLanguage(option.language)}
         >
-          {t(compact ? option.shortLabelKey : option.labelKey)}
+          {t(
+            display === 'header'
+              ? option.headerLabelKey
+              : display === 'compact'
+                ? option.shortLabelKey
+                : option.labelKey,
+          )}
         </button>
       ))}
     </div>

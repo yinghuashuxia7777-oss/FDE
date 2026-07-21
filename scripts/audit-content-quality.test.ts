@@ -9,9 +9,13 @@ import type {
   ChoiceCaseNode,
   FdeCase,
 } from '../src/domain/cases/types';
+import type { ConceptKnowledge } from '../src/domain/concepts/types';
 import { createMinimalValidCase } from '../src/tests/fixtures/cases';
 
-import { auditContentQuality } from './audit-content-quality';
+import {
+  auditConceptQuality,
+  auditContentQuality,
+} from './audit-content-quality';
 
 const domain: DomainDefinition = {
   schemaVersion: 1,
@@ -165,6 +169,57 @@ function audit(
 function codes(candidate: FdeCase): string[] {
   return audit(candidate).issues.map(({ code }) => code);
 }
+
+const concept: ConceptKnowledge = {
+  schemaVersion: 1,
+  id: 'concept.evidence',
+  type: 'concept',
+  category: 'fde',
+  order: 1,
+  title: '证据：支持决策的可核验事实',
+  technicalTerm: 'Evidence',
+  simpleExplanation: '证据是能够被别人重复检查、用于支持或否定判断的事实。',
+  analogy: '像医生结合检验报告而不是只听猜测来决定下一步检查。',
+  technicalExplanation:
+    'FDE 证据需要标明来源、时间、环境和对照，并能区分观测事实与推断。',
+  whyItMatters:
+    '真实客户系统信息不完整，证据让范围界定、根因判断和验证保持可追溯。',
+  commonMistakes: '把单条日志当成根因，或忽略采样范围、时间窗口和健康基线。',
+  relatedFoundation: ['fde.requirement-evidence'],
+  relatedCases: ['observability-correlation-id-001'],
+};
+
+describe('auditConceptQuality', () => {
+  it('accepts a substantive FDE Concept', () => {
+    expect(
+      auditConceptQuality([
+        { file: 'content/concepts/fde/evidence.json', concept },
+      ]),
+    ).toEqual({ conceptsChecked: 1, issues: [] });
+  });
+
+  it('rejects shallow or placeholder Concept explanations', () => {
+    const shallow = {
+      ...concept,
+      simpleExplanation: 'TODO',
+      analogy: '像桥。',
+      technicalExplanation: '一个概念。',
+      whyItMatters: '有用。',
+      commonMistakes: '暂无。',
+    };
+    const result = auditConceptQuality([
+      { file: 'content/concepts/fde/evidence.json', concept: shallow },
+    ]);
+
+    expect(result.issues.map(({ code }) => code)).toEqual([
+      'concept_content_insufficient',
+      'concept_content_insufficient',
+      'concept_content_insufficient',
+      'concept_content_insufficient',
+      'concept_content_insufficient',
+    ]);
+  });
+});
 
 describe('auditContentQuality', () => {
   it.each([

@@ -20,6 +20,7 @@ import {
 import {
   type ContentBundleTextSources,
   type ValidatedCaseSource,
+  type ValidatedConceptSource,
   validateContentBundleSources,
 } from './validate-content';
 
@@ -46,6 +47,11 @@ const OBSERVABLE_VERIFICATION_PATTERN =
 
 export interface ContentQualityReport {
   casesChecked: number;
+  issues: ContentIssue[];
+}
+
+export interface ConceptQualityReport {
+  conceptsChecked: number;
   issues: ContentIssue[];
 }
 
@@ -369,6 +375,38 @@ export function auditContentQuality(
   };
 }
 
+const CONCEPT_FIELD_MINIMUMS = {
+  simpleExplanation: 20,
+  analogy: 15,
+  technicalExplanation: 30,
+  whyItMatters: 25,
+  commonMistakes: 20,
+} as const;
+
+export function auditConceptQuality(
+  concepts: readonly ValidatedConceptSource[],
+): ConceptQualityReport {
+  const issues = concepts.flatMap(({ file, concept }) =>
+    Object.entries(CONCEPT_FIELD_MINIMUMS).flatMap(([field, minimumLength]) => {
+      const value = concept[field as keyof typeof CONCEPT_FIELD_MINIMUMS];
+      return isSubstantive(value, minimumLength)
+        ? []
+        : [
+            issue(
+              file,
+              [field],
+              'concept_content_insufficient',
+              `Concept ${concept.id} field ${field} must contain substantive FDE-oriented explanation.`,
+            ),
+          ];
+    }),
+  );
+  return {
+    conceptsChecked: concepts.length,
+    issues: issues.sort(compareContentIssues),
+  };
+}
+
 function scopeBundleConfigToSelectedCases(
   sources: ContentBundleTextSources,
 ): ContentBundleTextSources {
@@ -397,16 +435,20 @@ export function runContentQualityCli(args: readonly string[]): number {
       validation.domains.map(({ value }) => value),
       validation.skills.map(({ value }) => value),
     );
-    const issues = [...validation.issues, ...quality.issues].sort(
-      compareContentIssues,
-    );
+    const conceptQuality = auditConceptQuality(validation.concepts);
+    const issues = [
+      ...validation.issues,
+      ...quality.issues,
+      ...conceptQuality.issues,
+    ].sort(compareContentIssues);
     const report = {
       ok: issues.length === 0,
       casesChecked: validation.cases.length,
+      conceptsChecked: validation.concepts.length,
       validDomains: validation.domains.length,
       validSkills: validation.skills.length,
       validationIssueCount: validation.issues.length,
-      qualityIssueCount: quality.issues.length,
+      qualityIssueCount: quality.issues.length + conceptQuality.issues.length,
       issues,
     };
     const output =

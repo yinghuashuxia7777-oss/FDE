@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.trade-off",
+  "type": "concept",
+  "category": "fde",
+  "order": 47,
+  "title": "权衡：在约束下显式交换成本、质量与风险",
+  "technicalTerm": "Trade-off",
+  "simpleExplanation": "权衡是在不能同时最大化所有目标时，明确选择优先级并说明付出的代价。",
+  "analogy": "像旅行选择飞机或火车：时间、价格、灵活性和舒适度各有得失，没有脱离场景的唯一最佳答案。",
+  "technicalExplanation": "技术权衡应列出目标、硬约束、候选方案、影响维度、证据、可逆性和触发重新决策的条件。AI 系统尤其要同时比较质量、延迟、吞吐、成本、安全与运维复杂度。",
+  "whyItMatters": "量化、模型路由和容量设计都在交换资源与效果。FDE 要把隐含选择转成客户能理解、团队能验证的决策记录。",
+  "commonMistakes": "只展示推荐方案优点；用平均指标掩盖关键任务回归；没有记录可逆性与退出条件；把个人偏好包装成技术必然。",
+  "relatedFoundation": [
+    "ai.fine-tuning-serving-fit",
+    "fde.production-readiness"
+  ],
+  "relatedCases": [
+    "inference-gpu-oom-capacity-001",
+    "inference-quantization-regression-001",
+    "llm-cost-routing-quality-regression-001"
+  ]
+}

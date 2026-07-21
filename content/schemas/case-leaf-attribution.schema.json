@@ -1,0 +1,122 @@
+{
+  "$id": "https://fde-arena.local/schemas/case-leaf-attribution.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "caseId": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "caseVersion": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer"
+          },
+          "evidenceType": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "leafSkillId": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "nodeId": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "reviewer": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "type": "string"
+          },
+          "rubricVersion": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "caseId",
+          "caseVersion",
+          "nodeId",
+          "leafSkillId",
+          "rubricVersion",
+          "role",
+          "evidenceType",
+          "rationale",
+          "reviewer"
+        ],
+        "type": "object"
+      },
+      "maxItems": 10000,
+      "type": "array"
+    },
+    "mapId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "mapVersion": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "rubricSetVersion": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "skillCatalogVersion": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "approved",
+        "superseded",
+        "revoked"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "skillCatalogVersion",
+    "rubricSetVersion",
+    "mapId",
+    "mapVersion",
+    "status",
+    "entries"
+  ],
+  "title": "FDE Arena Case Leaf Attribution Map",
+  "type": "object"
+}

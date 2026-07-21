@@ -13,13 +13,14 @@ import type {
   ProductRepositories,
 } from '../application/product';
 import type {
+  CaseSummary,
   CompletedAttemptRecord,
   ContentRepository,
   MistakeRecord,
+  SkillMasteryRecord,
 } from '../repositories/contracts';
 import { bundledDomains, bundledSkills } from '../generated/content-index';
 import { createMinimalValidCase } from '../tests/fixtures/cases';
-import type { CaseNode } from '../domain/cases/types';
 import { I18nProvider } from '../i18n';
 import { DebriefPage } from './debrief';
 import { MistakesPage } from './mistakes';
@@ -191,7 +192,7 @@ describe('Slice B pages', () => {
       </I18nProvider>,
     );
     expect(
-      await screen.findByRole('heading', { name: '个人中心' }),
+      await screen.findByRole('heading', { name: 'AI 工程师能力档案' }),
     ).toBeVisible();
     profile.unmount();
 
@@ -233,6 +234,135 @@ describe('Slice B pages', () => {
     expect(
       screen.getByRole('link', { name: "Back to today's plan" }),
     ).toHaveAttribute('href', '/');
+  });
+
+  it('turns the exact-version debrief into a read-only next learning loop', async () => {
+    const source = repositories();
+    const content = createMinimalValidCase();
+    content.debrief.recommendedCaseIds = ['case-next'];
+    vi.mocked(source.attempts.get).mockResolvedValue(attempt());
+    vi.mocked(source.cases.getVersion).mockResolvedValue(content);
+    const nextCase: CaseSummary = {
+      id: 'case-next',
+      slug: 'case-next',
+      title: 'Next production failure',
+      summary: 'Investigate a production dependency failure.',
+      scenarioSummary: 'A production dependency is failing.',
+      level: 'intermediate',
+      status: 'published',
+      version: 1,
+      estimatedMinutes: 15,
+      domains: ['diagnostics'],
+      skills: ['evidence-assessment'],
+      riskTypes: ['operational'],
+      technicalLayers: ['application'],
+      nodeTypes: ['single-choice'],
+    };
+    vi.mocked(source.cases.listActive).mockResolvedValue([nextCase]);
+
+    render(
+      <MemoryRouter>
+        <DebriefPage attemptId="attempt-one" repositories={source} />
+      </MemoryRouter>,
+    );
+
+    const nextStep = await screen.findByRole('region', {
+      name: 'Keep growing',
+    });
+    expect(nextStep).toHaveTextContent(
+      'You completed: Minimal diagnostic case',
+    );
+    expect(nextStep).toHaveTextContent('Evidence-led diagnosis');
+    expect(
+      within(nextStep).getByRole('link', {
+        name: 'Open Foundation Knowledge',
+      }),
+    ).toHaveAttribute('href', '/foundation');
+    expect(
+      await within(nextStep).findByRole('link', {
+        name: 'Challenge Case: Next production failure',
+      }),
+    ).toHaveAttribute('href', '/training/case-next');
+    expect(source.attempts.save).not.toHaveBeenCalled();
+    expect(source.progress.commitCompletion).not.toHaveBeenCalled();
+    expect(source.skills.saveMany).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the Case library when a historical recommendation is no longer active', async () => {
+    const source = repositories();
+    const content = createMinimalValidCase();
+    content.debrief.recommendedCaseIds = ['case-deprecated'];
+    vi.mocked(source.attempts.get).mockResolvedValue(attempt());
+    vi.mocked(source.cases.getVersion).mockResolvedValue(content);
+    vi.mocked(source.cases.listActive).mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <DebriefPage attemptId="attempt-one" repositories={source} />
+      </MemoryRouter>,
+    );
+
+    const nextStep = await screen.findByRole('region', {
+      name: 'Keep growing',
+    });
+    expect(
+      within(nextStep).getByRole('link', { name: 'Browse more Cases' }),
+    ).toHaveAttribute('href', '/cases');
+    expect(
+      within(nextStep).queryByRole('link', { name: /case-deprecated/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('presents the completed attempt as a structured incident report', async () => {
+    const source = repositories();
+    const content = createMinimalValidCase();
+    const completed = attempt();
+    completed.criticalErrorIds = ['option-b'];
+    completed.roundHistory[0] = {
+      ...completed.roundHistory[0]!,
+      evaluation: {
+        ...completed.roundHistory[0]!.evaluation,
+        criticalErrorIds: ['option-b'],
+      },
+    };
+    vi.mocked(source.attempts.get).mockResolvedValue(completed);
+    vi.mocked(source.cases.getVersion).mockResolvedValue(content);
+
+    const { container } = render(
+      <MemoryRouter>
+        <DebriefPage attemptId="attempt-one" repositories={source} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/70%/)).toBeVisible();
+    expect(container.querySelector('.product-page')).toHaveClass(
+      'product-page--debrief-report',
+    );
+    expect(container.querySelector('.debrief-report__header')).not.toBeNull();
+    expect(
+      container.querySelector('.debrief-report__metrics'),
+    ).toHaveTextContent('70%');
+    expect(
+      container.querySelector('.debrief-report__path-comparison'),
+    ).not.toBeNull();
+    expect(container.querySelector('.debrief-report__timeline')).not.toBeNull();
+    const decision = container.querySelector('.debrief-report__decision-card');
+    expect(decision).toHaveAttribute('data-critical', 'true');
+    expect(decision).toHaveAccessibleName(/visit 1: select the next action/i);
+    expect(
+      container.querySelector('.debrief-report__assessment-grid'),
+    ).not.toBeNull();
+    const skillImpact = screen.getByRole('region', { name: 'Skill impact' });
+    expect(skillImpact).toHaveTextContent('evidence-assessment');
+    expect(skillImpact).toHaveTextContent(
+      'This attempt did not record a before-and-after mastery snapshot',
+    );
+    expect(
+      container.querySelector('.debrief-report__actions'),
+    ).toContainElement(
+      screen.getByRole('link', { name: "Back to today's plan" }),
+    );
+    expect(source.cases.getVersion).toHaveBeenCalledWith('case-minimal', 1);
   });
 
   it('uses authored labels instead of internal node, error, and critical IDs in Chinese', async () => {
@@ -776,78 +906,48 @@ describe('Slice B pages', () => {
     expect(await screen.findAllByTestId('domain-signal')).toHaveLength(15);
   });
 
-  it('keeps profile readiness N/A without enough trusted completed samples', async () => {
+  it('keeps profile readiness unavailable without active skill evidence', async () => {
     const source = repositories();
     render(
       <MemoryRouter>
         <ProfilePage repositories={source} />
       </MemoryRouter>,
     );
+    const readiness = await screen.findByRole('region', {
+      name: /engineering readiness/i,
+    });
+    expect(readiness).toHaveTextContent(/insufficient evidence/i);
+    expect(within(readiness).queryByRole('meter')).not.toBeInTheDocument();
     expect(
-      await screen.findByText(/not enough completed samples/i),
-    ).toBeVisible();
+      within(readiness).getByRole('status', {
+        name: /production ai engineer readiness/i,
+      }),
+    ).not.toHaveAttribute('aria-valuenow');
     expect(screen.getAllByText('N/A').length).toBeGreaterThan(0);
   });
 
-  it('computes readiness only when all five exact-version dimensions have samples', async () => {
+  it('uses active skill sample weights for readiness and loads each exact case version once', async () => {
     const source = repositories();
     const content = createMinimalValidCase();
-    const baseNode = content.nodes[0]!;
-    const specifications = [
-      ['evidence-node', 'log-analysis', 'evidence-assessment', false],
-      ['priority-node', 'command-choice', 'priority-triage', false],
-      ['risk-node', 'single-choice', 'risk-awareness', true],
-      [
-        'architecture-node',
-        'architecture-tradeoff',
-        'architecture-design',
-        false,
-      ],
-      [
-        'communication-node',
-        'customer-response',
-        'customer-communication',
-        false,
-      ],
-    ] as const;
-    content.skills = specifications.map(([, , skill]) => skill);
-    content.nodes = specifications.map(
-      ([id, type, skill, critical]) =>
-        ({
-          ...baseNode,
-          id,
-          type,
-          skillWeights: { [skill]: 1 },
-          scoring: {
-            ...baseNode.scoring,
-            criticalErrorOptionIds: critical ? ['option-b'] : [],
-          },
-        }) as CaseNode,
-    );
-    content.startNodeId = 'evidence-node';
-    const attempts = [1, 2, 3].map((number): CompletedAttemptRecord => ({
-      ...attempt(),
-      id: `attempt-${String(number)}`,
-      score: 100,
-      verdict: 'excellent',
-      visitedNodeIds: specifications.map(([id]) => id),
-      roundHistory: specifications.map(([nodeId], index) => ({
-        nodeId,
-        attemptNumber: 1,
-        submission: { type: 'choice', selectedOptionIds: ['option-a'] },
-        evaluation: {
-          isCorrect: true,
-          scoreRatio: 1,
-          errorTypes: [],
-          criticalErrorIds: [],
-          consequences: [],
-          branchKey: 'correct',
-        },
-        submittedAt: `2026-07-13T00:0${String(index + 1)}:00.000Z`,
-        revealed: false,
-      })),
-    }));
-    vi.mocked(source.attempts.list).mockResolvedValue(attempts);
+    content.skills = ['llm.applications', 'cloud.deployment'];
+    const mastery: SkillMasteryRecord[] = [
+      {
+        userId: 'local-user',
+        skillId: 'llm.applications',
+        score: 80,
+        sampleCount: 3,
+        updatedAt: '2026-07-13T00:10:00.000Z',
+      },
+      {
+        userId: 'local-user',
+        skillId: 'cloud.deployment',
+        score: 20,
+        sampleCount: 1,
+        updatedAt: '2026-07-13T00:10:00.000Z',
+      },
+    ];
+    vi.mocked(source.attempts.list).mockResolvedValue([attempt()]);
+    vi.mocked(source.skills.list).mockResolvedValue(mastery);
     vi.mocked(source.cases.getVersion).mockResolvedValue(content);
     render(
       <MemoryRouter>
@@ -855,20 +955,17 @@ describe('Slice B pages', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('100 / 100')).toBeVisible();
+    expect(
+      await screen.findByRole('meter', {
+        name: /production ai engineer readiness/i,
+      }),
+    ).toHaveAttribute('aria-valuenow', '65');
+    expect(screen.getByText('65%')).toBeVisible();
     expect(source.cases.getVersion).toHaveBeenCalledTimes(1);
     expect(source.cases.getVersion).toHaveBeenCalledWith('case-minimal', 1);
-    for (const label of [
-      'Evidence judgment',
-      'Priority judgment',
-      'Risk awareness',
-      'Architecture tradeoffs',
-      'Customer communication',
-    ]) {
-      expect(
-        screen.getByRole('row', { name: new RegExp(label, 'i') }),
-      ).toBeVisible();
-    }
+    expect(
+      screen.getByRole('region', { name: /skill evidence map/i }),
+    ).toHaveTextContent(content.title);
   });
 
   it('excludes only the attempt whose exact profile case version is missing', async () => {
@@ -882,8 +979,20 @@ describe('Slice B pages', () => {
     );
 
     expect(await screen.findByText(/excluded attempt: 1/i)).toBeVisible();
-    expect(screen.getByText(/not enough completed samples/i)).toBeVisible();
+    expect(screen.getByText(/insufficient evidence/i)).toBeVisible();
     expect(source.cases.getVersion).toHaveBeenCalledWith('case-minimal', 1);
+    expect(
+      screen.getByRole('region', { name: /identity summary/i }),
+    ).toHaveTextContent(/evidence collected\s*0/i);
+    expect(
+      screen.getByRole('region', { name: /capability evidence timeline/i }),
+    ).toHaveTextContent(/no capability evidence yet/i);
+    expect(
+      screen.getByRole('region', { name: /completed challenges/i }),
+    ).toHaveTextContent(/no completed challenges yet/i);
+    expect(
+      screen.queryByRole('link', { name: /review evidence/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('deduplicates missing profile version labels while counting excluded attempts', async () => {

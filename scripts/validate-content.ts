@@ -1,6 +1,8 @@
 import type { FdeCase } from '../src/domain/cases/types';
+import type { ConceptKnowledge } from '../src/domain/concepts/types';
 import type { FoundationKnowledge } from '../src/domain/foundation/types';
 import { ZodError } from 'zod';
+import { ConceptKnowledgeSchema } from '../src/content/concept-schema';
 import { FoundationKnowledgeSchema } from '../src/content/foundation-schema';
 import { parseCaseContent } from '../src/content/parse-content';
 import type {
@@ -53,6 +55,7 @@ export interface ContentBundleTextSources {
   domains: readonly ContentTextSource[];
   skills: readonly ContentTextSource[];
   foundation?: readonly ContentTextSource[];
+  concepts?: readonly ContentTextSource[];
   coverage: ContentTextSource;
 }
 
@@ -66,12 +69,18 @@ export interface ValidatedFoundationSource {
   foundation: FoundationKnowledge;
 }
 
+export interface ValidatedConceptSource {
+  file: string;
+  concept: ConceptKnowledge;
+}
+
 export interface ContentBundleValidationResult {
   config: ContentConfig | null;
   cases: ValidatedCaseSource[];
   domains: ValidatedDefinitionSource<DomainDefinition>[];
   skills: ValidatedDefinitionSource<SkillDefinition>[];
   foundations: ValidatedFoundationSource[];
+  concepts: ValidatedConceptSource[];
   coverage: CoveragePlan | null;
   issues: ContentIssue[];
 }
@@ -263,9 +272,39 @@ function duplicateFoundationIssues(
   return issues;
 }
 
+function duplicateConceptIssues(
+  concepts: readonly ValidatedConceptSource[],
+): ContentIssue[] {
+  const firstFileById = new Map<string, string>();
+  const issues: ContentIssue[] = [];
+  concepts.forEach(({ file, concept }) => {
+    const firstFile = firstFileById.get(concept.id);
+    if (firstFile === undefined) {
+      firstFileById.set(concept.id, file);
+      return;
+    }
+    issues.push({
+      file,
+      path: ['id'],
+      code: 'duplicate_concept_id',
+      message: `Concept ID ${concept.id} duplicates ${firstFile}.`,
+    });
+  });
+  return issues;
+}
+
 function foundationDomainFromFile(file: string): string | undefined {
   const normalized = file.replaceAll('\\', '/');
   const prefix = 'content/foundation/';
+  if (!normalized.startsWith(prefix)) return undefined;
+  const relativePath = normalized.slice(prefix.length);
+  const separatorIndex = relativePath.indexOf('/');
+  return separatorIndex > 0 ? relativePath.slice(0, separatorIndex) : undefined;
+}
+
+function conceptCategoryFromFile(file: string): string | undefined {
+  const normalized = file.replaceAll('\\', '/');
+  const prefix = 'content/concepts/';
   if (!normalized.startsWith(prefix)) return undefined;
   const relativePath = normalized.slice(prefix.length);
   const separatorIndex = relativePath.indexOf('/');
@@ -335,10 +374,25 @@ export function validateContentBundleSources(
       }
     });
 
+  const concepts: ValidatedConceptSource[] = [];
+  [...(sources.concepts ?? [])]
+    .sort((left, right) => left.file.localeCompare(right.file))
+    .forEach((source) => {
+      const input = parseJsonSource(source, issues);
+      if (input === undefined) return;
+      const result = ConceptKnowledgeSchema.safeParse(input);
+      if (result.success) {
+        concepts.push({ file: source.file, concept: result.data });
+      } else {
+        addSchemaIssues(source.file, result.error.issues, issues);
+      }
+    });
+
   issues.push(
     ...duplicateDefinitionIssues(domains, 'domain'),
     ...duplicateDefinitionIssues(skills, 'skill'),
     ...duplicateFoundationIssues(foundations),
+    ...duplicateConceptIssues(concepts),
   );
 
   const domainById = new Map(domains.map(({ value }) => [value.id, value]));
@@ -488,12 +542,48 @@ export function validateContentBundleSources(
     }
   });
 
+  const foundationIds = new Set(
+    foundations.map(({ foundation }) => foundation.id),
+  );
+  concepts.forEach(({ file, concept }) => {
+    const pathCategory = conceptCategoryFromFile(file);
+    if (pathCategory !== concept.category) {
+      issues.push({
+        file,
+        path: ['category'],
+        code: 'concept_category_path_mismatch',
+        message: `Concept ${concept.id} declares category ${concept.category} but is stored under ${pathCategory ?? '<missing>'}.`,
+      });
+    }
+    concept.relatedFoundation.forEach((foundationId, index) => {
+      if (foundationIds.has(foundationId) || sources.partial === true) return;
+      issues.push({
+        file,
+        path: ['relatedFoundation', index],
+        code: 'missing_foundation_reference',
+        message: `Concept ${concept.id} references missing Foundation ${foundationId}.`,
+      });
+    });
+    if (config !== null) {
+      concept.relatedCases.forEach((caseId, index) => {
+        if (activePublishedCaseIds.has(caseId)) return;
+        issues.push({
+          file,
+          path: ['relatedCases', index],
+          code: 'missing_active_case_reference',
+          message: `Concept ${concept.id} references case ${caseId} outside the active published catalog.`,
+        });
+      });
+    }
+  });
+
   return {
     config,
     cases: caseValidation.cases,
     domains,
     skills,
     foundations,
+    concepts,
     coverage,
     issues: issues.sort(compareIssues),
   };
@@ -523,6 +613,7 @@ export function runValidateContentCli(args: readonly string[]): number {
               validDomains: validation.domains.length,
               validSkills: validation.skills.length,
               validFoundations: validation.foundations.length,
+              validConcepts: validation.concepts.length,
               issues: validation.issues,
             };
           })()

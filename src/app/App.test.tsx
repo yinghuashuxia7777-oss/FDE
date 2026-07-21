@@ -6,6 +6,7 @@ import { createMemoryRouter, Link, RouterProvider } from 'react-router-dom';
 import type { ProductRepositories } from '../application/product';
 import { ApplicationShell } from '../components/layout/ApplicationShell';
 import { ThemeProvider } from '../components/layout/ThemeProvider';
+import { useLearningJourney } from '../components/onboarding';
 import { I18N_STORAGE_KEY, type Language } from '../i18n';
 import { App } from './App';
 import { RouteFrame } from './route-pages';
@@ -35,11 +36,27 @@ function renderApp(
     );
   }
   const router = trackRouter(createAppRouter());
-  return render(
+  const view = render(
     <App
       router={router}
       {...(repositories === undefined ? {} : { repositories })}
     />,
+  );
+  return { ...view, router };
+}
+
+function JourneyStateProbe() {
+  const { selectStartingPoint, startingPoint } = useLearningJourney();
+  return (
+    <>
+      <output aria-label="journey starting point">
+        {startingPoint ?? 'not-selected'}
+      </output>
+      <button onClick={() => selectStartingPoint('zero-basics')} type="button">
+        Choose zero basics
+      </button>
+      <Link to="/away">Leave journey page</Link>
+    </>
   );
 }
 
@@ -105,7 +122,7 @@ function installResponsiveMatchMedia(initialDesktop: boolean) {
 
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     get matches() {
-      return query === '(min-width: 64rem)' ? desktop : false;
+      return query === '(min-width: 80rem)' ? desktop : false;
     },
     media: query,
     onchange: null,
@@ -134,7 +151,7 @@ function installResponsiveMatchMedia(initialDesktop: boolean) {
     },
     setDesktop(nextDesktop: boolean) {
       desktop = nextDesktop;
-      for (const listener of listeners.get('(min-width: 64rem)') ?? []) {
+      for (const listener of listeners.get('(min-width: 80rem)') ?? []) {
         listener({ matches: nextDesktop } as MediaQueryListEvent);
       }
     },
@@ -152,6 +169,33 @@ describe('application shell', () => {
     window.localStorage.clear();
     window.matchMedia = defaultMatchMedia;
     vi.restoreAllMocks();
+  });
+
+  it('keeps the in-memory learning journey choice across route changes', async () => {
+    const user = userEvent.setup();
+    const router = trackRouter(
+      createMemoryRouter([
+        { path: '/', element: <JourneyStateProbe /> },
+        {
+          path: '/away',
+          element: <Link to="/">Return to journey</Link>,
+        },
+      ]),
+    );
+    render(<App router={router} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Choose zero basics' }),
+    );
+    expect(screen.getByLabelText('journey starting point')).toHaveTextContent(
+      'zero-basics',
+    );
+
+    await user.click(screen.getByRole('link', { name: 'Leave journey page' }));
+    await user.click(screen.getByRole('link', { name: 'Return to journey' }));
+    expect(screen.getByLabelText('journey starting point')).toHaveTextContent(
+      'zero-basics',
+    );
   });
 
   it('opens in Simplified Chinese and switches the whole shell to English', async () => {
@@ -189,7 +233,8 @@ describe('application shell', () => {
     ).toHaveAttribute('aria-current', 'page');
   });
 
-  it('exposes only desktop navigation at the desktop boundary', () => {
+  it('exposes the Growth OS top navigation and preserves product routes in its workspace menu', async () => {
+    const user = userEvent.setup();
     installResponsiveMatchMedia(true);
     setRoute('/cases');
     renderApp();
@@ -197,13 +242,69 @@ describe('application shell', () => {
     const desktopNavigation = screen.getByRole('navigation', {
       name: 'Primary navigation',
     });
-    expect(desktopNavigation).toHaveClass('desktop-navigation');
+    expect(desktopNavigation).toHaveClass('growth-os-navigation');
     expect(
-      within(desktopNavigation).getByRole('link', { name: 'Cases' }),
-    ).toHaveAttribute('aria-current', 'page');
+      within(desktopNavigation).getByRole('link', { name: 'Dashboard' }),
+    ).toHaveAttribute('href', '#/');
+    expect(
+      within(desktopNavigation).getByRole('link', { name: 'Skill Graph' }),
+    ).toHaveAttribute('href', '#/skills');
+    expect(
+      within(desktopNavigation).getByRole('link', { name: 'Evidence' }),
+    ).toHaveAttribute('href', '#/profile');
+    expect(
+      within(desktopNavigation).getByRole('link', { name: 'Projects' }),
+    ).toHaveAttribute('href', '#/projects');
+    expect(
+      within(desktopNavigation).queryByRole('link', {
+        name: 'Next recommendation',
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue(
+      'system',
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open workspace menu' }),
+    );
+    expect(screen.getByRole('link', { name: 'Knowledge' })).toHaveAttribute(
+      'href',
+      '#/foundation',
+    );
+    expect(screen.getByRole('link', { name: 'Practices' })).toHaveAttribute(
+      'href',
+      '#/practices',
+    );
+    expect(screen.getByRole('link', { name: 'Cases' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(
       screen.queryByRole('navigation', { name: 'Mobile navigation' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('routes command-bar search into the existing case filter', async () => {
+    const user = userEvent.setup();
+    setRoute('/');
+    renderApp();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open workspace menu' }),
+    );
+
+    const search = screen.getByRole('searchbox', {
+      name: 'Search all cases',
+    });
+    await user.type(search, 'RAG incident{Enter}');
+
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#/cases?q=RAG%20incident');
+    });
+    expect(screen.getByRole('heading', { name: 'Cases' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('searchbox', { name: 'Search all cases' }),
+    ).toHaveValue('RAG incident');
   });
 
   it('keeps the hash route while the skip link focuses main content', async () => {
@@ -372,7 +473,8 @@ describe('application shell', () => {
     });
   });
 
-  it('routes Foundation detail inside the shell with desktop active state', async () => {
+  it('routes Foundation detail inside the shell with Knowledge active in the workspace menu', async () => {
+    const user = userEvent.setup();
     installResponsiveMatchMedia(true);
     setRoute('/foundation/api-basic');
     renderApp('en-US', foundationRouteRepositories());
@@ -384,17 +486,104 @@ describe('application shell', () => {
         { timeout: 3000 },
       ),
     ).toBeVisible();
-    const desktopNavigation = screen.getByRole('navigation', {
-      name: 'Primary navigation',
-    });
-    expect(
-      within(desktopNavigation).getByRole('link', { name: 'Foundation' }),
-    ).toHaveAttribute('aria-current', 'page');
+    await user.click(
+      screen.getByRole('button', { name: 'Open workspace menu' }),
+    );
+    expect(screen.getByRole('link', { name: 'Knowledge' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(window.location.hash).toBe('#/foundation/api-basic');
     expect(screen.getByTestId('context-bar')).toBeInTheDocument();
+  });
+
+  it('unlocks First Mission completion only after the matching Foundation route is visited', async () => {
+    const user = userEvent.setup();
+    setRoute('/');
+    const { router } = renderApp('en-US', foundationRouteRepositories());
+
     expect(
-      within(desktopNavigation).getByRole('link', { name: 'Foundation' }),
-    ).toHaveAttribute('aria-current', 'page');
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('radio', { name: /become ai engineer/i }),
+    );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Generate my growth profile' }),
+    );
+    const firstMission = screen.getByRole('region', {
+      name: 'Your First Mission',
+    });
+    expect(within(firstMission).queryByRole('button')).not.toBeInTheDocument();
+
+    await act(async () => {
+      await router.navigate('/foundation/api.token-authentication');
+    });
+    expect(
+      await screen.findByRole('link', { name: 'Back to Foundation Knowledge' }),
+    ).toBeVisible();
+    await act(async () => {
+      await router.navigate('/');
+    });
+    const missionAfterOtherFoundation = await screen.findByRole('region', {
+      name: 'Your First Mission',
+    });
+    expect(missionAfterOtherFoundation).toHaveTextContent('API');
+    expect(
+      within(missionAfterOtherFoundation).queryByRole('button'),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      await router.navigate('/foundation/api-basic');
+    });
+    expect(
+      await screen.findByRole('link', { name: 'Back to Foundation Knowledge' }),
+    ).toBeVisible();
+    await act(async () => {
+      await router.navigate('/');
+    });
+    expect(
+      await screen.findByRole('button', {
+        name: 'Complete this onboarding step',
+      }),
+    ).toBeVisible();
+  });
+
+  it('keeps the Foundation detail hash route while navigating chapters', async () => {
+    const user = userEvent.setup();
+    installResponsiveMatchMedia(true);
+    setRoute('/foundation/api-basic');
+    renderApp('en-US', foundationRouteRepositories());
+
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: 'API：系统之间可验证的协作契约' },
+        { timeout: 3000 },
+      ),
+    ).toBeVisible();
+    const routeHash = window.location.hash;
+    const navigation = screen.getByRole('navigation', {
+      name: 'Foundation chapters',
+    });
+    const target = document.getElementById(
+      'foundation-chapter-simple-explanation',
+    );
+
+    await user.click(
+      within(navigation).getByRole('link', { name: 'Simple explanation' }),
+    );
+
+    expect(window.location.hash).toBe(routeHash);
+    expect(target).toHaveFocus();
+    expect(
+      screen.getByRole('heading', {
+        name: 'API：系统之间可验证的协作契约',
+      }),
+    ).toBeVisible();
   });
 
   it('focuses the stable detail heading when navigating from the Foundation library', async () => {
@@ -421,7 +610,7 @@ describe('application shell', () => {
     const user = userEvent.setup();
     setRoute('/');
     const view = renderApp();
-    expect(media.listenerCount('(min-width: 64rem)')).toBe(1);
+    expect(media.listenerCount('(min-width: 80rem)')).toBe(1);
     await user.click(screen.getByRole('button', { name: 'More' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -442,7 +631,7 @@ describe('application shell', () => {
     expect(screen.getByTestId('context-bar')).not.toHaveAttribute('inert');
 
     view.unmount();
-    expect(media.listenerCount('(min-width: 64rem)')).toBe(0);
+    expect(media.listenerCount('(min-width: 80rem)')).toBe(0);
   });
 
   it('uses an immersive training shell with a clear exit', () => {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
@@ -13,7 +14,10 @@ import {
 import { Alert, ErrorState, StatusBadge } from '../../components/ui';
 import type { EvidenceType } from '../../domain/cases/types';
 import { useI18n } from '../../i18n';
-import type { CompletedAttemptRecord } from '../../repositories/contracts';
+import type {
+  CaseSummary,
+  CompletedAttemptRecord,
+} from '../../repositories/contracts';
 import { AsyncPage, PageHeader } from '../shared';
 
 interface DebriefPageProps {
@@ -101,7 +105,10 @@ function translateSubmissionDescription(
 function AttemptSummary({ attempt }: { attempt: CompletedAttemptRecord }) {
   const { t } = useI18n();
   return (
-    <dl className="metric-strip" aria-label={t('debrief.summary.label')}>
+    <dl
+      className="metric-strip debrief-report__metrics"
+      aria-label={t('debrief.summary.label')}
+    >
       <div>
         <dt>{t('debrief.summary.score')}</dt>
         <dd>{Math.round(attempt.score)}%</dd>
@@ -119,6 +126,96 @@ function AttemptSummary({ attempt }: { attempt: CompletedAttemptRecord }) {
         <dd>{attempt.caseVersion}</dd>
       </div>
     </dl>
+  );
+}
+
+function DebriefNextStep({
+  caseTitle,
+  knowledgePoints,
+  recommendedCaseIds,
+  repositories,
+}: {
+  caseTitle: string;
+  knowledgePoints: readonly string[];
+  recommendedCaseIds: readonly string[] | undefined;
+  repositories: ProductRepositories | undefined;
+}) {
+  const { t } = useI18n();
+  const getRepositories = useProductRepositories(repositories);
+  const [activeCases, setActiveCases] = useState<readonly CaseSummary[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void getRepositories()
+      .then((source) => source.cases.listActive({ status: 'published' }))
+      .then(
+        (items) => {
+          if (active) {
+            setActiveCases(
+              items.filter(({ status }) => status === 'published'),
+            );
+          }
+        },
+        () => {
+          // Active recommendations are optional; the Case library is safe.
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [getRepositories]);
+
+  const activeCaseById = new Map(
+    activeCases.map((candidate) => [candidate.id, candidate]),
+  );
+  const recommendedCases = (recommendedCaseIds ?? []).flatMap((caseId) => {
+    const candidate = activeCaseById.get(caseId);
+    return candidate === undefined ? [] : [candidate];
+  });
+  return (
+    <section
+      className="panel debrief-next-step"
+      aria-labelledby="debrief-next-step-title"
+      data-learning-mode="true"
+    >
+      <h2 id="debrief-next-step-title">{t('onboarding.debrief.title')}</h2>
+      <p>{t('onboarding.debrief.completed', { title: caseTitle })}</p>
+      <div className="debrief-next-step__grid">
+        <section>
+          <h3>{t('onboarding.debrief.learn')}</h3>
+          <ul>
+            {knowledgePoints.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <Link className="button button--secondary" to="/foundation">
+            {t('onboarding.debrief.openFoundation')}
+          </Link>
+        </section>
+        <section>
+          <h3>{t('onboarding.debrief.challenge')}</h3>
+          {recommendedCases.length === 0 ? (
+            <Link className="button button--primary" to="/cases">
+              {t('onboarding.debrief.openCases')}
+            </Link>
+          ) : (
+            <div className="button-row">
+              {recommendedCases.map((candidate) => (
+                <Link
+                  className="button button--primary"
+                  key={candidate.id}
+                  to={`/training/${candidate.id}`}
+                >
+                  {t('onboarding.nextStep.openCase', {
+                    title: candidate.title,
+                  })}
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </section>
   );
 }
 
@@ -144,12 +241,17 @@ export function DebriefPage({
   }, [attemptId, getRepositories]);
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
-      <PageHeader
-        eyebrow={t('debrief.eyebrow')}
-        title={t('debrief.title')}
-        description={t('debrief.description')}
-      />
+    <section
+      className="product-page product-page--debrief-report"
+      aria-labelledby="page-title"
+    >
+      <div className="debrief-report__header">
+        <PageHeader
+          eyebrow={t('debrief.eyebrow')}
+          title={t('debrief.title')}
+          description={t('debrief.description')}
+        />
+      </div>
       <AsyncPage state={state} retry={retry}>
         {(data) => {
           if (data.kind === 'missing')
@@ -202,8 +304,16 @@ export function DebriefPage({
           const visits = groupAttemptVisits(attempt);
           const groupingWarning = visitGroupingWarning(attempt, visits);
           const recommended = buildRecommendedPath(content);
+          const affectedSkillIds = [
+            ...new Set(
+              visits.flatMap((visit) => {
+                const node = nodes.get(visit.nodeId);
+                return node === undefined ? [] : Object.keys(node.skillWeights);
+              }),
+            ),
+          ].sort((left, right) => left.localeCompare(right));
           return (
-            <div className="product-stack">
+            <div className="product-stack debrief-report">
               <AttemptSummary attempt={attempt} />
               {attempt.criticalErrorIds.length === 0 ? null : (
                 <Alert title={t('debrief.criticalRecorded')} tone="critical">
@@ -227,8 +337,8 @@ export function DebriefPage({
                   })}
                 </Alert>
               )}
-              <div className="product-split">
-                <section className="panel">
+              <div className="product-split debrief-report__path-comparison">
+                <section className="panel debrief-report__path-card">
                   <h2>{t('debrief.actualPath')}</h2>
                   <ol>
                     {visits.map((visit) => (
@@ -249,7 +359,7 @@ export function DebriefPage({
                     ))}
                   </ol>
                 </section>
-                <section className="panel">
+                <section className="panel debrief-report__path-card">
                   <h2>{t('debrief.recommendedPath')}</h2>
                   <ol>
                     {recommended.nodeIds.map((nodeId, index) => (
@@ -267,7 +377,7 @@ export function DebriefPage({
                 </section>
               </div>
               <section
-                className="product-stack"
+                className="product-stack debrief-report__timeline"
                 aria-labelledby="decision-timeline-title"
               >
                 <h2 id="decision-timeline-title">
@@ -275,9 +385,13 @@ export function DebriefPage({
                 </h2>
                 {visits.map((visit) => {
                   const node = nodes.get(visit.nodeId);
+                  const hasCriticalError = visit.rounds.some(
+                    (round) => round.evaluation.criticalErrorIds.length > 0,
+                  );
                   return (
                     <article
-                      className="panel"
+                      className="panel debrief-report__decision-card"
+                      data-critical={hasCriticalError}
                       key={visit.ordinal}
                       aria-label={t('debrief.timeline.itemLabel', {
                         visit: visit.ordinal,
@@ -394,60 +508,95 @@ export function DebriefPage({
                   );
                 })}
               </section>
-              <section className="panel" aria-labelledby="case-debrief-title">
-                <h2 id="case-debrief-title">{t('debrief.assessment.title')}</h2>
-                <h3>{t('debrief.assessment.summary')}</h3>
-                <p>{content.debrief.summary}</p>
-                <h3>{t('debrief.assessment.rootCause')}</h3>
-                <p>{content.debrief.rootCause}</p>
-                <h3>{t('debrief.assessment.correctApproach')}</h3>
-                <ol>
-                  {content.debrief.correctApproach.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ol>
-                <h3>{t('debrief.assessment.keyLessons')}</h3>
-                <ul>
-                  {content.debrief.keyLessons.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <h3>{t('debrief.assessment.interviewer')}</h3>
-                <p>{content.debrief.interviewerPerspective}</p>
-                <h3>{t('debrief.assessment.customerRisk')}</h3>
-                <p>{content.debrief.customerRiskPerspective}</p>
-                <h3>{t('debrief.assessment.remediation')}</h3>
-                <ul>
-                  {content.debrief.remediation.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <h3>{t('debrief.assessment.verification')}</h3>
-                <ul>
-                  {content.debrief.verification.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <h3>{t('debrief.assessment.knowledgePoints')}</h3>
-                <ul>
-                  {content.debrief.knowledgePoints.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                {content.debrief.recommendedCaseIds === undefined ? null : (
-                  <>
-                    <h3>{t('debrief.assessment.recommendedCases')}</h3>
-                    <ul>
-                      {content.debrief.recommendedCaseIds.map((caseId) => (
-                        <li key={caseId}>
-                          <Link to={`/training/${caseId}`}>{caseId}</Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
+              <section
+                className="panel debrief-report__skill-impact"
+                aria-labelledby="debrief-skill-impact-title"
+              >
+                <h2 id="debrief-skill-impact-title">
+                  {t('debrief.skillImpact.title')}
+                </h2>
+                <p>{t('debrief.skillImpact.description')}</p>
+                {affectedSkillIds.length === 0 ? (
+                  <p>{t('debrief.skillImpact.empty')}</p>
+                ) : (
+                  <ul className="debrief-report__skill-list">
+                    {affectedSkillIds.map((skillId) => (
+                      <li key={skillId}>{skillId}</li>
+                    ))}
+                  </ul>
                 )}
               </section>
-              <div className="button-row">
+              <section
+                className="panel debrief-report__assessment"
+                aria-labelledby="case-debrief-title"
+              >
+                <h2 id="case-debrief-title">{t('debrief.assessment.title')}</h2>
+                <div className="debrief-report__assessment-grid">
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.summary')}</h3>
+                    <p>{content.debrief.summary}</p>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.rootCause')}</h3>
+                    <p>{content.debrief.rootCause}</p>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.correctApproach')}</h3>
+                    <ol>
+                      {content.debrief.correctApproach.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ol>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.keyLessons')}</h3>
+                    <ul>
+                      {content.debrief.keyLessons.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.interviewer')}</h3>
+                    <p>{content.debrief.interviewerPerspective}</p>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.customerRisk')}</h3>
+                    <p>{content.debrief.customerRiskPerspective}</p>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.remediation')}</h3>
+                    <ul>
+                      {content.debrief.remediation.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.verification')}</h3>
+                    <ul>
+                      {content.debrief.verification.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section className="debrief-report__assessment-card">
+                    <h3>{t('debrief.assessment.knowledgePoints')}</h3>
+                    <ul>
+                      {content.debrief.knowledgePoints.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+              </section>
+              <DebriefNextStep
+                caseTitle={content.title}
+                knowledgePoints={content.debrief.knowledgePoints}
+                recommendedCaseIds={content.debrief.recommendedCaseIds}
+                repositories={override}
+              />
+              <div className="button-row debrief-report__actions">
                 <Link className="button button--primary" to="/">
                   {t('debrief.backToPlan')}
                 </Link>

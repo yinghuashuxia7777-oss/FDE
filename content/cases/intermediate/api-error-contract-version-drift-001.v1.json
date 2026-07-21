@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "id": "api-error-contract-version-drift-001",
+  "slug": "api-error-contract-version-drift-001",
+  "title": "错误响应升级后被客户端误判为可重试故障",
+  "summary": "通过响应头、载荷与 SDK 日志定位错误契约版本漂移，并用显式适配、契约测试和灰度回放恢复正确错误语义。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 24,
+  "domains": ["api-integration", "software-foundations", "reliability"],
+  "skills": [
+    "api.integration",
+    "software.foundations",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["develop", "deploy", "operate"],
+  "technicalLayers": ["public-api", "client-sdk", "error-handling"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["contract-drift", "retry-amplification", "customer-impact"],
+  "behaviorPatterns": [
+    "contract-testing",
+    "version-adaptation",
+    "canary-validation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的企业采购平台通过 SDK 调用订单 API，客户会依据错误代码修正预算中心或商品字段。",
+    "background": "订单 API v2 将错误响应从旧版嵌套 JSON 升级为 application/problem+json，但一个仍受支持的 SDK 只解析旧版 error.code 路径。",
+    "initialIncident": "v2 灰度后，字段校验失败被 SDK 标记为 UNKNOWN_UPSTREAM 并自动重试，客户既看不到可修正字段，也观察到请求量上升和重复告警。",
+    "constraints": [
+      "v1 客户仍在支持期内，不能通过强制所有客户立即升级来恢复。",
+      "400 类永久校验错误不得自动重试，未知错误也不能被静默解释为成功。",
+      "修复必须兼容两种已发布契约，并为未来未知媒体类型提供安全失败行为。"
+    ],
+    "confirmedFacts": [
+      "服务端业务校验逻辑未变化，故障只出现在 v2 错误响应灰度流量中。",
+      "同一 requestId 的 SDK 日志显示三次 400，但最终对客户抛出 UNKNOWN_UPSTREAM。",
+      "成功响应和订单幂等处理均正常，问题集中在错误载荷解析和重试分类。"
+    ]
+  },
+  "startNodeId": "api-error-contract-version-drift-001-node-01",
+  "nodes": [
+    {
+      "id": "api-error-contract-version-drift-001-node-01",
+      "type": "log-analysis",
+      "title": "对齐媒体类型与解析路径",
+      "prompt": "根据原始响应和 SDK 日志，最合理的第一项遏制与诊断行动是什么？",
+      "skillWeights": {
+        "api.integration": 0.4,
+        "software.foundations": 0.35,
+        "reliability.observability": 0.25
+      },
+      "evidence": [
+        {
+          "id": "api-error-contract-version-drift-001-node-01-evidence-01",
+          "type": "json",
+          "title": "v1 与 v2 原始错误响应",
+          "content": "v1 400 application/json: {\"error\":{\"code\":\"INVALID_COST_CENTER\",\"message\":\"Unknown cost center\"}}\nv2 400 application/problem+json: {\"type\":\"https://errors.example/validation\",\"title\":\"Validation failed\",\"status\":400,\"detail\":\"costCenter is unknown\",\"errorCode\":\"INVALID_COST_CENTER\",\"invalidParams\":[{\"name\":\"costCenter\"}]}"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-01-evidence-02",
+          "type": "log",
+          "title": "SDK 错误分类日志",
+          "content": "request=req-441 api_version=v2 http_status=400 content_type=application/problem+json parser=legacy-json parsed_code=null mapped_error=UNKNOWN_UPSTREAM retryable=true attempt=3"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-01-evidence-03",
+          "type": "metric",
+          "title": "灰度分段指标",
+          "content": "v1_unknown_error_rate=0.1% v2_unknown_error_rate=31.8% v2_retry_to_original_ratio=2.7 server_validation_rate_v1=10.2% server_validation_rate_v2=10.4%"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-error-contract-version-drift-001-node-01-option-a",
+          "label": "停止对 400 和未知解析错误的自动重试，保留原始响应，再按 API 版本与 Content-Type 对照解析契约",
+          "explanation": "服务端校验率稳定，而 v2 解析失败和重试激增；先停止永久错误放大并保留载荷，能直接验证媒体类型与解析器不匹配。"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-01-option-b",
+          "label": "把所有 v2 的 400 临时改成 500，让旧 SDK 能继续按上游故障处理",
+          "explanation": "改变状态码会把客户可修正的永久错误伪装成暂时故障，诱发更多重试并破坏 HTTP 契约。",
+          "errorType": "misclassify-validation-as-server-error"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-01-option-c",
+          "label": "删除错误响应体并只返回 200，避免 SDK 解析失败",
+          "explanation": "把失败伪装为成功会让客户误以为订单已创建，造成状态不一致和潜在业务损失。",
+          "errorType": "mask-error-as-success"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-error-contract-version-drift-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较 v1 与 v2 的 HTTP 状态、Content-Type、字段路径，以及 SDK 对未知错误的重试分类。",
+        "secondWrong": "服务端校验率没有变化，只有 v2 解析失败；先停止 400 重试并保存原始响应。",
+        "revealedAnswer": "应遏制错误重试，再按版本和媒体类型核对错误契约与解析路径。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-error-contract-version-drift-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-error-contract-version-drift-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-error-contract-version-drift-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "api-error-contract-version-drift-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "api-error-contract-version-drift-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "建立显式错误契约适配",
+      "prompt": "哪种修复能在不破坏既有客户的前提下恢复稳定错误语义？",
+      "skillWeights": {
+        "api.integration": 0.4,
+        "software.foundations": 0.4,
+        "reliability.observability": 0.2
+      },
+      "evidence": [
+        {
+          "id": "api-error-contract-version-drift-001-node-02-evidence-01",
+          "type": "config",
+          "title": "支持矩阵",
+          "content": "API v1: application/json, supported_until=2026-12-31\nAPI v2: application/problem+json, current\nSDK 3.x: v1+v2 supported\nretryable_statuses: 408, 429, 502, 503, 504\nnon_retryable_statuses: 400, 401, 403, 404, 409, 422"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-02-evidence-02",
+          "type": "diagram",
+          "title": "候选错误处理边界",
+          "content": "HTTP response -> select decoder by API version + normalized Content-Type -> validate schema -> map stable domain error -> classify retry from status + explicit policy -> expose raw correlationId"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-error-contract-version-drift-001-node-02-option-a",
+          "label": "按版本与规范化 Content-Type 选择解码器，映射稳定领域错误，并用生成的契约样例门禁状态码、字段和重试分类",
+          "explanation": "显式适配保留 v1 与 v2 支持，稳定领域错误隔离传输差异；契约样例可阻止媒体类型、字段和重试语义再次漂移。"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-02-option-b",
+          "label": "用一个宽松正则从任何响应文本中提取第一个大写单词作为错误码",
+          "explanation": "正则不理解版本、媒体类型或结构，会对本地化文本和新增字段产生不确定映射，无法提供稳定契约。",
+          "errorType": "heuristic-error-code-parsing"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-02-option-c",
+          "label": "立即移除 v1 并要求所有客户当天升级到 v2",
+          "explanation": "v1 仍在公开支持期内，强制迁移会制造额外客户中断，也没有修复 SDK 对 v2 的解析缺陷。",
+          "errorType": "break-supported-version-to-avoid-compatibility"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-error-contract-version-drift-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "修复应把传输契约差异限制在适配层，并让业务侧获得稳定、可测试的错误类型。",
+        "secondWrong": "按版本与 Content-Type 显式解码，再用契约样例测试字段、状态码和重试政策。",
+        "revealedAnswer": "应建立双版本显式适配和稳定领域错误映射，并以契约测试防止再次漂移。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": []
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "api-error-contract-version-drift-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "api-error-contract-version-drift-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "api-error-contract-version-drift-001-node-03",
+      "type": "configuration-review",
+      "title": "回放双版本并灰度恢复",
+      "prompt": "哪套验证与发布方案足以证明客户可正确处理新旧错误契约？",
+      "skillWeights": {
+        "api.integration": 0.3,
+        "software.foundations": 0.25,
+        "reliability.observability": 0.45
+      },
+      "evidence": [
+        {
+          "id": "api-error-contract-version-drift-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "候选 SDK 回放结果",
+          "content": "fixtures=186 decoded_expected_code=186 retry_policy_matches=186 unknown_content_type_safe_fail=12/12 v1_regression=0 v2_unknown_error_rate=0.0%"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-03-evidence-02",
+          "type": "log",
+          "title": "v2 灰度解析日志",
+          "content": "request=req-canary-12 api_version=v2 http_status=400 content_type=application/problem+json decoder=problem-v2 domain_error=INVALID_COST_CENTER retryable=false invalid_field=costCenter"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-03-evidence-03",
+          "type": "customer-message",
+          "title": "客户成功团队要求",
+          "content": "请说明哪些 SDK 版本受影响、订单是否被重复创建、客户现在会看到什么可操作错误，以及旧版支持期限是否改变。"
+        }
+      ],
+      "options": [
+        {
+          "id": "api-error-contract-version-drift-001-node-03-option-a",
+          "label": "回放 v1、v2 和未知媒体类型样例，门禁错误映射与重试决策，再灰度监控 UNKNOWN、重试比和客户字段错误",
+          "explanation": "多契约回放验证兼容与安全失败，灰度指标直接覆盖本次失效模式；沟通可以据此说明无重复订单和客户可采取的修正。"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-03-option-b",
+          "label": "只测试一个 v2 的 400 样例，解析成功后立即发布所有 SDK 渠道",
+          "explanation": "单一样例无法覆盖 v1 回归、不同错误形状、媒体类型参数和未知契约，也不能支撑全量风险判断。",
+          "errorType": "single-fixture-contract-validation"
+        },
+        {
+          "id": "api-error-contract-version-drift-001-node-03-option-c",
+          "label": "在灰度期间关闭 UNKNOWN 错误和重试指标，以免旧告警干扰发布",
+          "explanation": "这些指标正是契约漂移的领先信号，关闭后会失去暂停发布和确认客户恢复的依据。",
+          "errorType": "disable-contract-drift-signals"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "api-error-contract-version-drift-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证范围应覆盖所有仍受支持的契约、未知类型安全失败和实际重试决策。",
+        "secondWrong": "回放 v1、v2 与未知媒体类型，再灰度观察 UNKNOWN、重试比和字段级客户错误。",
+        "revealedAnswer": "应以多版本契约回放和灰度指标共同门禁，并向客户说明影响、可操作错误和支持期限。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "api-error-contract-version-drift-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "API v2 错误媒体类型和字段结构发生了已发布变更，但旧解析器仍读取 v1 路径，将永久校验错误映射为可重试的未知上游故障。",
+    "rootCause": "SDK 没有按 API 版本和 Content-Type 选择错误解码器，错误映射与重试分类又耦合在缺失字段的默认分支中；发布流程缺少双版本契约样例测试。",
+    "correctApproach": [
+      "停止对 400 和未知解析错误的自动重试，保留原始响应并对齐版本、媒体类型和解析路径。",
+      "建立 v1 与 v2 显式解码器，映射稳定领域错误，并以契约样例门禁状态、字段和重试语义。",
+      "回放所有支持版本和未知媒体类型，再按 UNKNOWN、重试比和字段错误指标灰度恢复。"
+    ],
+    "keyLessons": [
+      "HTTP 状态、媒体类型、载荷结构和重试语义共同构成错误契约，任何一项漂移都可能改变客户端行为。",
+      "客户沟通应说明受影响 SDK、订单未重复、可操作字段错误以及既有版本支持期限保持不变。"
+    ],
+    "interviewerPerspective": "观察候选人是否区分服务端业务错误与客户端解析故障，并用兼容适配和契约测试解决已发布版本漂移。",
+    "customerRiskPerspective": "错误契约漂移会隐藏客户可修正信息并放大无效请求；把失败伪装为成功则可能造成订单状态不一致。",
+    "remediation": [
+      "按 API 版本和规范化 Content-Type 显式选择解码器，未知契约保留关联 ID 并安全失败。",
+      "将传输错误映射为稳定领域错误，并将重试决策限定在明确状态与政策中。",
+      "从发布契约生成 v1、v2 样例测试，持续监控解析 UNKNOWN 和重试放大。"
+    ],
+    "verification": [
+      "确认所有已发布错误样例得到预期领域代码和重试决策，未知媒体类型不会重试或伪装成功。",
+      "确认灰度期间 v1 无回归、v2 UNKNOWN 恢复基线、重试比正常，客户能看到具体可修正字段。"
+    ],
+    "knowledgePoints": [
+      "API error contract",
+      "media type versioning",
+      "consumer contract testing"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

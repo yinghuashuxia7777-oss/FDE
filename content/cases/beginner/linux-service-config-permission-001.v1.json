@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "linux-service-config-permission-001",
+  "slug": "linux-service-config-permission-001",
+  "title": "Linux 服务账户无权读取配置",
+  "summary": "根据 systemd 运行身份、文件权限与启动日志定位配置读取失败，并用最小权限方案恢复服务。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["software-foundations", "security-governance"],
+  "skills": ["software.foundations", "security.governance"],
+  "lifecycleStages": ["deploy", "operate"],
+  "technicalLayers": ["linux", "filesystem", "service-runtime"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "credential-exposure"],
+  "behaviorPatterns": ["evidence-first-debugging", "least-privilege"],
+  "scenario": {
+    "customerProfile": "一家虚构的财务运营平台使用 Linux 后台服务生成每日对账报告。",
+    "background": "团队把报告服务从人工启动迁移到 systemd，并创建了独立的低权限运行账户 report-reader。",
+    "initialIncident": "部署后服务持续启动失败，但发布工程师使用自己的账号运行同一程序可以正常生成报告。",
+    "constraints": [
+      "配置文件包含数据库连接引用，不能改成所有用户可读。",
+      "不得让服务以 root 身份运行或把配置内容复制到日志。",
+      "修复必须先在预发布实例验证，再逐台应用到生产。"
+    ],
+    "confirmedFacts": [
+      "应用制品哈希与已通过测试的版本一致。",
+      "systemd 单元声明 User=report-reader 且服务在读取配置前退出。",
+      "同一配置文件由发布工程师账号读取时语法检查通过。"
+    ]
+  },
+  "startNodeId": "linux-service-config-permission-001-node-01",
+  "nodes": [
+    {
+      "id": "linux-service-config-permission-001-node-01",
+      "type": "log-analysis",
+      "title": "定位服务身份与文件权限差异",
+      "prompt": "根据启动日志和权限证据，下一步应采取哪项最小风险行动？",
+      "skillWeights": {
+        "software.foundations": 0.6,
+        "security.governance": 0.4
+      },
+      "evidence": [
+        {
+          "id": "linux-service-config-permission-001-node-01-evidence-01",
+          "type": "log",
+          "title": "服务启动日志",
+          "content": "report-worker[1842]: startup_failed path=/etc/report-worker/runtime.yaml error=PermissionError errno=13"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-01-evidence-02",
+          "type": "terminal",
+          "title": "运行身份与文件权限",
+          "content": "$ systemctl show report-worker -p User -p Group\nUser=report-reader\nGroup=report-reader\n$ stat -c '%U %G %a %n' /etc/report-worker/runtime.yaml\nroot reporting 640 /etc/report-worker/runtime.yaml\n$ id report-reader\nuid=991(report-reader) gid=991(report-reader) groups=991(report-reader)"
+        }
+      ],
+      "options": [
+        {
+          "id": "linux-service-config-permission-001-node-01-option-a",
+          "label": "让 report-reader 加入专用 reporting 组，并保持配置为 root:reporting 0640",
+          "explanation": "日志明确显示读取被拒绝，而权限证据表明服务账户不属于拥有组；补充专用组读取权可以恢复访问且不会扩大到其他用户。"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-01-option-b",
+          "label": "把配置权限改成 0777，先确保服务能够启动",
+          "explanation": "0777 会让所有本机用户读取和修改配置，虽然可能绕过当前错误，却扩大凭据暴露与配置篡改风险。",
+          "errorType": "world-writable-sensitive-config"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-01-option-c",
+          "label": "把 systemd 单元改为 root 运行，避免继续排查权限",
+          "explanation": "以 root 运行会移除服务隔离边界，而且证据只支持缺少特定文件读取权，不支持授予整台主机的管理权限。",
+          "errorType": "unnecessary-root-runtime"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "linux-service-config-permission-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "比较 systemd 的真实运行用户、文件拥有组和组成员关系。",
+        "secondWrong": "文件允许 reporting 组读取，但 report-reader 当前不属于该组。",
+        "revealedAnswer": "应仅把服务账户加入专用 reporting 组并保持 0640，而不是开放全局权限或改为 root。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "linux-service-config-permission-001-node-01-option-b",
+          "linux-service-config-permission-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "linux-service-config-permission-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "linux-service-config-permission-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "linux-service-config-permission-001-node-02",
+      "type": "command-choice",
+      "title": "验证最小权限修复",
+      "prompt": "组权限调整后，哪组验证最能证明服务恢复且权限没有过度扩大？",
+      "skillWeights": {
+        "software.foundations": 0.4,
+        "security.governance": 0.6
+      },
+      "evidence": [
+        {
+          "id": "linux-service-config-permission-001-node-02-evidence-01",
+          "type": "terminal",
+          "title": "预发布权限检查",
+          "content": "$ id report-reader\nuid=991(report-reader) gid=991(report-reader) groups=991(report-reader),992(reporting)\n$ sudo -u report-reader test -r /etc/report-worker/runtime.yaml; echo $?\n0\n$ stat -c '%U %G %a' /etc/report-worker/runtime.yaml\nroot reporting 640"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "预发布启动结果",
+          "content": "service_active=1 startup_errors=0 synthetic_report_status=success unauthorized_file_reads=0"
+        }
+      ],
+      "options": [
+        {
+          "id": "linux-service-config-permission-001-node-02-option-a",
+          "label": "确认服务账户可读、其他普通账户不可读，再重启一个实例并观察合成报告",
+          "explanation": "正向读取、负向权限和运行结果共同证明功能恢复且权限边界仍存在；单实例验证也保留了回滚空间。"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-02-option-b",
+          "label": "只确认 systemctl 显示 active 就立即重启全部生产实例",
+          "explanation": "active 不能证明报告任务成功或文件权限没有扩大，同时全量重启会在验证不足时扩大可用性风险。",
+          "errorType": "status-only-global-rollout"
+        },
+        {
+          "id": "linux-service-config-permission-001-node-02-option-c",
+          "label": "把完整配置打印到共享日志，证明服务确实读取到了文件",
+          "explanation": "打印敏感配置会造成凭据暴露；可读性退出码和合成任务已经提供充分证据，无需记录配置内容。",
+          "errorType": "sensitive-config-log-exposure"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "linux-service-config-permission-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "完整验证需要同时证明功能恢复与最小权限边界仍有效。",
+        "secondWrong": "检查服务账户可读、普通账户不可读，并观察一个实例的真实合成任务。",
+        "revealedAnswer": "应完成正负权限测试和单实例业务验证，并向客户说明已确认的根因、影响范围与逐步发布计划。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "linux-service-config-permission-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "服务使用低权限账户运行，而配置仅允许 reporting 组读取；把服务账户加入专用组后，应以正负权限和合成任务验证最小权限修复。",
+    "rootCause": "systemd 使用 report-reader 账户启动，但该账户未加入配置文件拥有组 reporting，导致内核拒绝读取 0640 配置。",
+    "correctApproach": [
+      "把 report-reader 加入仅用于读取该配置的 reporting 组，并保持文件为 root:reporting 0640。",
+      "先在预发布执行正负权限测试，再逐实例重启并观察合成报告结果。"
+    ],
+    "keyLessons": [
+      "交互账号能运行不代表服务运行身份拥有相同文件权限。",
+      "FDE 应向客户分开说明已确认事实、当前影响、最小修复和下一次更新时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否核对真实运行身份、拒绝 0777 与 root 捷径，并定义可观察的最小权限验证。",
+    "customerRiskPerspective": "过度放宽权限可能把一次启动故障升级为凭据泄露或配置篡改事件。",
+    "remediation": [
+      "在部署自动化中声明服务账户、配置拥有组和 0640 权限。",
+      "增加以真实服务账户执行的部署前可读性检查，并禁止敏感配置进入日志。"
+    ],
+    "verification": [
+      "确认 report-reader 可读配置、无关普通账户读取失败且文件仍为 0640。",
+      "确认逐实例发布期间服务启动错误为零，合成报告持续成功。"
+    ],
+    "knowledgePoints": [
+      "Linux file permissions",
+      "systemd service identity",
+      "least privilege validation"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

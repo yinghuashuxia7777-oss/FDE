@@ -8,11 +8,36 @@ interface ThemeProviderProps {
   initialTheme?: ThemePreference;
 }
 
-export function ThemeProvider({
-  children,
-  initialTheme = 'system',
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<ThemePreference>(initialTheme);
+export const THEME_STORAGE_KEY = 'fde-arena:theme';
+
+function isThemePreference(value: unknown): value is ThemePreference {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
+function readStoredTheme(): ThemePreference {
+  if (typeof window === 'undefined') return 'system';
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(THEME_STORAGE_KEY) ?? 'null',
+    ) as { theme?: unknown } | null;
+    return isThemePreference(stored?.theme) ? stored.theme : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
+  const [theme, setTheme] = useState<ThemePreference>(
+    () => initialTheme ?? readStoredTheme(),
+  );
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme }));
+    } catch {
+      // A blocked storage backend must not prevent theme switching.
+    }
+  }, [theme]);
 
   useEffect(() => {
     const root = document.documentElement;

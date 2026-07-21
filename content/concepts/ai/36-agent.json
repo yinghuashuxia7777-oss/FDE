@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.agent",
+  "type": "concept",
+  "category": "ai",
+  "order": 36,
+  "title": "Agent：编排状态、决策与工具执行",
+  "technicalTerm": "Agent / Agent Orchestrator",
+  "simpleExplanation": "Agent 让模型在目标驱动下读取状态、选择下一步、调用工具并根据结果继续，编排器负责控制这条循环。",
+  "analogy": "像有权限边界的项目协调员：可以安排专门人员办事，但必须记录任务、限制权限、检查结果，并知道何时停止或升级给人。",
+  "technicalExplanation": "Agent 运行包含规划、工具选择、参数生成、执行、观察与终止。编排层管理状态、步数、超时、重试、委派、审批和审计，模型建议不能代替确定性的安全控制。",
+  "whyItMatters": "多 Agent 系统可能重复委派或无限循环，高风险工具也可能越过用户意图。FDE 应观察每一步决策与状态转换，而非只看最终回复。",
+  "commonMistakes": "只设自然语言“不要越权”；没有最大步数和成本预算；多个 Agent 互相转交同一任务；工具失败后无条件重试。",
+  "relatedFoundation": ["agent-basic", "ai.agent-loop"],
+  "relatedCases": [
+    "multi-agent-delegation-loop-001",
+    "agent-approval-boundary-bypass-001"
+  ]
+}

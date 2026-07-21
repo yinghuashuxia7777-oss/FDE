@@ -89,12 +89,18 @@ describe('TrainingLayout', () => {
     expect(screen.getAllByTestId('question-part')).toHaveLength(1);
     expect(screen.getAllByTestId('options-part')).toHaveLength(1);
     expect(screen.getByLabelText('Scene column')).toHaveClass(
+      'training-workspace__panel',
+      'training-workspace__panel--scene',
       'training-workspace__scene',
     );
     expect(screen.getByLabelText('Evidence column')).toHaveClass(
+      'training-workspace__panel',
+      'training-workspace__panel--evidence',
       'training-workspace__evidence',
     );
     expect(screen.getByLabelText('Decision column')).toHaveClass(
+      'training-workspace__panel',
+      'training-workspace__panel--decision',
       'training-workspace__decision',
     );
   });

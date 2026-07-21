@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "practiceId": "practice.eng.python-engineering",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.eng.runtime-debugging",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.eng.automated-testing",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.software.api-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.software.backend-architecture",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.software.distributed-reliability",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.llm-application",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.prompt-engineering",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.structured-output",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.model-selection",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.llm-evaluation",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.retrieval",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.chunking",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.grounding",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.evaluation",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.tool-calling",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.tool-contracts",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.workflow-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.memory-lifecycle",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.evaluation",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.safety",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.containerization",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.deployment",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.observability",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.reliability",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.security",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.cost-optimization",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.software.system-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.software.data-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.ai.context-engineering",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.permission-filtering",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.rag.freshness",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.state-management",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.agent.approval-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.cloud-architecture",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.prod.release-verification",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.fde.customer-discovery",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.fde.requirement-discovery",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.fde.architecture-proposal",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    },
+    {
+      "practiceId": "practice.fde.customer-solution-design",
+      "minimumLength": 40,
+      "requiredKeywordGroups": [
+        ["evidence", "证据"],
+        ["verify", "verification", "验证"]
+      ],
+      "passingKeywordCount": 2
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "status": "draft",
+  "projects": [
+    {
+      "id": "project.enterprise-rag-assistant",
+      "title": "Enterprise RAG Assistant",
+      "summary": "Design, evaluate, and release a permission-aware RAG assistant.",
+      "requiredLeafSkillIds": [
+        "rag.retrieval",
+        "rag.evaluation",
+        "prod.deployment"
+      ],
+      "deliverables": [
+        "retrieval-evaluation-report",
+        "permission-test",
+        "release-plan"
+      ]
+    },
+    {
+      "id": "project.agent-workflow-system",
+      "title": "Agent Workflow System",
+      "summary": "Design a governed tool-using Agent workflow.",
+      "requiredLeafSkillIds": [
+        "agent.tool-calling",
+        "agent.memory-lifecycle",
+        "agent.safety"
+      ],
+      "deliverables": ["tool-contract", "workflow-design", "safety-review"]
+    },
+    {
+      "id": "project.ai-customer-solution",
+      "title": "AI Customer Solution",
+      "summary": "Turn a customer problem into an evidence-backed delivery proposal.",
+      "requiredLeafSkillIds": [
+        "fde.requirement-discovery",
+        "fde.architecture-proposal",
+        "fde.customer-solution-design"
+      ],
+      "deliverables": [
+        "requirements-brief",
+        "architecture-proposal",
+        "acceptance-plan"
+      ]
+    }
+  ]
+}

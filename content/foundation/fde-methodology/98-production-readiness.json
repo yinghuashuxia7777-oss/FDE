@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "fde.production-readiness",
+  "type": "foundation",
+  "title": "生产就绪：用证据通过发布门禁",
+  "domain": "fde-methodology",
+  "track": "computer-basics",
+  "skills": ["fde.adoption", "cloud.deployment", "reliability.observability"],
+  "level": "intermediate",
+  "order": 98,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "生产就绪意味着系统在目标负载和真实约束下具备可观测、可恢复、可保护、可支持和可回滚的证据，而不是代码已经完成或演示可以运行。",
+    "analogy": "它像客机起飞前的检查，不只确认发动机能启动，还要验证燃料、天气、通信、应急程序和机组责任都达到放行标准。",
+    "technicalExplanation": "门禁通常包括容量测试、故障演练、监控与告警、数据保护、权限审查、运行手册、值班责任、回滚验证和业务验收，并保存制品版本。",
+    "example": "模型服务发布前，团队用长上下文峰值做容量测试，验证降级和回滚，确认告警能定位模型版本与节点，再按小流量逐步放量。",
+    "commonMistakes": "用检查表勾选代替实际证据、把未完成项都标成发布后处理，或只验证正常路径，会让门禁失去作用；关键风险必须有责任人和截止条件。"
+  },
+  "relatedCases": [
+    "customer-pilot-production-gap-001",
+    "k8s-secret-rotation-rollout-001"
+  ]
+}

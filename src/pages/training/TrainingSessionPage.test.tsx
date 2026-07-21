@@ -7,6 +7,7 @@ import {
   type TrainingDependencies,
   type TrainingState,
 } from '../../application/training';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import { I18nProvider } from '../../i18n';
 import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import { TrainingSessionPage } from './TrainingSessionPage';
@@ -107,15 +108,34 @@ async function initialSession(harness: Harness): Promise<TrainingState> {
 function renderSession(
   initialState: TrainingState,
   dependencies: TrainingDependencies,
+  concepts: readonly ConceptKnowledge[] = [],
 ) {
   return render(
     <TrainingSessionPage
       initialState={initialState}
       dependencies={dependencies}
+      concepts={concepts}
     />,
     { wrapper: MemoryRouter },
   );
 }
+
+const concept: ConceptKnowledge = {
+  schemaVersion: 1,
+  id: 'concept.evidence',
+  type: 'concept',
+  category: 'fde',
+  order: 1,
+  title: '证据：支持决策的可核验事实',
+  technicalTerm: 'Evidence',
+  simpleExplanation: '证据是能够被重复检查并支持判断的事实。',
+  analogy: '像医生先看检验结果，再决定下一步检查。',
+  technicalExplanation: '证据需要标明来源、时间、环境与健康对照。',
+  whyItMatters: '它让诊断、根因与验证保持可追溯。',
+  commonMistakes: '不要把单条日志直接当成根因。',
+  relatedFoundation: ['fde.requirement-evidence'],
+  relatedCases: ['case-minimal'],
+};
 
 async function chooseWrongAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
@@ -125,6 +145,32 @@ async function chooseWrongAndSubmit(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('TrainingSessionPage controller', () => {
+  it('shows clickable Case terminology without mutating the training session', async () => {
+    const user = userEvent.setup();
+    const harness = createHarness();
+    const initialState = await initialSession(harness);
+    const savedBeforeViewing = harness.savedAttempts;
+
+    renderSession(initialState, harness.dependencies, [concept]);
+
+    const term = screen.getByRole('button', {
+      name: '证据：支持决策的可核验事实（Evidence）',
+    });
+    expect(
+      screen.getByRole('button', { name: 'Submit decision' }),
+    ).toBeDisabled();
+
+    await user.click(term);
+
+    expect(screen.getByText(concept.simpleExplanation)).toBeVisible();
+    expect(screen.getByText(concept.whyItMatters)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Evidence' })).toBeVisible();
+    expect(harness.savedAttempts).toBe(savedBeforeViewing);
+    expect(
+      screen.getByRole('button', { name: 'Submit decision' }),
+    ).toBeDisabled();
+  });
+
   it('localizes training chrome without rewriting authored case content', async () => {
     const harness = createHarness();
     const initialState = await initialSession(harness);
@@ -297,6 +343,12 @@ describe('TrainingSessionPage controller', () => {
     expect(
       screen.getByRole('link', { name: "Back to today's plan" }),
     ).toHaveAttribute('href', '/');
+    expect(pageTitle.closest('.training-complete__result')).not.toBeNull();
+    expect(
+      screen
+        .getByRole('link', { name: 'Review decisions' })
+        .closest('.training-complete__actions'),
+    ).not.toBeNull();
   });
 
   it('shows a recoverable persistence alert and retries completion from the same checkpoint', async () => {

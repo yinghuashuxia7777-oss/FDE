@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.oauth-roles",
+  "type": "foundation",
+  "title": "OAuth 角色：分清授权流程中的参与者",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "beginner",
+  "order": 53,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "OAuth 把资源所有者、客户端、授权服务器和资源服务器分成不同角色，只有先分清谁请求授权、谁签发令牌、谁验证令牌才能正确排障。",
+    "analogy": "OAuth 像园区访客流程，访客本人同意访问，接待应用代为申请，证件中心签发通行证，各栋楼的门卫再按证件范围决定是否放行。",
+    "technicalExplanation": "客户端代表资源所有者获取访问令牌，授权服务器认证并授权后签发令牌，资源服务器验证令牌并保护 API。一个组织可以部署多个角色，但逻辑职责仍需区分。",
+    "example": "FDE 调查新 API 的 403 时，团队一直修改客户端登录配置，却忽略真正拒绝请求的是资源服务器。对照四个角色后发现该 API 要求另一组 scope，授权申请没有包含。",
+    "commonMistakes": "把 OAuth 当成单一登录接口，会混淆认证与 API 授权。另一个误区是认为授权服务器签发了令牌，所有资源服务器就必须接受，实际仍要匹配受众和权限。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

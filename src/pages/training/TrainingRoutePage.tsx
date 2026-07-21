@@ -5,6 +5,7 @@ import {
   prerequisitesForCase,
   type FoundationItemProgress,
 } from '../../application/foundation';
+import { conceptsForCase } from '../../application/concepts';
 import {
   createTrainingSession,
   resumeAttempt,
@@ -17,11 +18,16 @@ import {
   useProductRepositories,
 } from '../../application/product';
 import {
+  bundledConceptSource,
+  type ConceptSource,
+} from '../../content/concept-source';
+import {
   bundledFoundationSource,
   type FoundationSource,
 } from '../../content/foundation-source';
 import { ErrorState, LoadingState } from '../../components/ui';
 import type { FdeCase } from '../../domain/cases/types';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import { localizeUiError, useI18n } from '../../i18n';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
 import { TrainingSessionPage } from './TrainingSessionPage';
@@ -42,6 +48,7 @@ type RouteSession =
     };
 
 interface TrainingRoutePageProps {
+  conceptSource?: ConceptSource;
   foundationSource?: FoundationSource;
 }
 
@@ -68,10 +75,13 @@ function InactiveTrainingState() {
 }
 
 function PrerequisiteTrainingStart({
+  concepts,
   content,
   dependencies,
   prerequisites,
-}: Extract<RouteSession, { kind: 'prerequisite' }>) {
+}: Extract<RouteSession, { kind: 'prerequisite' }> & {
+  concepts: readonly ConceptKnowledge[];
+}) {
   const [initialState, setInitialState] = useState<TrainingState>();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
@@ -80,6 +90,7 @@ function PrerequisiteTrainingStart({
   if (initialState !== undefined) {
     return (
       <TrainingSessionPage
+        concepts={concepts}
         dependencies={dependencies}
         initialState={initialState}
       />
@@ -111,6 +122,7 @@ function PrerequisiteTrainingStart({
 
   return (
     <PrerequisiteKnowledgeGate
+      concepts={concepts}
       error={error}
       onStart={start}
       pending={pending}
@@ -119,7 +131,70 @@ function PrerequisiteTrainingStart({
   );
 }
 
+function useCaseConcepts(conceptSource: ConceptSource, caseId: string) {
+  const [snapshot, setSnapshot] = useState<{
+    caseId: string;
+    concepts: readonly ConceptKnowledge[];
+    source: ConceptSource;
+  }>();
+
+  useEffect(() => {
+    let active = true;
+    void conceptSource.loadAll().then(
+      (items) => {
+        if (!active) return;
+        setSnapshot({
+          caseId,
+          concepts: conceptsForCase(items, caseId),
+          source: conceptSource,
+        });
+      },
+      () => {
+        // Concept guidance is advisory; the Case action remains available.
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [caseId, conceptSource]);
+
+  return snapshot?.caseId === caseId && snapshot.source === conceptSource
+    ? snapshot.concepts
+    : [];
+}
+
+function ConceptAwarePrerequisiteTrainingStart({
+  conceptSource,
+  ...session
+}: Extract<RouteSession, { kind: 'prerequisite' }> & {
+  conceptSource: ConceptSource;
+}) {
+  const concepts = useCaseConcepts(conceptSource, session.content.id);
+  return <PrerequisiteTrainingStart {...session} concepts={concepts} />;
+}
+
+function ConceptAwareTrainingSession({
+  caseId,
+  conceptSource,
+  dependencies,
+  initialState,
+}: Extract<RouteSession, { kind: 'ready' }> & {
+  caseId: string;
+  conceptSource: ConceptSource;
+}) {
+  const concepts = useCaseConcepts(conceptSource, caseId);
+
+  return (
+    <TrainingSessionPage
+      concepts={concepts}
+      dependencies={dependencies}
+      initialState={initialState}
+    />
+  );
+}
+
 export function TrainingRoutePage({
+  conceptSource = bundledConceptSource,
   foundationSource = bundledFoundationSource,
 }: TrainingRoutePageProps = {}) {
   const { caseId } = useParams<{ caseId: string }>();
@@ -128,6 +203,7 @@ export function TrainingRoutePage({
     <TrainingRouteForCase
       key={caseId ?? ''}
       caseId={caseId ?? ''}
+      conceptSource={conceptSource}
       foundationSource={foundationSource}
     />
   );
@@ -135,23 +211,18 @@ export function TrainingRoutePage({
 
 function TrainingRouteForCase({
   caseId,
+  conceptSource,
   foundationSource,
 }: {
   caseId: string;
+  conceptSource: ConceptSource;
   foundationSource: FoundationSource;
 }) {
   const { language, t } = useI18n();
   const getRepositories = useProductRepositories();
-  const mounted = useRef(true);
   const pending = useRef<
     { caseId: string; value: Promise<RouteSession> } | undefined
   >(undefined);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
   const { state, retry } = useAsyncPageData(() => {
     const selectedCaseId = caseId;
     if (pending.current?.caseId === selectedCaseId) {
@@ -199,7 +270,6 @@ function TrainingRouteForCase({
           initialState: resumeAttempt(content, latestMatchingAttempt),
         };
       }
-
       try {
         const foundationItems = await foundationSource.loadAll();
         if (
@@ -228,22 +298,16 @@ function TrainingRouteForCase({
         // Foundation and its evidence projection are advisory; training fails open.
       }
 
-      if (!mounted.current) {
-        return { kind: 'not-active' };
-      }
-      const initialState = await createTrainingSession(content, dependencies);
-      if (initialState.persistenceError !== null) {
-        throw new Error(initialState.persistenceError);
-      }
       return {
-        kind: 'ready',
+        kind: 'prerequisite',
+        content,
         dependencies,
-        initialState,
+        prerequisites: [],
       };
     })();
     pending.current = { caseId: selectedCaseId, value };
     return value;
-  }, [caseId, foundationSource, getRepositories, t]);
+  }, [caseId, conceptSource, foundationSource, getRepositories, t]);
 
   if (state.status === 'loading') {
     return (
@@ -279,17 +343,19 @@ function TrainingRouteForCase({
   }
   if (state.data.kind === 'prerequisite') {
     return (
-      <PrerequisiteTrainingStart
+      <ConceptAwarePrerequisiteTrainingStart
         key={`${state.data.content.id}@${state.data.content.metadata.version}`}
+        conceptSource={conceptSource}
         {...state.data}
       />
     );
   }
   return (
-    <TrainingSessionPage
+    <ConceptAwareTrainingSession
       key={`${state.data.initialState.caseId}@${state.data.initialState.caseVersion}`}
-      dependencies={state.data.dependencies}
-      initialState={state.data.initialState}
+      caseId={state.data.initialState.caseId}
+      conceptSource={conceptSource}
+      {...state.data}
     />
   );
 }

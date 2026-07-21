@@ -1,6 +1,7 @@
 import type { FoundationKnowledge } from '../../domain/foundation/types';
 import type {
   AttemptRecord,
+  CaseSummary,
   CompletedAttemptRecord,
   SkillMasteryRecord,
 } from '../../repositories/contracts';
@@ -9,6 +10,7 @@ import {
   buildFoundationTrackProgress,
   foundationStatus,
   prerequisitesForCase,
+  selectFoundationForCase,
   selectNextFoundation,
 } from './analysis';
 
@@ -188,6 +190,86 @@ describe('Foundation progress analysis', () => {
         [],
       )?.id,
     ).toBe('computer-basics.b');
+  });
+
+  it('selects the weak shared Foundation for the recommended Case', () => {
+    const targetCase = {
+      id: 'target-case',
+      skills: ['skill.shared', 'skill.secondary'],
+    } as Pick<CaseSummary, 'id' | 'skills'>;
+    const mastered = item('foundation.mastered', 1, {
+      skills: ['skill.shared'],
+      relatedCases: [targetCase.id],
+    });
+    const unrelated = item('foundation.unrelated', 2, {
+      skills: ['skill.unrelated'],
+      relatedCases: ['another-case'],
+    });
+    const disjoint = item('foundation.disjoint', 3, {
+      skills: ['skill.disjoint'],
+      relatedCases: [targetCase.id],
+    });
+    const weakShared = item('foundation.weak-shared', 99, {
+      skills: ['skill.secondary'],
+      relatedCases: [targetCase.id],
+    });
+    expect(
+      selectFoundationForCase(
+        [mastered, unrelated, disjoint, weakShared],
+        targetCase,
+        [
+          mastery('skill.shared', 80),
+          mastery('skill.unrelated', 20),
+          mastery('skill.secondary', 25),
+        ],
+        [completedAttempt(targetCase.id, 'pass')],
+      )?.id,
+    ).toBe('foundation.weak-shared');
+  });
+
+  it('returns no Foundation when the Case has no shared active relation', () => {
+    expect(
+      selectFoundationForCase(
+        [
+          item('foundation.unrelated-case', 1, {
+            skills: ['skill.shared'],
+            relatedCases: ['another-case'],
+          }),
+          item('foundation.disjoint-skill', 2, {
+            skills: ['skill.disjoint'],
+            relatedCases: ['target-case'],
+          }),
+        ],
+        { id: 'target-case', skills: ['skill.shared'] },
+        [],
+        [],
+      ),
+    ).toBeUndefined();
+  });
+
+  it('breaks equal Foundation recommendation scores by order then stable ID', () => {
+    const targetCase = { id: 'target-case', skills: ['skill.shared'] };
+    const later = item('foundation.later', 4, {
+      skills: ['skill.shared'],
+      relatedCases: [targetCase.id],
+    });
+    const sameOrderZ = item('foundation.z', 2, {
+      skills: ['skill.shared'],
+      relatedCases: [targetCase.id],
+    });
+    const sameOrderA = item('foundation.a', 2, {
+      skills: ['skill.shared'],
+      relatedCases: [targetCase.id],
+    });
+
+    expect(
+      selectFoundationForCase(
+        [later, sameOrderZ, sameOrderA],
+        targetCase,
+        [],
+        [],
+      )?.id,
+    ).toBe('foundation.a');
   });
 
   it('sorts case prerequisites learning, not-started, mastered and omits unrelated items', () => {

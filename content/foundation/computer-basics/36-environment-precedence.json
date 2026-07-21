@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.environment-precedence",
+  "type": "foundation",
+  "title": "环境配置优先级：确定最终生效值",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations", "cloud.deployment"],
+  "level": "intermediate",
+  "order": 36,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "环境配置优先级规定默认值、配置文件、环境变量、命令行参数等来源发生冲突时谁覆盖谁，诊断必须确认运行实例的最终值及其来源而不是只查看仓库文件。",
+    "analogy": "配置来源像会议室温度的多层控制，设备默认值、墙面面板和中央控制台都能设定温度。只拍下墙面显示不能证明最终送风温度，必须知道覆盖顺序并查看设备实际采用的指令。",
+    "technicalExplanation": "不同框架的覆盖顺序并不统一，变量名规范化、空值处理和启动参数还可能改变结果。应用应在启动时输出经过脱敏的有效配置摘要与来源标签，部署系统则应减少重复声明，并让变更经过可审计、可回滚的发布流程。",
+    "example": "Python 服务案例中，镜像配置文件把请求超时设为 30 秒，生产请求却仍在约 5 秒终止，启动日志同时标明值来自环境变量。证据链已经指向部署清单中的遗留覆盖项，应先在预发布删除该项并验证行为，再安全推广。",
+    "commonMistakes": "常见错误是反复重建镜像却不检查部署注入值，或进入生产容器手工修改文件，结果既没有持久性也无法审计。为确认来源而打印完整环境变量同样危险，应只输出允许公开的键、脱敏值或稳定摘要。"
+  },
+  "relatedCases": [
+    "python-config-precedence-001",
+    "frontend-build-env-endpoint-001"
+  ]
+}

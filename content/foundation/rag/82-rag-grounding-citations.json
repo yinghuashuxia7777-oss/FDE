@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.rag-grounding-citations",
+  "type": "foundation",
+  "title": "RAG 依据与引用：让结论可核验可追踪",
+  "domain": "rag",
+  "track": "ai-basics",
+  "skills": ["rag.search", "llm.applications", "reliability.observability"],
+  "level": "intermediate",
+  "order": 82,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "RAG 依据与引用要求回答中的关键主张能映射到本次实际检索的获授权片段，并记录文档、版本、区域和位置，使用户与工程师都能核对来源和发现漂移。",
+    "analogy": "它像审计报告给每项结论附上获准查看的凭证编号和页码，读者能回查原文；若凭证来自旧账本或别人的项目，即使编号格式完整也不可信。",
+    "technicalExplanation": "生成链路应保存查询、合法候选、组装片段与引用标识的追踪关系，验证引用确实支持相邻主张且版本可访问；证据不足、来源冲突或快照超龄时应拒答或透明降级。",
+    "example": "多区域维护助手在两次刷新中引用不同快照，其中一份文档权限已撤销；应绑定会话检索快照、记录区域版本，并让撤销覆盖层在所有区域三十秒内失败关闭。",
+    "commonMistakes": "只要求模型输出链接、引用存在就认定主张正确、缓存答案却不绑定语料代次，或把受限标题带入拒答文本都会破坏可追溯性和授权边界。"
+  },
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "multi-region-rag-consistency-001",
+    "rag-permission-filter-gap-001"
+  ]
+}

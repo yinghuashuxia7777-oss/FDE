@@ -141,19 +141,19 @@ export function TrainingLayout({
       aria-label={t('training.layout.workspace')}
     >
       <aside
-        className="training-workspace__scene"
+        className="training-workspace__panel training-workspace__panel--scene training-workspace__scene"
         aria-label={t('training.layout.sceneColumn')}
       >
         {scene}
       </aside>
       <section
-        className="training-workspace__evidence"
+        className="training-workspace__panel training-workspace__panel--evidence training-workspace__evidence"
         aria-label={t('training.layout.evidenceColumn')}
       >
         {evidence}
       </section>
       <aside
-        className="training-workspace__decision"
+        className="training-workspace__panel training-workspace__panel--decision training-workspace__decision"
         aria-label={t('training.layout.decisionColumn')}
       >
         {question}

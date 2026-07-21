@@ -137,6 +137,11 @@ export function readContentBundleSources(
       'content/foundation',
       options.limit === undefined ? {} : { limit: options.limit },
     ),
+    concepts: readOptionalContentSources(
+      root,
+      'content/concepts',
+      options.limit === undefined ? {} : { limit: options.limit },
+    ),
     coverage: readRequiredContentSource(
       root,
       'content/coverage/coverage-plan.json',

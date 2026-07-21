@@ -1,56 +1,49 @@
 import {
-  buildDomainSignals,
-  calculateCapabilityDimensions,
-  calculateLevelPassRates,
+  buildCapabilityEvidenceRecords,
+  buildCompletedChallengeProfiles,
+  buildSkillEvidenceProfiles,
+  calculateEvidenceReadiness,
+  projectMvpLeafEvidence,
+  projectSessionPracticeEvidence,
+  mergeMvpLeafEvidence,
   type ProductRepositories,
   type TrustedAttempt,
   useAsyncPageData,
   useProductRepositories,
 } from '../../application/product';
-import { Alert, StatusBadge } from '../../components/ui';
+import { Link } from 'react-router-dom';
+import { usePracticeEvidence } from '../../application/practice';
+import {
+  mvpCaseAttributions,
+  mvpLeafSkills,
+} from '../../content/mvp-capability-content';
+import { Alert } from '../../components/ui';
 import type { FdeCase } from '../../domain/cases/types';
 import { useI18n } from '../../i18n';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
 import { AsyncPage, PageHeader } from '../shared';
+import { CapabilityProfileView } from './CapabilityProfileView';
 
 interface ProfilePageProps {
   repositories?: ProductRepositories;
 }
 
-type Translate = ReturnType<typeof useI18n>['t'];
-
-const masteryStatusKeys = {
-  'Not started': 'product.common.mastery.notStarted',
-  Weak: 'product.common.mastery.weak',
-  Learning: 'product.common.mastery.learning',
-  Competent: 'product.common.mastery.competent',
-  Proficient: 'product.common.mastery.proficient',
-} as const;
-
-function translateErrorType(t: Translate, value: string): string {
-  const key = `product.errorType.${value}`;
-  const translated = t(key);
-  return translated === key ? value : translated;
-}
-
 export function ProfilePage({ repositories: override }: ProfilePageProps) {
   const { t } = useI18n();
+  const { evidence: practiceEvidence, projectEvidence } = usePracticeEvidence();
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
-    const [
-      attempts,
-      mistakes,
-      mastery,
-      activeDomainDefinitions,
-      activeSkillDefinitions,
-    ] = await Promise.all([
-      source.attempts.list({ userId: LOCAL_USER_ID, status: 'completed' }),
-      source.mistakes.list({ userId: LOCAL_USER_ID }),
-      source.skills.list(LOCAL_USER_ID),
-      source.content.listActiveDomains(),
-      source.content.listActiveSkills(),
-    ]);
+    const [attempts, mistakes, mastery, activeSkillDefinitions] =
+      await Promise.all([
+        source.attempts.list({
+          userId: LOCAL_USER_ID,
+          status: 'completed',
+        }),
+        source.mistakes.list({ userId: LOCAL_USER_ID }),
+        source.skills.list(LOCAL_USER_ID),
+        source.content.listActiveSkills(),
+      ]);
     const completed = attempts.filter(
       (attempt): attempt is Extract<typeof attempt, { status: 'completed' }> =>
         attempt.status === 'completed',
@@ -83,15 +76,15 @@ export function ProfilePage({ repositories: override }: ProfilePageProps) {
         trusted.push({ attempt, caseContent: content });
       }
     });
-    trusted.sort((left, right) =>
-      left.attempt.id.localeCompare(right.attempt.id),
-    );
     missing.sort();
+
+    const activeSkillIds = activeSkillDefinitions.map(({ id }) => id);
     const skillDefinitionsById = new Map(
       activeSkillDefinitions.map((definition) => [definition.id, definition]),
     );
     const referencedSkillIds = new Set([
       ...mastery.map(({ skillId }) => skillId),
+      ...mistakes.flatMap(({ skillIds }) => skillIds),
       ...trusted.flatMap(({ caseContent }) => caseContent.skills),
     ]);
     const historicalSkillDefinitions = await Promise.all(
@@ -106,37 +99,21 @@ export function ProfilePage({ repositories: override }: ProfilePageProps) {
       }
     });
 
-    const domainDefinitionsById = new Map(
-      activeDomainDefinitions.map((definition) => [definition.id, definition]),
-    );
-    const referencedDomainIds = new Set([
-      ...trusted.flatMap(({ caseContent }) => caseContent.domains),
-      ...[...skillDefinitionsById.values()].map(({ domainId }) => domainId),
-    ]);
-    const historicalDomainDefinitions = await Promise.all(
-      [...referencedDomainIds]
-        .filter((id) => !domainDefinitionsById.has(id))
-        .sort()
-        .map((id) => source.content.findDomainDefinition(id)),
-    );
-    historicalDomainDefinitions.forEach((definition) => {
-      if (definition !== undefined) {
-        domainDefinitionsById.set(definition.id, definition);
-      }
-    });
-
     return {
+      activeSkillIds,
       trusted,
       missing,
       mistakes,
       mastery,
-      domainDefinitions: [...domainDefinitionsById.values()],
       skillDefinitions: [...skillDefinitionsById.values()],
     };
   }, [getRepositories]);
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
+    <section
+      className="product-page capability-profile-page"
+      aria-labelledby="page-title"
+    >
       <PageHeader
         eyebrow={t('profile.eyebrow')}
         title={t('profile.title')}
@@ -144,48 +121,29 @@ export function ProfilePage({ repositories: override }: ProfilePageProps) {
       />
       <AsyncPage state={state} retry={retry}>
         {({
+          activeSkillIds,
           trusted,
           missing,
           mistakes,
           mastery,
-          domainDefinitions,
           skillDefinitions,
         }) => {
           const missingVersions = [...new Set(missing)];
-          const domains = buildDomainSignals(
-            domainDefinitions,
+          const evidence = buildCapabilityEvidenceRecords(trusted);
+          const challenges = buildCompletedChallengeProfiles(trusted);
+          const skills = buildSkillEvidenceProfiles(
             skillDefinitions,
             mastery,
+            mistakes,
+            trusted,
           );
-          const levels = calculateLevelPassRates(trusted);
-          const dimensions = calculateCapabilityDimensions(trusted);
-          const errorCounts = new Map<string, number>();
-          mistakes.forEach(({ errorTypes }) =>
-            errorTypes.forEach((error) =>
-              errorCounts.set(error, (errorCounts.get(error) ?? 0) + 1),
-            ),
+          const readiness = calculateEvidenceReadiness(
+            new Set(activeSkillIds),
+            mastery,
           );
-          const frequentErrors = [...errorCounts].sort(
-            (left, right) =>
-              right[1] - left[1] || left[0].localeCompare(right[0]),
-          );
-          const availableDimensionScores = dimensions.flatMap(({ score }) =>
-            score === undefined ? [] : [score],
-          );
-          const criticalAttempts = trusted.filter(
-            ({ attempt }) => attempt.criticalErrorIds.length > 0,
-          ).length;
-          const missingDimensions = dimensions.filter(
-            ({ samples }) => samples === 0,
-          );
-          const enoughSamples =
-            trusted.length >= 3 && missingDimensions.length === 0;
-          const readiness = enoughSamples
-            ? availableDimensionScores.reduce((sum, score) => sum + score, 0) /
-              5
-            : undefined;
+
           return (
-            <div className="product-stack">
+            <div className="capability-profile-stack">
               {missing.length === 0 ? null : (
                 <Alert
                   title={t('profile.missingVersions.title')}
@@ -202,141 +160,32 @@ export function ProfilePage({ repositories: override }: ProfilePageProps) {
                   )}
                 </Alert>
               )}
-              <section className="panel" aria-labelledby="readiness-title">
-                <h2 id="readiness-title">{t('profile.readiness.title')}</h2>
-                {readiness === undefined ? (
-                  <p>
-                    {t('profile.readiness.insufficient', {
-                      dimensions:
-                        missingDimensions.length === 0
-                          ? t('product.common.none')
-                          : missingDimensions
-                              .map(({ id }) => t(`profile.dimension.${id}`))
-                              .join(', '),
-                    })}
-                  </p>
-                ) : (
-                  <p>
-                    <strong>{Math.round(readiness)} / 100</strong>
-                  </p>
+              <CapabilityProfileView
+                challenges={challenges}
+                evidence={evidence}
+                mvpLeafEvidence={mergeMvpLeafEvidence(
+                  projectMvpLeafEvidence(
+                    trusted.map(({ attempt }) => attempt),
+                    mvpCaseAttributions,
+                    mvpLeafSkills,
+                  ),
+                  projectSessionPracticeEvidence(
+                    practiceEvidence,
+                    mvpLeafSkills,
+                  ),
                 )}
-                <p>
-                  {t('profile.readiness.formula', {
-                    trusted: trusted.length,
-                    critical: criticalAttempts,
-                  })}
-                </p>
-              </section>
-              <section
-                className="panel"
-                aria-labelledby="profile-domains-title"
-              >
-                <h2 id="profile-domains-title">
-                  {t('profile.domainMastery.title')}
-                </h2>
-                <div className="domain-grid">
-                  {domains.map((domain) => (
-                    <article className="domain-cell" key={domain.id}>
-                      <h3>{domain.label}</h3>
-                      <p>
-                        {domain.score === undefined
-                          ? t('product.common.notAvailable')
-                          : `${Math.round(domain.score)} / 100`}
-                      </p>
-                      <StatusBadge>
-                        {t(masteryStatusKeys[domain.status])}
-                      </StatusBadge>
-                      <p>
-                        {t(
-                          domain.sampleCount === 1
-                            ? 'profile.domainMastery.sampleOne'
-                            : 'profile.domainMastery.samples',
-                          { count: domain.sampleCount },
-                        )}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-              <section className="panel" aria-labelledby="level-rates-title">
-                <h2 id="level-rates-title">{t('profile.levelRates.title')}</h2>
-                <table>
-                  <caption>{t('profile.levelRates.caption')}</caption>
-                  <thead>
-                    <tr>
-                      <th>{t('profile.levelRates.level')}</th>
-                      <th>{t('profile.levelRates.passed')}</th>
-                      <th>{t('profile.levelRates.samples')}</th>
-                      <th>{t('profile.levelRates.rate')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {levels.map((level) => (
-                      <tr key={level.level}>
-                        <th scope="row">
-                          {t(`product.common.level.${level.level}`)}
-                        </th>
-                        <td>{level.passed}</td>
-                        <td>{level.samples}</td>
-                        <td>
-                          {level.rate === undefined
-                            ? t('product.common.notAvailable')
-                            : `${Math.round(level.rate)}%`}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </section>
-              <section className="panel" aria-labelledby="dimensions-title">
-                <h2 id="dimensions-title">{t('profile.dimensions.title')}</h2>
-                <table>
-                  <caption>{t('profile.dimensions.caption')}</caption>
-                  <thead>
-                    <tr>
-                      <th>{t('profile.dimensions.dimension')}</th>
-                      <th>{t('profile.dimensions.score')}</th>
-                      <th>{t('profile.dimensions.samples')}</th>
-                      <th>{t('profile.dimensions.basis')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dimensions.map((dimension) => (
-                      <tr key={dimension.id}>
-                        <th scope="row">
-                          {t(`profile.dimension.${dimension.id}`)}
-                        </th>
-                        <td>
-                          {dimension.score === undefined
-                            ? t('product.common.notAvailable')
-                            : Math.round(dimension.score)}
-                        </td>
-                        <td>{dimension.samples}</td>
-                        <td>{t('profile.dimension.basisText')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </section>
-              <section
-                className="panel"
-                aria-labelledby="frequent-errors-title"
-              >
-                <h2 id="frequent-errors-title">
-                  {t('profile.frequentErrors.title')}
-                </h2>
-                {frequentErrors.length === 0 ? (
-                  <p>{t('profile.frequentErrors.empty')}</p>
-                ) : (
-                  <ol>
-                    {frequentErrors.map(([error, count]) => (
-                      <li key={error}>
-                        {translateErrorType(t, error)}: {count}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </section>
+                practiceEvidence={practiceEvidence}
+                projectEvidence={projectEvidence}
+                readiness={readiness}
+                skills={skills}
+              />
+              <aside className="local-feedback-entry">
+                <span>{t('feedback.entry.profile')}</span>
+                <Link to="/feedback">
+                  {t('feedback.entry.action')}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </aside>
             </div>
           );
         }}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.monitoring",
+  "type": "concept",
+  "category": "system",
+  "order": 20,
+  "title": "监控：用指标与健康信号观察系统状态",
+  "technicalTerm": "Monitoring",
+  "simpleExplanation": "监控持续收集系统信号，帮助团队在用户报告之前发现异常并判断影响范围。",
+  "analogy": "像汽车仪表盘：不仅显示发动机是否还在转，还显示温度、油量和故障灯，帮助判断能否安全继续行驶。",
+  "technicalExplanation": "监控通常结合指标、日志、追踪、健康检查和告警。高质量信号围绕用户成功率、延迟、错误、饱和度和关键依赖建立，并能按租户、版本或区域切分。",
+  "whyItMatters": "生产问题需要从症状量化影响，再用关联信号缩小范围。FDE 应避免单一平均值掩盖某一客户或区域的严重退化。",
+  "commonMistakes": "只监控 CPU；把进程存活当业务健康；告警没有运行手册与负责人；为了排障无限增加高基数字段或敏感数据。",
+  "relatedFoundation": [
+    "computer.health-readiness",
+    "computer.logs",
+    "computer.log-correlation",
+    "api.correlation-id"
+  ],
+  "relatedCases": [
+    "container-readiness-port-001",
+    "observability-correlation-id-001",
+    "security-log-pii-exposure-001"
+  ]
+}

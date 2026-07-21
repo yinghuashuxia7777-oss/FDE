@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.ai.structured-output",
+  "version": 1,
+  "status": "draft",
+  "title": "Structured Output Focused Practice",
+  "summary": "A focused transfer activity for Structured Output.",
+  "primaryConceptId": "concept.interface-contract",
+  "foundationIds": ["ai.structured-output"],
+  "primaryLeafSkillId": "ai.structured-output",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.ai.structured-output",
+    "kind": "decision",
+    "prompt": "Define a schema-valid response and one recovery rule.",
+    "stimulus": [
+      {
+        "id": "stimulus.ai.structured-output",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.ai.structured-output",
+      "skillId": "ai.structured-output",
+      "version": 1
+    },
+    "criterionIds": ["criterion.ai.structured-output.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "schema-contract",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

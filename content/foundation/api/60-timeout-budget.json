@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "api.timeout-budget",
+  "type": "foundation",
+  "title": "超时预算：让整条调用链共享明确期限",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "intermediate",
+  "order": 60,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "超时预算规定一次业务调用从开始到放弃的总期限，连接、读取、下游处理和重试都应从同一预算中消费而不是各自获得完整时长。",
+    "analogy": "赶飞机的总时间只有一小时，打车、安检和登机都必须分享这段时间；若每个环节都自称还能用一小时，最终一定错过真正截止点。",
+    "technicalExplanation": "入口设置截止时间并向下游传播剩余预算，各阶段超时应小于调用方剩余期限，还要预留序列化和返回时间。重试只能使用尚未耗尽的预算。",
+    "example": "FDE 排查 Agent 工具卡住九十秒时发现，编排器、网关和下游各配置三十秒并串行耗尽。统一传播截止时间后，下游及时取消，重试也不会越过用户期限。",
+    "commonMistakes": "只缩短最外层超时而不取消下游，会留下继续执行的幽灵请求。每次重试重新获得完整超时同样会突破总预算，并增加未知结果与重复副作用。"
+  },
+  "relatedCases": [
+    "agent-tool-timeout-retry-001",
+    "api-timeout-budget-cascade-001"
+  ]
+}

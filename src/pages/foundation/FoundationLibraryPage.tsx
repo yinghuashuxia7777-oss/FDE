@@ -97,57 +97,61 @@ export function FoundationLibraryPage({
 
           return (
             <div className="product-stack">
-              <section
-                className="foundation-overall panel"
-                aria-labelledby="foundation-overall-title"
-              >
-                <div className="foundation-track__heading">
-                  <div>
-                    <p className="eyebrow">
-                      {t('foundation.library.overallEyebrow')}
-                    </p>
-                    <h2 id="foundation-overall-title">
-                      {t('foundation.library.overallTitle')}
-                    </h2>
-                  </div>
-                  <strong>{t('foundation.library.progress', overall)}</strong>
-                </div>
-                <progress
-                  aria-label={t('foundation.library.overallProgressLabel', {
-                    mastered: overall.mastered,
-                    total: overall.total,
-                  })}
-                  max={overall.total || 1}
-                  value={overall.mastered}
-                >
-                  {overallPercent}%
-                </progress>
-              </section>
-
-              {continueItem === undefined ? null : (
+              <div className="foundation-library-overview">
                 <section
-                  className="foundation-continue panel"
-                  aria-labelledby="foundation-continue-title"
+                  className="foundation-overall panel"
+                  aria-labelledby="foundation-overall-title"
                 >
-                  <div>
-                    <p className="eyebrow">
-                      {t('foundation.library.continueTitle')}
-                    </p>
-                    <h2 id="foundation-continue-title">{continueItem.title}</h2>
-                    <p>{t('foundation.library.continueDescription')}</p>
+                  <div className="foundation-track__heading">
+                    <div>
+                      <p className="eyebrow">
+                        {t('foundation.library.overallEyebrow')}
+                      </p>
+                      <h2 id="foundation-overall-title">
+                        {t('foundation.library.overallTitle')}
+                      </h2>
+                    </div>
+                    <strong>{t('foundation.library.progress', overall)}</strong>
                   </div>
-                  <Link
-                    className="button button--primary"
-                    to={`/foundation/${continueItem.id}`}
+                  <progress
+                    aria-label={t('foundation.library.overallProgressLabel', {
+                      mastered: overall.mastered,
+                      total: overall.total,
+                    })}
+                    max={overall.total || 1}
+                    value={overall.mastered}
                   >
-                    {t(
-                      next === undefined
-                        ? 'foundation.library.reviewFoundation'
-                        : 'foundation.library.continueLearning',
-                    )}
-                  </Link>
+                    {overallPercent}%
+                  </progress>
                 </section>
-              )}
+
+                {continueItem === undefined ? null : (
+                  <section
+                    className="foundation-continue panel"
+                    aria-labelledby="foundation-continue-title"
+                  >
+                    <div>
+                      <p className="eyebrow">
+                        {t('foundation.library.continueTitle')}
+                      </p>
+                      <h2 id="foundation-continue-title">
+                        {continueItem.title}
+                      </h2>
+                      <p>{t('foundation.library.continueDescription')}</p>
+                    </div>
+                    <Link
+                      className="button button--primary"
+                      to={`/foundation/${continueItem.id}`}
+                    >
+                      {t(
+                        next === undefined
+                          ? 'foundation.library.reviewFoundation'
+                          : 'foundation.library.continueLearning',
+                      )}
+                    </Link>
+                  </section>
+                )}
+              </div>
 
               {tracks.map((track) => {
                 const trackItems = items.filter(
@@ -157,8 +161,9 @@ export function FoundationLibraryPage({
                 const trackLabel = t(foundationTrackKeys[track.track]);
                 return (
                   <section
-                    className="foundation-track panel"
+                    className={`foundation-track foundation-track--${track.track} panel`}
                     aria-labelledby={titleId}
+                    data-track={track.track}
                     key={track.track}
                   >
                     <div className="foundation-track__heading">
@@ -199,6 +204,7 @@ export function FoundationLibraryPage({
                         return (
                           <article
                             className="case-card foundation-card"
+                            data-status={status}
                             key={item.id}
                           >
                             <div className="case-card__header">

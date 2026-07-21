@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.token-expiry-refresh",
+  "type": "foundation",
+  "title": "令牌过期与刷新：安全延续访问会话",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "intermediate",
+  "order": 56,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "访问令牌通常寿命较短，客户端应在过期或服务明确拒绝后按授权机制刷新，并安全替换旧凭据而不是无限重放失效令牌。",
+    "analogy": "短期通行证到期后需要用受保护的续签凭证换新证，不能涂改旧日期继续使用；多人同时续签还应避免发出一堆相互覆盖的新证。",
+    "technicalExplanation": "客户端依据 expiry 和合理时钟偏差判断有效期，使用刷新令牌或重新授权获取新访问令牌。刷新令牌可能轮换和撤销，并发刷新需要单飞或原子更新。",
+    "example": "FDE 面对合作方 API 的 403 时先核对令牌时间，确认尚未过期且 audience 有效，因此没有反复刷新凭据；继续比较授权声明后发现缺少读取 scope，说明刷新不能修复权限注册问题。",
+    "commonMistakes": "每次请求前无条件刷新会增加授权服务压力，收到任何 403 都刷新则掩盖 scope 不足。也不要记录刷新令牌，或忽略服务器时间与本地时钟偏差。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

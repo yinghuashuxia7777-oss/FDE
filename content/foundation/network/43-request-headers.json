@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "http.request-headers",
+  "type": "foundation",
+  "title": "请求头：传递身份、协商与诊断上下文",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "beginner",
+  "order": 43,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "HTTP 请求头携带认证凭据、期望格式、追踪标识和客户端条件等元数据，网关与服务会据此处理请求，所以缺失或覆盖头部会改变结果。",
+    "analogy": "请求头像包裹外侧的通行证、易碎标记和追踪编号，箱内物品完全相同，外部标签不同也会改变门卫放行、仓库处理以及问题追查方式。",
+    "technicalExplanation": "Authorization、Accept、If-Match 和追踪头分别影响身份、响应表示、并发控制与链路关联。头名通常不区分大小写，但值的格式和代理转发策略必须遵循契约。",
+    "example": "FDE 排查 OAuth 接口持续返回 403 时，发现 SDK 默认请求头覆盖了调用方提供的 Authorization，实际送出的是旧令牌且缺少目标 scope，通过脱敏记录声明与关联 ID 才定位差异。",
+    "commonMistakes": "只比较请求正文而忽略经过网关后的实际头部，容易误判服务逻辑。也不要打印完整 Authorization 或复制生产 Cookie，诊断时只保留必要声明、摘要和关联标识。"
+  },
+  "relatedCases": [
+    "api-oauth-scope-mismatch-001",
+    "observability-correlation-id-001"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.api-key-auth",
+  "type": "foundation",
+  "title": "API Key 认证：识别调用方并控制凭据暴露",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "beginner",
+  "order": 51,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "API Key 是服务分配给调用方的秘密字符串，通常用于识别项目或应用并执行配额控制，但它本身不应被当成细粒度用户授权证明。",
+    "analogy": "API Key 像公司发给供应商的总门禁卡，门卫能知道来自哪家供应商，却未必知道具体持卡人是谁；卡片一旦被复制，冒用者也会获得相同入口。",
+    "technicalExplanation": "密钥常通过专用请求头发送，服务端保存可验证表示并支持轮换、撤销和最小权限。它与用户身份令牌职责不同，不能仅凭同一密钥区分终端用户权限。",
+    "example": "FDE 轮换外部服务凭据时发现 Secret 已到 generation 42，但 9 个 Pod 仍使用旧凭据；团队先做单 Pod canary，确认新凭据认证成功且权限仍为 payments.write，再分批切换并撤销旧代。",
+    "commonMistakes": "把密钥写进前端包、代码仓库、截图或工单都会扩大泄露面。也不要用一个永久密钥覆盖所有环境和租户，否则撤销、归因与最小权限都难以落实。"
+  },
+  "relatedCases": ["k8s-secret-rotation-rollout-001"]
+}

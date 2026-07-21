@@ -10,7 +10,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,3 +33,5 @@ jobs:
         run: npm run format:check
       - name: Build
         run: npm run build
+      - name: Run critical browser journeys
+        run: npm run test:e2e

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "http.response-headers",
+  "type": "foundation",
+  "title": "响应头：读取服务给出的处理线索",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "beginner",
+  "order": 45,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "HTTP 响应头描述内容格式、缓存规则、限流状态、重试建议和请求标识，正文相同也可能需要依据这些元数据采取不同后续动作。",
+    "analogy": "响应头像检验报告边上的批次号、有效期和复查建议，主体结论只说通过或失败，而这些附加信息决定何时复查以及去哪里追溯全过程。",
+    "technicalExplanation": "Content-Type、Retry-After、Location、ETag 和请求 ID 等头部承担不同控制语义。代理可能新增、删除或改写响应头，因此排障要区分边缘返回与源服务返回。",
+    "example": "FDE 处理跨服务间歇失败时，客户端只记录 502 和正文，丢弃了响应中的 correlation ID，无法与网关日志关联。保留脱敏后的关键响应头后才定位到单个下游实例。",
+    "commonMistakes": "只保存响应正文截图而忽略头部，会丢失限流和链路证据。也不要盲目相信任意自定义头，必须确认它由哪个组件生成、是否跨代理保持以及能否安全记录。"
+  },
+  "relatedCases": ["observability-correlation-id-001"]
+}

@@ -3,7 +3,9 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 import type { ProductRepositories } from '../../application/product';
+import type { ConceptSource } from '../../content/concept-source';
 import type { FoundationSource } from '../../content/foundation-source';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import type {
   FoundationKnowledge,
   FoundationTrack,
@@ -82,6 +84,33 @@ function source(items = thirtyItems()): FoundationSource {
       .mockImplementation((id: string) =>
         Promise.resolve(items.find((item) => item.id === id)),
       ),
+  };
+}
+
+const relatedConcept: ConceptKnowledge = {
+  schemaVersion: 1,
+  id: 'concept.api',
+  type: 'concept',
+  category: 'api-backend',
+  order: 1,
+  title: 'API：系统之间的可验证协作边界',
+  technicalTerm: 'API',
+  simpleExplanation: 'API 是两个系统约定如何交换请求与结果的边界。',
+  analogy: '像餐厅菜单，明确可点什么、如何点以及会返回什么。',
+  technicalExplanation: 'API 契约定义输入、输出、错误与兼容规则。',
+  whyItMatters: 'FDE 需要沿接口边界定位客户系统与产品之间的问题。',
+  commonMistakes: '不要把能连通误认为业务契约已经满足。',
+  relatedFoundation: ['api-basic'],
+  relatedCases: ['case-active'],
+};
+
+function concepts(
+  loadAll: () => Promise<readonly ConceptKnowledge[]> = () =>
+    Promise.resolve([relatedConcept]),
+): ConceptSource {
+  return {
+    loadAll: vi.fn(loadAll),
+    findById: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -220,7 +249,7 @@ function repositories(): ProductRepositories {
 
 describe('Foundation pages', () => {
   it('groups 10/10/10 dynamically, derives progress, and keeps stable links', async () => {
-    render(
+    const { container } = render(
       <I18nProvider initialLanguage="en-US">
         <MemoryRouter>
           <FoundationLibraryPage
@@ -234,9 +263,15 @@ describe('Foundation pages', () => {
     expect(
       await screen.findByRole('heading', { name: 'Foundation Knowledge' }),
     ).toBeVisible();
+    const overview = container.querySelector('.foundation-library-overview');
+    expect(overview).not.toBeNull();
     const overall = screen.getByRole('region', {
       name: 'Overall progress',
     });
+    expect(overview).toContainElement(overall);
+    expect(overview).toContainElement(
+      screen.getByRole('region', { name: 'Foundation item 2' }),
+    );
     expect(within(overall).getByText('1 / 30 mastered')).toBeVisible();
     expect(within(overall).getByRole('progressbar')).toHaveAttribute(
       'value',
@@ -249,6 +284,12 @@ describe('Foundation pages', () => {
     const computer = screen.getByRole('region', { name: 'Computer basics' });
     const network = screen.getByRole('region', { name: 'Network and API' });
     const ai = screen.getByRole('region', { name: 'AI basics' });
+    expect(computer).toHaveClass('foundation-track--computer-basics');
+    expect(network).toHaveClass('foundation-track--network-api');
+    expect(ai).toHaveClass('foundation-track--ai-basics');
+    expect(computer).toHaveAttribute('data-track', 'computer-basics');
+    expect(network).toHaveAttribute('data-track', 'network-api');
+    expect(ai).toHaveAttribute('data-track', 'ai-basics');
     expect(within(computer).getAllByRole('article')).toHaveLength(10);
     expect(within(network).getAllByRole('article')).toHaveLength(10);
     expect(within(ai).getAllByRole('article')).toHaveLength(10);
@@ -265,13 +306,20 @@ describe('Foundation pages', () => {
     ).toHaveAttribute('href', '/foundation/foundation-item-02');
     expect(screen.getByText('Mastered')).toBeVisible();
     expect(screen.getByText('Learning')).toBeVisible();
+    expect(
+      container.querySelector('.foundation-card[data-status="mastered"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('.foundation-card[data-status="learning"]'),
+    ).not.toBeNull();
   });
 
   it('renders authored sections explicitly and joins active Skills and Cases by ID', async () => {
-    render(
+    const { container } = render(
       <I18nProvider initialLanguage="en-US">
         <MemoryRouter>
           <FoundationDetailPage
+            conceptSource={concepts()}
             foundationId="api-basic"
             foundationSource={source()}
             repositories={repositories()}
@@ -284,9 +332,41 @@ describe('Foundation pages', () => {
       await screen.findByRole('heading', { name: '作者编写的 API 基础' }),
     ).toBeVisible();
     expect(screen.getByText(authoredContent.simpleExplanation)).toBeVisible();
-    const article = screen.getByRole('article');
+    const detailLayout = container.querySelector('.foundation-detail-layout');
+    const article = detailLayout?.querySelector(':scope > article');
+    const aside = detailLayout?.querySelector(':scope > aside');
+    expect(detailLayout).not.toBeNull();
+    expect(article).not.toBeNull();
+    expect(aside).not.toBeNull();
+    const chapterNavigation = screen.getByRole('navigation', {
+      name: 'Foundation chapters',
+    });
     expect(
-      within(article)
+      within(chapterNavigation).getByRole('link', {
+        name: 'Simple explanation',
+      }),
+    ).toHaveAttribute('href', '#foundation-chapter-simple-explanation');
+    expect(
+      within(chapterNavigation).getByRole('link', {
+        name: 'Common mistakes',
+      }),
+    ).toHaveAttribute('href', '#foundation-chapter-common-mistakes');
+    expect(
+      Array.from(
+        article?.querySelectorAll('[data-foundation-chapter]') ?? [],
+      ).map((section) => section.getAttribute('data-foundation-chapter')),
+    ).toEqual([
+      'simple-explanation',
+      'analogy',
+      'technical-explanation',
+      'example',
+      'common-mistakes',
+    ]);
+    expect(
+      article?.querySelector('#foundation-chapter-simple-explanation'),
+    ).not.toBeNull();
+    expect(
+      within(article as HTMLElement)
         .getAllByRole('heading', { level: 2 })
         .slice(0, 5)
         .map((heading) => heading.textContent),
@@ -301,10 +381,204 @@ describe('Foundation pages', () => {
     expect(screen.getByText('72 / 100')).toBeVisible();
     expect(screen.getByText('Competent')).toBeVisible();
     expect(
+      screen.getByText('Current knowledge: 作者编写的 API 基础'),
+    ).toBeVisible();
+    expect(screen.getByText('Recommended practice')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Related Concepts' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: 'API：系统之间的可验证协作边界（API）',
+      }),
+    ).toBeVisible();
+    const conceptNextStep = screen.getByRole('region', {
+      name: 'Active API incident',
+    });
+    expect(conceptNextStep).toHaveTextContent(
+      'After understanding these engineering concepts, challenge:',
+    );
+    expect(
+      within(conceptNextStep).getByRole('link', {
+        name: 'Challenge Case: Active API incident',
+      }),
+    ).toHaveAttribute('href', '/training/case-active');
+    expect(
       screen.getByRole('link', { name: 'Start Case: Active API incident' }),
     ).toHaveAttribute('href', '/training/case-active');
+    expect(aside).toContainElement(
+      screen.getByRole('link', { name: 'Start Case: Active API incident' }),
+    );
     expect(screen.queryByText('case-deprecated')).not.toBeInTheDocument();
     expect(screen.queryByText('case-missing')).not.toBeInTheDocument();
+    const nextStep = screen.getByRole('region', {
+      name: 'Foundation item 2',
+    });
+    expect(nextStep).toHaveTextContent(
+      'After understanding this knowledge, continue with:',
+    );
+    expect(
+      within(nextStep).getByRole('link', { name: 'Learn Foundation item 2' }),
+    ).toHaveAttribute('href', '/foundation/foundation-item-02');
+  });
+
+  it('explains that reading and guide completion do not create Mastery evidence', async () => {
+    const repository = repositories();
+    vi.mocked(repository.attempts.list).mockResolvedValue([]);
+    vi.mocked(repository.skills.list).mockResolvedValue([]);
+    const { container } = render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            conceptSource={concepts(() => Promise.resolve([]))}
+            foundationId="api-basic"
+            foundationSource={source([foundationItem(1, 'computer-basics')])}
+            repositories={repository}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: '作者编写的 API 基础' }),
+    ).toBeVisible();
+    const readingNote = screen.getByRole('note', {
+      name: 'Reading and Mastery',
+    });
+    expect(readingNote).toHaveTextContent(
+      'Reading helps you understand the concept',
+    );
+    expect(readingNote).toHaveTextContent('does not directly increase Mastery');
+    expect(readingNote).toHaveTextContent(
+      'Completing this guide does not mean the skill is mastered',
+    );
+    expect(readingNote).toHaveTextContent(
+      'Training evidence from a related Case updates your capabilities',
+    );
+    const facts = container.querySelector('.foundation-facts');
+    expect(facts).not.toBeNull();
+    expect(within(facts as HTMLElement).getByText('Not started')).toBeVisible();
+    expect(repository.attempts.save).not.toHaveBeenCalled();
+    expect(repository.skills.save).not.toHaveBeenCalled();
+    expect(repository.skills.saveMany).not.toHaveBeenCalled();
+    expect(repository.progress.commitCompletion).not.toHaveBeenCalled();
+  });
+
+  it('keeps authored Foundation content usable when the optional next-step source fails', async () => {
+    const failingSource = source();
+    vi.mocked(failingSource.loadAll).mockRejectedValue(
+      new Error('Foundation recommendation unavailable'),
+    );
+
+    render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            foundationId="api-basic"
+            foundationSource={failingSource}
+            repositories={repositories()}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByText(authoredContent.technicalExplanation),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Start Case: Active API incident' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('region', { name: 'Foundation item 2' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('fails open when optional Foundation and Concept sidecars throw synchronously', async () => {
+    const throwingFoundationSource = source();
+    vi.mocked(throwingFoundationSource.loadAll).mockImplementation(() => {
+      throw new Error('Synchronous Foundation sidecar failure');
+    });
+    const throwingConceptSource = concepts(() => {
+      throw new Error('Synchronous Concept sidecar failure');
+    });
+
+    render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            conceptSource={throwingConceptSource}
+            foundationId="api-basic"
+            foundationSource={throwingFoundationSource}
+            repositories={repositories()}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByText(authoredContent.technicalExplanation),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Start Case: Active API incident' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'Related Concepts' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Foundation item 2' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('fails open when related Concepts cannot load', async () => {
+    render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            conceptSource={concepts(() =>
+              Promise.reject(new Error('Concept source unavailable')),
+            )}
+            foundationId="api-basic"
+            foundationSource={source()}
+            repositories={repositories()}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByText(authoredContent.technicalExplanation),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Start Case: Active API incident' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'Related Concepts' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders Foundation content without waiting for a slow Concept source', async () => {
+    const neverLoads = new Promise<readonly ConceptKnowledge[]>(() => {
+      // Intentionally unresolved: the sidecar cannot block authored content.
+    });
+    render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            conceptSource={concepts(() => neverLoads)}
+            foundationId="api-basic"
+            foundationSource={source()}
+            repositories={repositories()}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByText(authoredContent.technicalExplanation),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'Related Concepts' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps knowledge readable when a related Case is absent from the active pack', async () => {

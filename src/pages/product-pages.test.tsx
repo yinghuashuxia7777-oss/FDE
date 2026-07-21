@@ -13,6 +13,9 @@ import type {
   ProductRepositories,
 } from '../application/product';
 import type { FoundationSource } from '../content/foundation-source';
+import type { ConceptSource } from '../content/concept-source';
+import { LearningJourneyProvider } from '../components/onboarding';
+import type { ConceptKnowledge } from '../domain/concepts/types';
 import type { FoundationKnowledge } from '../domain/foundation/types';
 import type {
   CaseProgressRecord,
@@ -113,17 +116,17 @@ function summary(
   };
 }
 
-function caseProgress(caseId: string): CaseProgressRecord {
+function caseProgress(caseId: string, completedCount = 1): CaseProgressRecord {
   return {
     userId: 'local-user',
     caseId,
     caseVersion: 1,
     latestAttemptId: `${caseId}-attempt`,
     attemptCount: 1,
-    completedCount: 1,
-    highestScore: 80,
-    latestScore: 80,
-    latestVerdict: 'pass',
+    completedCount,
+    highestScore: completedCount > 0 ? 80 : 0,
+    latestScore: completedCount > 0 ? 80 : 0,
+    latestVerdict: completedCount > 0 ? 'pass' : 'fail',
     hasCriticalError: false,
     updatedAt: '2026-07-13T00:00:00.000Z',
   };
@@ -184,6 +187,33 @@ function dashboardFoundationSource(): FoundationSource {
   };
 }
 
+function dashboardConceptSource(): ConceptSource {
+  const item: ConceptKnowledge = {
+    schemaVersion: 1,
+    id: 'concept.api',
+    type: 'concept',
+    category: 'api-backend',
+    order: 1,
+    title: 'API collaboration boundary',
+    technicalTerm: 'API',
+    simpleExplanation: 'An API is a contract between connected systems.',
+    analogy: 'A menu describes what can be ordered.',
+    technicalExplanation: 'Requests and responses follow a defined contract.',
+    whyItMatters: 'FDEs diagnose failures across system boundaries.',
+    commonMistakes: 'Treating every API failure as a model failure.',
+    relatedFoundation: ['api-basic'],
+    relatedCases: ['case-active'],
+  };
+  return {
+    loadAll: vi.fn().mockResolvedValue([item]),
+    findById: vi
+      .fn()
+      .mockImplementation((id: string) =>
+        Promise.resolve(id === item.id ? item : undefined),
+      ),
+  };
+}
+
 function LocationProbe() {
   const location = useLocation();
   return (
@@ -214,6 +244,374 @@ function renderCases(source: ProductRepositories, initialEntries = ['/cases']) {
 }
 
 describe('Slice A product pages', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('makes profile setup and First Mission the only new-user experience', async () => {
+    const user = userEvent.setup();
+    const source = repositories();
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('case-active', {
+        title: 'Advanced agent incident',
+        level: 'advanced',
+        skills: ['api.integration'],
+      }),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <LearningJourneyProvider>
+          <DashboardPage
+            conceptSource={dashboardConceptSource()}
+            foundationSource={dashboardFoundationSource()}
+            repositories={source}
+          />
+        </LearningJourneyProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('radio', { name: /become ai engineer/i }),
+    );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Generate my growth profile' }),
+    );
+
+    const firstMission = screen.getByRole('region', {
+      name: 'Your First Mission',
+    });
+    expect(firstMission).toHaveTextContent('API foundation');
+    expect(
+      within(firstMission).getByRole('link', {
+        name: 'Start learning API foundation',
+      }),
+    ).toHaveAttribute('href', '/foundation/api-basic');
+    expect(
+      screen.getByRole('region', { name: 'Your growth profile' }),
+    ).toHaveTextContent('Stage 0');
+    expect(
+      screen.queryByRole('region', { name: 'AI engineering growth journey' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('figure', { name: 'Capability map' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: "Today's challenge" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Next recommendation' }),
+    ).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.button--primary')).toHaveLength(1);
+    expect(firstMission).toContainElement(
+      document.querySelector('.button--primary'),
+    );
+    expect(source.attempts.save).not.toHaveBeenCalled();
+    expect(source.attempts.delete).not.toHaveBeenCalled();
+    expect(source.cases.seed).not.toHaveBeenCalled();
+    expect(source.mistakes.save).not.toHaveBeenCalled();
+    expect(source.mistakes.delete).not.toHaveBeenCalled();
+    expect(source.progress.commitCompletion).not.toHaveBeenCalled();
+    expect(source.progress.clear).not.toHaveBeenCalled();
+    expect(source.progress.replaceUserData).not.toHaveBeenCalled();
+    expect(source.settings.save).not.toHaveBeenCalled();
+    expect(source.skills.save).not.toHaveBeenCalled();
+    expect(source.skills.saveMany).not.toHaveBeenCalled();
+  });
+
+  it('keeps a learner with only an in-progress attempt in New User Mode', async () => {
+    const source = repositories();
+    const historicalAttempt: InProgressAttemptRecord = {
+      id: 'historical-attempt',
+      userId: 'local-user',
+      caseId: 'case-no-longer-active',
+      caseVersion: 1,
+      schemaVersion: 1,
+      status: 'in-progress',
+      startedAt: '2026-07-13T00:00:00.000Z',
+      updatedAt: '2026-07-13T00:00:00.000Z',
+      currentNodeId: 'node-one',
+      criticalErrorIds: [],
+      visitedNodeIds: ['node-one'],
+      roundHistory: [],
+    };
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('case-active'),
+    ]);
+    vi.mocked(source.attempts.list).mockResolvedValue([historicalAttempt]);
+    vi.mocked(source.progress.list).mockResolvedValue([
+      caseProgress('case-active', 0),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <LearningJourneyProvider>
+          <DashboardPage
+            conceptSource={dashboardConceptSource()}
+            foundationSource={dashboardFoundationSource()}
+            repositories={source}
+          />
+        </LearningJourneyProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('region', { name: 'AI engineering readiness' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('composes the AI Growth OS capability command center from real product evidence', async () => {
+    const source = repositories();
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('case-active', {
+        title: 'Active customer incident',
+        scenarioSummary:
+          'A customer deployment returns inconsistent API responses under load.',
+        level: 'advanced',
+        estimatedMinutes: 25,
+        skills: ['reliability.observability'],
+      }),
+    ]);
+    vi.mocked(source.attempts.list).mockResolvedValue([
+      completedAttempt('case-active'),
+    ]);
+    vi.mocked(source.progress.list).mockResolvedValue([
+      caseProgress('case-active'),
+    ]);
+    vi.mocked(source.skills.list).mockResolvedValue([
+      {
+        userId: 'local-user',
+        skillId: 'llm.applications',
+        score: 82,
+        sampleCount: 4,
+        updatedAt: '2026-07-13T09:00:00.000Z',
+      },
+      {
+        userId: 'local-user',
+        skillId: 'reliability.observability',
+        score: 36,
+        sampleCount: 2,
+        updatedAt: '2026-07-13T09:00:00.000Z',
+      },
+    ]);
+
+    const { container } = render(
+      <MemoryRouter>
+        <DashboardPage
+          foundationSource={dashboardFoundationSource()}
+          repositories={source}
+        />
+      </MemoryRouter>,
+    );
+
+    const journey = await screen.findByRole('region', {
+      name: 'AI engineering growth journey',
+    });
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).not.toBeInTheDocument();
+    expect(journey).toHaveTextContent('Become a production AI engineer');
+
+    const readiness = screen.getByRole('region', {
+      name: 'AI engineering readiness',
+    });
+    expect(readiness).toHaveTextContent('67%');
+    expect(readiness).toHaveTextContent('Stage 2');
+    expect(readiness).toHaveTextContent('LLM application engineering');
+    expect(readiness).toHaveTextContent('Reliability and observability');
+    expect(readiness).toHaveTextContent('Evidence-weighted mastery');
+
+    const capabilityMap = screen.getByRole('figure', {
+      name: 'Capability map',
+    });
+    expect(capabilityMap).not.toHaveTextContent('Demo Profile');
+    expect(capabilityMap).not.toHaveAttribute('data-showcase');
+    const llmNode = capabilityMap.querySelector(
+      '[data-skill-id="llm.applications"]',
+    );
+    expect(llmNode).not.toBeNull();
+    expect(llmNode).toHaveTextContent('LLM applications');
+    expect(llmNode).toHaveAttribute('data-mastery', 'proficient');
+    expect(
+      capabilityMap.querySelector(
+        '[data-skill-id="reliability.observability"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      within(capabilityMap).getByText(
+        'Confidence High · 4 engineering evidence records',
+      ),
+    ).toBeVisible();
+
+    const mentor = screen.getByRole('complementary', {
+      name: 'Next recommendation',
+    });
+    expect(mentor).toHaveTextContent(/Based on local evidence/i);
+    expect(
+      within(mentor).getByRole('link', {
+        name: "Continue today's growth mission",
+      }),
+    ).toHaveAttribute('href', '/foundation/api.timeout-retry');
+
+    const challenge = screen.getByRole('region', {
+      name: "Today's challenge",
+    });
+    expect(
+      within(challenge).getByRole('heading', {
+        name: 'Active customer incident',
+      }),
+    ).toBeVisible();
+    expect(within(challenge).getByText('25 min')).toBeVisible();
+    expect(within(challenge).getByText('advanced')).toBeVisible();
+
+    const evidence = screen.getByRole('region', {
+      name: 'Evidence timeline',
+    });
+    expect(evidence).toHaveTextContent('Active customer incident');
+    expect(evidence).toHaveTextContent('88');
+    expect(
+      within(evidence).getByRole('link', { name: 'Review evidence' }),
+    ).toHaveAttribute('href', '/debrief/case-active-today-attempt');
+
+    expect(container.querySelector('.growth-os-grid')).not.toBeNull();
+  });
+
+  it('treats a zero score with a positive sample as real capability evidence', async () => {
+    const source = repositories();
+    vi.mocked(source.skills.list).mockResolvedValue([
+      {
+        userId: 'local-user',
+        skillId: 'llm.applications',
+        score: 0,
+        sampleCount: 1,
+        updatedAt: '2026-07-17T08:00:00.000Z',
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <DashboardPage repositories={source} />
+      </MemoryRouter>,
+    );
+
+    const capabilityMap = await screen.findByRole('figure', {
+      name: 'Capability map',
+    });
+    expect(capabilityMap).not.toHaveTextContent('Demo Profile');
+    expect(capabilityMap).toHaveTextContent('0% readiness');
+    expect(capabilityMap).not.toHaveTextContent('72% Ready');
+    const llmNode = capabilityMap.querySelector(
+      '[data-skill-id="llm.applications"]',
+    );
+    expect(llmNode).toHaveAttribute('data-mastery', 'learning');
+    expect(llmNode).toHaveTextContent('Learning');
+    expect(llmNode).not.toHaveTextContent('Not verified');
+  });
+
+  it('keeps a historical completed attempt real when active mastery is unavailable', async () => {
+    const source = repositories();
+    vi.mocked(source.attempts.list).mockResolvedValue([
+      completedAttempt('deprecated-hidden-case'),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <DashboardPage repositories={source} />
+      </MemoryRouter>,
+    );
+
+    const capabilityMap = await screen.findByRole('figure', {
+      name: 'Capability map',
+    });
+    expect(capabilityMap).not.toHaveTextContent('Demo Profile');
+    expect(capabilityMap).not.toHaveTextContent('72%');
+    expect(capabilityMap).toHaveTextContent('Start building capability proof');
+    expect(
+      capabilityMap.querySelectorAll(
+        '.capability-node[data-mastery="not-started"]',
+      ),
+    ).toHaveLength(7);
+    expect(capabilityMap).toHaveTextContent('No evidence yet');
+    expect(capabilityMap).toHaveTextContent(
+      'Complete challenges to build evidence',
+    );
+    expect(capabilityMap).not.toHaveTextContent(/0 samples?/i);
+  });
+
+  it('places timezone-stamped completions on the learner local calendar day', async () => {
+    const source = repositories();
+    const completedAt = '2026-07-13T23:30:00-07:00';
+    const localCompletion = new Date(completedAt);
+    const localDate = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+    }).format(localCompletion);
+    const now = new Date(
+      localCompletion.getFullYear(),
+      localCompletion.getMonth(),
+      localCompletion.getDate(),
+      12,
+    );
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('local-calendar-case'),
+    ]);
+    vi.mocked(source.attempts.list).mockResolvedValue([
+      completedAttempt('local-calendar-case', completedAt),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <DashboardPage repositories={source} now={now} />
+      </MemoryRouter>,
+    );
+
+    const evidence = await screen.findByRole('region', {
+      name: 'Evidence timeline',
+    });
+    expect(within(evidence).getByText(localDate)).toBeVisible();
+  });
+
+  it('keeps lifetime training evidence monotonic across milestone boundaries', async () => {
+    const source = repositories();
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('xp-milestone-case'),
+    ]);
+    vi.mocked(source.attempts.list).mockResolvedValue(
+      Array.from({ length: 6 }, (_, index) => ({
+        ...completedAttempt('xp-milestone-case'),
+        id: `xp-attempt-${String(index + 1)}`,
+      })),
+    );
+
+    render(
+      <MemoryRouter>
+        <DashboardPage repositories={source} />
+      </MemoryRouter>,
+    );
+
+    const readiness = await screen.findByRole('region', {
+      name: 'AI engineering readiness',
+    });
+    expect(readiness).toHaveTextContent('528 / 1000');
+    expect(
+      within(readiness).getByRole('progressbar', {
+        name: 'Training evidence 528 of next milestone 1000',
+      }),
+    ).toHaveAttribute('max', '1000');
+  });
+
   it('localizes program chrome while preserving Content Pack copy', async () => {
     const source = repositories();
     const authoredTitle = 'Content Pack authored title';
@@ -230,10 +628,13 @@ describe('Slice A product pages', () => {
     );
 
     expect(await screen.findByRole('heading', { name: '首页' })).toBeVisible();
-    expect(await screen.findByText(authoredTitle)).toBeVisible();
     expect(
-      screen.getByText('今天继续训练一个尚未完成的 FDE 场景。'),
+      screen.getByRole('heading', {
+        name: '生成你的 AI Engineer 成长档案',
+      }),
     ).toBeVisible();
+    expect(screen.getByText('选择你的成长目标')).toBeVisible();
+    expect(screen.queryByText(authoredTitle)).not.toBeInTheDocument();
     dashboard.unmount();
 
     render(
@@ -254,7 +655,50 @@ describe('Slice A product pages', () => {
     ).toBeVisible();
   });
 
-  it('shows today completion, review, estimate, and the first unfinished training CTA', async () => {
+  it('exposes the incident library visual structure from authored case data', async () => {
+    const source = repositories();
+    vi.mocked(source.cases.listActive).mockResolvedValue([
+      summary('incident-advanced', {
+        title: 'Production retrieval incident',
+        scenarioSummary: 'Customers receive documents from another tenant.',
+        level: 'advanced',
+        skills: ['rag.metadata-filter', 'security.access-control'],
+      }),
+    ]);
+
+    const { container } = renderCases(source);
+
+    const title = await screen.findByRole('heading', {
+      name: 'Production retrieval incident',
+    });
+    const card = title.closest('article');
+    expect(card).not.toBeNull();
+    expect(container.querySelector('.product-page')).toHaveClass(
+      'product-page--case-library',
+    );
+    expect(container.querySelector('form')).toHaveClass(
+      'case-library__toolbar',
+    );
+    expect(container.querySelector('.case-library__results')).toContainElement(
+      card,
+    );
+    expect(card).toHaveClass('case-card--incident');
+    expect(card).toHaveAttribute('data-level', 'advanced');
+    expect(
+      within(card!).getByText(
+        'Customers receive documents from another tenant.',
+      ),
+    ).toHaveClass('case-card__summary');
+    expect(card!.querySelector('.case-card__facts')).not.toBeNull();
+    expect(card!.querySelector('.case-card__skills')).toHaveTextContent(
+      'rag.metadata-filter',
+    );
+    expect(within(card!).getByRole('link', { name: 'Start case' })).toHaveClass(
+      'case-card__action',
+    );
+  });
+
+  it('shows today evidence, estimate, and the first unfinished challenge CTA', async () => {
     const source = repositories();
     vi.mocked(source.cases.listActive).mockResolvedValue([
       summary('completed-today', { title: 'Completed today' }),
@@ -295,51 +739,59 @@ describe('Slice A product pages', () => {
       </MemoryRouter>,
     );
 
-    const today = await screen.findByRole('region', {
-      name: /today's training/i,
+    const challenge = await screen.findByRole('region', {
+      name: "Today's challenge",
     });
-    expect(within(today).getByText('Focus Case')).toBeVisible();
-    expect(within(today).getByText('Completed today')).toBeVisible();
-    expect(within(today).getByText('Completed')).toBeVisible();
-    expect(within(today).getByRole('link', { name: 'Review' })).toHaveAttribute(
-      'href',
-      '/debrief/completed-today-today-attempt',
-    );
-    expect(today).toHaveTextContent(/1\s*\/\s*3\s*completed/i);
-    expect(today).toHaveTextContent(/30\s*min/i);
-    expect(screen.getByText('1 day')).toBeVisible();
     expect(
-      within(today).getByRole('heading', { name: 'Next recommendations' }),
+      within(challenge).getByRole('heading', { name: 'Risk focus' }),
     ).toBeVisible();
+    expect(within(challenge).getByText('10 min')).toBeVisible();
     expect(
-      within(today).getByRole('link', { name: /train risk focus/i }),
+      within(challenge).getByRole('link', {
+        name: 'Enter engineering challenge',
+      }),
     ).toHaveAttribute('href', '/training/risk-focus');
     expect(
-      within(today).getAllByRole('link', { name: /^train /i }),
-    ).toHaveLength(1);
+      within(challenge).getByRole('link', { name: /Completed today/ }),
+    ).toHaveAttribute('href', '/debrief/completed-today-today-attempt');
+    const evidence = screen.getByRole('region', {
+      name: 'Evidence timeline',
+    });
+    expect(evidence).toHaveTextContent('Completed today');
+    expect(
+      within(evidence).getByRole('link', { name: 'Review evidence' }),
+    ).toHaveAttribute('href', '/debrief/completed-today-today-attempt');
   });
 
   it('shows a safe today-plan empty state when no eligible case exists', async () => {
     const source = repositories();
+    vi.mocked(source.progress.list).mockResolvedValue([
+      caseProgress('previous-case'),
+    ]);
     render(
       <MemoryRouter>
         <DashboardPage repositories={source} />
       </MemoryRouter>,
     );
 
-    const today = await screen.findByRole('region', {
-      name: /today's training/i,
+    const challenge = await screen.findByRole('region', {
+      name: "Today's challenge",
     });
     expect(
-      within(today).getByText(/no published case is available/i),
+      within(challenge).getByText(/has no published case to schedule/i),
     ).toBeVisible();
     expect(
-      within(today).getByRole('link', { name: /browse cases/i }),
+      within(challenge).getByRole('link', { name: /browse cases/i }),
     ).toHaveAttribute('href', '/cases');
-    expect(within(today).queryByRole('link', { name: /train/i })).toBeNull();
+    expect(
+      screen.getByRole('progressbar', {
+        name: 'Training evidence 0 of next milestone 500',
+      }),
+    ).toHaveAttribute('max', '500');
   });
 
-  it('keeps daily training first and derives Foundation progress from all attempts', async () => {
+  it('keeps an in-progress learner focused on profile setup and the Foundation-first mission', async () => {
+    const user = userEvent.setup();
     const source = repositories();
     vi.mocked(source.cases.listActive).mockResolvedValue([
       summary('case-active', {
@@ -365,34 +817,45 @@ describe('Slice A product pages', () => {
 
     render(
       <MemoryRouter>
-        <DashboardPage
-          foundationSource={dashboardFoundationSource()}
-          repositories={source}
-        />
+        <LearningJourneyProvider>
+          <DashboardPage
+            foundationSource={dashboardFoundationSource()}
+            repositories={source}
+          />
+        </LearningJourneyProvider>
       </MemoryRouter>,
     );
 
-    const today = await screen.findByRole('region', {
-      name: /today's training/i,
-    });
-    const foundation = screen.getByRole('region', {
-      name: 'Foundation Knowledge',
-    });
     expect(
-      today.compareDocumentPosition(foundation) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(within(foundation).getByText('Learning')).toBeVisible();
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
     expect(
-      within(foundation).getByRole('link', { name: 'Continue learning' }),
+      screen.queryByRole('region', { name: "Today's challenge" }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole('radio', { name: /become ai engineer/i }),
+    );
+    await user.click(screen.getByRole('radio', { name: /beginner/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Generate my growth profile' }),
+    );
+    const firstMission = screen.getByRole('region', {
+      name: 'Your First Mission',
+    });
+    expect(firstMission).toHaveTextContent('API foundation');
+    expect(
+      within(firstMission).getByRole('link', {
+        name: 'Start learning API foundation',
+      }),
     ).toHaveAttribute('href', '/foundation/api-basic');
-    expect(today).toHaveTextContent(/0\s*\/\s*1\s*completed/i);
     expect(source.attempts.list).toHaveBeenCalledWith({
       userId: 'local-user',
     });
   });
 
-  it('explains how the first completed case populates the dashboard', async () => {
+  it('explains the first capability proof without exposing an empty dashboard', async () => {
     const source = repositories();
     render(
       <MemoryRouter>
@@ -400,11 +863,20 @@ describe('Slice A product pages', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/complete your first case/i)).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('region', { name: 'AI engineering readiness' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Next recommendation' }),
+    ).not.toBeInTheDocument();
     expect(source.cases.listActive).toHaveBeenCalledWith({
       status: 'published',
     });
-    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0);
   });
 
   it('lets a dashboard storage error retry without stale updates', async () => {
@@ -428,7 +900,14 @@ describe('Slice A product pages', () => {
     );
 
     await user.click(await screen.findByRole('button', { name: /retry/i }));
-    expect(await screen.findByText(/complete your first case/i)).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Build your AI Engineer growth profile',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('region', { name: 'AI engineering readiness' }),
+    ).not.toBeInTheDocument();
     expect(listCases).toHaveBeenCalledTimes(2);
   });
 
@@ -483,6 +962,9 @@ describe('Slice A product pages', () => {
         delete: vi.fn(),
       },
     });
+    vi.mocked(source.progress.list).mockResolvedValue([
+      caseProgress('previous-case'),
+    ]);
 
     render(
       <MemoryRouter>
@@ -493,6 +975,93 @@ describe('Slice A product pages', () => {
     expect(
       await screen.findAllByText(/critical-risk skill risk-awareness/i),
     ).toHaveLength(1);
+  });
+
+  it('stops transferring a hidden historical critical skill after a clean same-node pass', async () => {
+    const visibleCase = summary('visible-risk-transfer', {
+      title: 'Visible risk transfer',
+      level: 'intermediate',
+      domains: ['reliability'],
+      skills: ['risk-awareness'],
+    });
+    const repairedAttempt: CompletedAttemptRecord = {
+      ...completedAttempt('deprecated-source-case', '2026-07-13T10:00:00.000Z'),
+      roundHistory: [
+        {
+          nodeId: 'hidden-node',
+          attemptNumber: 1,
+          submission: {
+            type: 'choice',
+            selectedOptionIds: ['correct'],
+          },
+          evaluation: {
+            isCorrect: true,
+            scoreRatio: 1,
+            errorTypes: [],
+            criticalErrorIds: [],
+            consequences: [],
+            branchKey: 'correct',
+          },
+          submittedAt: '2026-07-13T09:55:00.000Z',
+          revealed: false,
+        },
+      ],
+    };
+    const source = repositories({
+      attempts: {
+        get: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn().mockResolvedValue([repairedAttempt]),
+        save: vi.fn(),
+        delete: vi.fn(),
+      },
+      cases: {
+        list: vi.fn().mockResolvedValue([visibleCase]),
+        listActive: vi.fn().mockResolvedValue([visibleCase]),
+        getVersion: vi.fn(),
+        seed: vi.fn(),
+      },
+      mistakes: {
+        get: vi.fn(),
+        list: vi.fn().mockResolvedValue([
+          {
+            id: 'hidden-critical-mistake',
+            userId: 'local-user',
+            attemptId: 'hidden-attempt',
+            caseId: 'deprecated-source-case',
+            caseVersion: 1,
+            nodeId: 'hidden-node',
+            submission: { type: 'choice', selectedOptionIds: ['wrong'] },
+            correctSubmission: {
+              type: 'choice',
+              selectedOptionIds: ['correct'],
+            },
+            errorTypes: ['risk-awareness-gap'],
+            evidenceIds: [],
+            skillIds: ['risk-awareness'],
+            critical: true,
+            createdAt: '2026-07-12T00:00:00.000Z',
+            redoScores: [],
+          },
+        ]),
+        save: vi.fn(),
+        delete: vi.fn(),
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage repositories={source} />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(
+        /continue today with an uncompleted FDE scenario/i,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/critical-risk skill risk-awareness/i),
+    ).not.toBeInTheDocument();
   });
 
   it('projects dashboard metrics and recommendations onto visible MVP cases only', async () => {
@@ -513,13 +1082,14 @@ describe('Slice A product pages', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findAllByText('visible-case')).not.toHaveLength(0);
-    expect(
-      within(screen.getByText('Total cases').parentElement!).getByText('1'),
-    ).toBeVisible();
-    expect(
-      within(screen.getByText('Completed cases').parentElement!).getByText('1'),
-    ).toBeVisible();
+    const challenge = await screen.findByRole('region', {
+      name: "Today's challenge",
+    });
+    expect(challenge).toHaveTextContent('visible-case');
+    const journey = screen.getByRole('region', {
+      name: 'AI engineering growth journey',
+    });
+    expect(journey).not.toHaveTextContent('expert-case');
     expect(screen.queryByText('expert-case')).not.toBeInTheDocument();
     expect(screen.queryByText('deprecated-case')).not.toBeInTheDocument();
   });

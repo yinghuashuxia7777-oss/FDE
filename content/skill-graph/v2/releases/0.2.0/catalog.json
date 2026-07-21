@@ -1,0 +1,872 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "0.2.0",
+  "status": "reviewed",
+  "expectedLeafCount": 40,
+  "presentationNodes": [
+    {
+      "id": "capability.software",
+      "name": "software",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.delivery",
+      "name": "delivery",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.operations",
+      "name": "operations",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.integration",
+      "name": "integration",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.data-ai",
+      "name": "data-ai",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.security",
+      "name": "security",
+      "description": "MVP capability presentation group."
+    },
+    {
+      "id": "capability.customer-outcomes",
+      "name": "customer-outcomes",
+      "description": "MVP capability presentation group."
+    }
+  ],
+  "leaves": [
+    {
+      "schemaVersion": 1,
+      "id": "eng.python-engineering",
+      "name": "Python Engineering",
+      "description": "Python Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 0,
+      "status": "reviewed",
+      "evidenceTypes": ["code-review"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "eng.runtime-debugging",
+      "name": "Runtime Debugging",
+      "description": "Runtime Debugging demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "systems.networking",
+      "capabilityLevel": 0,
+      "status": "reviewed",
+      "evidenceTypes": ["diagnosis"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "eng.automated-testing",
+      "name": "Automated Testing",
+      "description": "Automated Testing demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 0,
+      "status": "reviewed",
+      "evidenceTypes": ["test-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.api-design",
+      "name": "API Design",
+      "description": "API Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "api.integration",
+      "capabilityLevel": 1,
+      "status": "reviewed",
+      "evidenceTypes": ["api-contract"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.backend-architecture",
+      "name": "Backend Architecture",
+      "description": "Backend Architecture demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 1,
+      "status": "reviewed",
+      "evidenceTypes": ["architecture-decision"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.distributed-reliability",
+      "name": "Distributed Reliability",
+      "description": "Distributed Reliability demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "reliability.observability",
+      "capabilityLevel": 1,
+      "status": "reviewed",
+      "evidenceTypes": ["reliability-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.llm-application",
+      "name": "LLM Application Engineering",
+      "description": "LLM Application Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "llm.applications",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["feature-decision"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.prompt-engineering",
+      "name": "Prompt Engineering",
+      "description": "Prompt Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "llm.applications",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["prompt-decision"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.structured-output",
+      "name": "Structured Output",
+      "description": "Structured Output demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "llm.applications",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["schema-contract"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.model-selection",
+      "name": "Model Selection",
+      "description": "Model Selection demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "tuning.inference-deployment",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["model-adr"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.llm-evaluation",
+      "name": "LLM Evaluation",
+      "description": "LLM Evaluation demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["evaluation-report"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.retrieval",
+      "name": "RAG Retrieval",
+      "description": "RAG Retrieval demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["retrieval-report"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.chunking",
+      "name": "RAG Chunking",
+      "description": "RAG Chunking demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["chunking-decision"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.grounding",
+      "name": "RAG Grounding",
+      "description": "RAG Grounding demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["grounding-report"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.evaluation",
+      "name": "RAG Evaluation",
+      "description": "RAG Evaluation demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["rag-evaluation"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.tool-calling",
+      "name": "Tool Calling",
+      "description": "Tool Calling demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["tool-decision"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.tool-contracts",
+      "name": "Tool Contract",
+      "description": "Tool Contract demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["tool-contract"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.workflow-design",
+      "name": "Agent Workflow Design",
+      "description": "Agent Workflow Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["workflow-design"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.memory-lifecycle",
+      "name": "Agent Memory Lifecycle",
+      "description": "Agent Memory Lifecycle demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["memory-policy"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.evaluation",
+      "name": "Agent Evaluation",
+      "description": "Agent Evaluation demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["agent-evaluation"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.safety",
+      "name": "Agent Safety",
+      "description": "Agent Safety demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "security.governance",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["safety-review"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.containerization",
+      "name": "Docker & Containerization",
+      "description": "Docker & Containerization demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "cloud.deployment",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["container-review"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.deployment",
+      "name": "Deployment Engineering",
+      "description": "Deployment Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "cloud.deployment",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["release-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.observability",
+      "name": "Observability",
+      "description": "Observability demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "reliability.observability",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["observability-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.reliability",
+      "name": "Reliability Engineering",
+      "description": "Reliability Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "reliability.observability",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["reliability-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.security",
+      "name": "Security Engineering",
+      "description": "Security Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "security.governance",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["security-review"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.cost-optimization",
+      "name": "AI Cost Optimization",
+      "description": "AI Cost Optimization demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "performance.scaling",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["cost-analysis"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.system-design",
+      "name": "System Design",
+      "description": "System Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "software.foundations",
+      "capabilityLevel": 1,
+      "status": "reviewed",
+      "evidenceTypes": ["system-design"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "software.data-design",
+      "name": "Data & State Design",
+      "description": "Data & State Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "data.engineering",
+      "capabilityLevel": 1,
+      "status": "reviewed",
+      "evidenceTypes": ["data-design"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "ai.context-engineering",
+      "name": "Context Engineering",
+      "description": "Context Engineering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "llm.applications",
+      "capabilityLevel": 2,
+      "status": "reviewed",
+      "evidenceTypes": ["context-policy"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.permission-filtering",
+      "name": "RAG Permission Filtering",
+      "description": "RAG Permission Filtering demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["permission-test"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rag.freshness",
+      "name": "RAG Freshness & Versioning",
+      "description": "RAG Freshness & Versioning demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "rag.search",
+      "capabilityLevel": 3,
+      "status": "reviewed",
+      "evidenceTypes": ["freshness-plan"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.state-management",
+      "name": "Agent State Management",
+      "description": "Agent State Management demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "agents.evaluation",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["state-model"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "agent.approval-design",
+      "name": "Agent Approval Design",
+      "description": "Agent Approval Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "security.governance",
+      "capabilityLevel": 4,
+      "status": "reviewed",
+      "evidenceTypes": ["approval-design"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.cloud-architecture",
+      "name": "Cloud Architecture",
+      "description": "Cloud Architecture demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "cloud.deployment",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["cloud-architecture"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "prod.release-verification",
+      "name": "Release Verification",
+      "description": "Release Verification demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "cloud.deployment",
+      "capabilityLevel": 5,
+      "status": "reviewed",
+      "evidenceTypes": ["release-evidence"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "fde.customer-discovery",
+      "name": "Customer Discovery",
+      "description": "Customer Discovery demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "customer.discovery",
+      "capabilityLevel": 6,
+      "status": "reviewed",
+      "evidenceTypes": ["discovery-brief"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "fde.requirement-discovery",
+      "name": "Requirement Discovery",
+      "description": "Requirement Discovery demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "customer.discovery",
+      "capabilityLevel": 6,
+      "status": "reviewed",
+      "evidenceTypes": ["requirements-brief"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "fde.architecture-proposal",
+      "name": "Architecture Proposal",
+      "description": "Architecture Proposal demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "customer.discovery",
+      "capabilityLevel": 6,
+      "status": "reviewed",
+      "evidenceTypes": ["architecture-proposal"],
+      "activeRubricVersion": 1
+    },
+    {
+      "schemaVersion": 1,
+      "id": "fde.customer-solution-design",
+      "name": "Customer Solution Design",
+      "description": "Customer Solution Design demonstrated through a bounded, reviewable engineering artifact.",
+      "parentSkillId": "fde.adoption",
+      "capabilityLevel": 6,
+      "status": "reviewed",
+      "evidenceTypes": ["solution-brief"],
+      "activeRubricVersion": 1
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.eng.python-engineering.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "eng.python-engineering",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.eng.runtime-debugging.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "eng.runtime-debugging",
+      "legacySkillId": "systems.networking",
+      "canonical": true
+    },
+    {
+      "id": "edge.eng.automated-testing.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "eng.automated-testing",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.api-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.api-design",
+      "legacySkillId": "api.integration",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.backend-architecture.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.backend-architecture",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.distributed-reliability.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.distributed-reliability",
+      "legacySkillId": "reliability.observability",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.llm-application.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.llm-application",
+      "legacySkillId": "llm.applications",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.prompt-engineering.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.prompt-engineering",
+      "legacySkillId": "llm.applications",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.structured-output.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.structured-output",
+      "legacySkillId": "llm.applications",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.model-selection.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.model-selection",
+      "legacySkillId": "tuning.inference-deployment",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.llm-evaluation.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.llm-evaluation",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.retrieval.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.retrieval",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.chunking.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.chunking",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.grounding.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.grounding",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.evaluation.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.evaluation",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.tool-calling.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.tool-calling",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.tool-contracts.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.tool-contracts",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.workflow-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.workflow-design",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.memory-lifecycle.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.memory-lifecycle",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.evaluation.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.evaluation",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.safety.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.safety",
+      "legacySkillId": "security.governance",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.containerization.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.containerization",
+      "legacySkillId": "cloud.deployment",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.deployment.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.deployment",
+      "legacySkillId": "cloud.deployment",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.observability.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.observability",
+      "legacySkillId": "reliability.observability",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.reliability.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.reliability",
+      "legacySkillId": "reliability.observability",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.security.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.security",
+      "legacySkillId": "security.governance",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.cost-optimization.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.cost-optimization",
+      "legacySkillId": "performance.scaling",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.system-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.system-design",
+      "legacySkillId": "software.foundations",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.data-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "software.data-design",
+      "legacySkillId": "data.engineering",
+      "canonical": true
+    },
+    {
+      "id": "edge.ai.context-engineering.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "ai.context-engineering",
+      "legacySkillId": "llm.applications",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.permission-filtering.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.permission-filtering",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.freshness.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "rag.freshness",
+      "legacySkillId": "rag.search",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.state-management.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.state-management",
+      "legacySkillId": "agents.evaluation",
+      "canonical": true
+    },
+    {
+      "id": "edge.agent.approval-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "agent.approval-design",
+      "legacySkillId": "security.governance",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.cloud-architecture.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.cloud-architecture",
+      "legacySkillId": "cloud.deployment",
+      "canonical": true
+    },
+    {
+      "id": "edge.prod.release-verification.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "prod.release-verification",
+      "legacySkillId": "cloud.deployment",
+      "canonical": true
+    },
+    {
+      "id": "edge.fde.customer-discovery.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "fde.customer-discovery",
+      "legacySkillId": "customer.discovery",
+      "canonical": true
+    },
+    {
+      "id": "edge.fde.requirement-discovery.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "fde.requirement-discovery",
+      "legacySkillId": "customer.discovery",
+      "canonical": true
+    },
+    {
+      "id": "edge.fde.architecture-proposal.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "fde.architecture-proposal",
+      "legacySkillId": "customer.discovery",
+      "canonical": true
+    },
+    {
+      "id": "edge.fde.customer-solution-design.rollup",
+      "type": "rolls-up-to",
+      "leafSkillId": "fde.customer-solution-design",
+      "legacySkillId": "fde.adoption",
+      "canonical": true
+    },
+    {
+      "id": "edge.software.foundations.presents",
+      "type": "presents-as",
+      "legacySkillId": "software.foundations",
+      "presentationSkillId": "capability.software",
+      "canonical": true
+    },
+    {
+      "id": "edge.git.delivery.presents",
+      "type": "presents-as",
+      "legacySkillId": "git.delivery",
+      "presentationSkillId": "capability.delivery",
+      "canonical": true
+    },
+    {
+      "id": "edge.systems.networking.presents",
+      "type": "presents-as",
+      "legacySkillId": "systems.networking",
+      "presentationSkillId": "capability.operations",
+      "canonical": true
+    },
+    {
+      "id": "edge.api.integration.presents",
+      "type": "presents-as",
+      "legacySkillId": "api.integration",
+      "presentationSkillId": "capability.integration",
+      "canonical": true
+    },
+    {
+      "id": "edge.data.engineering.presents",
+      "type": "presents-as",
+      "legacySkillId": "data.engineering",
+      "presentationSkillId": "capability.data-ai",
+      "canonical": true
+    },
+    {
+      "id": "edge.cloud.deployment.presents",
+      "type": "presents-as",
+      "legacySkillId": "cloud.deployment",
+      "presentationSkillId": "capability.delivery",
+      "canonical": true
+    },
+    {
+      "id": "edge.reliability.observability.presents",
+      "type": "presents-as",
+      "legacySkillId": "reliability.observability",
+      "presentationSkillId": "capability.operations",
+      "canonical": true
+    },
+    {
+      "id": "edge.security.governance.presents",
+      "type": "presents-as",
+      "legacySkillId": "security.governance",
+      "presentationSkillId": "capability.security",
+      "canonical": true
+    },
+    {
+      "id": "edge.performance.scaling.presents",
+      "type": "presents-as",
+      "legacySkillId": "performance.scaling",
+      "presentationSkillId": "capability.operations",
+      "canonical": true
+    },
+    {
+      "id": "edge.llm.applications.presents",
+      "type": "presents-as",
+      "legacySkillId": "llm.applications",
+      "presentationSkillId": "capability.data-ai",
+      "canonical": true
+    },
+    {
+      "id": "edge.rag.search.presents",
+      "type": "presents-as",
+      "legacySkillId": "rag.search",
+      "presentationSkillId": "capability.data-ai",
+      "canonical": true
+    },
+    {
+      "id": "edge.agents.evaluation.presents",
+      "type": "presents-as",
+      "legacySkillId": "agents.evaluation",
+      "presentationSkillId": "capability.data-ai",
+      "canonical": true
+    },
+    {
+      "id": "edge.tuning.inference-deployment.presents",
+      "type": "presents-as",
+      "legacySkillId": "tuning.inference-deployment",
+      "presentationSkillId": "capability.delivery",
+      "canonical": true
+    },
+    {
+      "id": "edge.customer.discovery.presents",
+      "type": "presents-as",
+      "legacySkillId": "customer.discovery",
+      "presentationSkillId": "capability.customer-outcomes",
+      "canonical": true
+    },
+    {
+      "id": "edge.fde.adoption.presents",
+      "type": "presents-as",
+      "legacySkillId": "fde.adoption",
+      "presentationSkillId": "capability.customer-outcomes",
+      "canonical": true
+    }
+  ]
+}

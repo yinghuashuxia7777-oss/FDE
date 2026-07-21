@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "http.status-client-error",
+  "type": "foundation",
+  "title": "客户端错误状态码：按语义修正请求",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "beginner",
+  "order": 47,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "四百段状态码表示服务无法按当前请求继续处理，身份、权限、资源、冲突和限流等原因需要不同修复，通常不能靠原样重试解决。",
+    "analogy": "客户端错误像进入园区时收到的不同拒绝单，无证件、区域无权限、房间不存在和预约名额已满看似都没进门，补救动作却完全不同。",
+    "technicalExplanation": "400 指向请求无效，401 常表示认证缺失或失效，403 表示权限不足，404 表示资源不可见或不存在，409 表示状态冲突，429 表示触发限流。错误契约提供进一步原因。",
+    "example": "FDE 面对新接口 403 时先验证令牌签名和有效期，再比较目标 audience 与 scope，发现调用者只有旧资源的读取范围。补齐最小授权后成功，而重复刷新同权限令牌没有意义。",
+    "commonMistakes": "把 401 和 403 混为一谈会在认证与授权之间来回试错，对所有四百段错误统一重试还会放大限流。诊断必须同时记录状态、稳定错误码和脱敏请求上下文。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

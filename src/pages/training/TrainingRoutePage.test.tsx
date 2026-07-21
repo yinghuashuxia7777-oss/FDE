@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   Link,
@@ -13,7 +13,9 @@ import {
   ProductDataProvider,
   type ProductRepositories,
 } from '../../application/product';
+import type { ConceptSource } from '../../content/concept-source';
 import type { FoundationSource } from '../../content/foundation-source';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import type { FoundationKnowledge } from '../../domain/foundation/types';
 import { evaluateNode } from '../../domain/scoring';
 import {
@@ -146,6 +148,35 @@ function foundationSource(
   } satisfies FoundationSource;
 }
 
+function conceptItem(): ConceptKnowledge {
+  return {
+    schemaVersion: 1,
+    id: 'concept.evidence',
+    type: 'concept',
+    category: 'fde',
+    order: 1,
+    title: '证据：支持决策的可核验事实',
+    technicalTerm: 'Evidence',
+    simpleExplanation: '证据是能够被重复检查并支持判断的事实。',
+    analogy: '像医生先看检验结果，再决定下一步检查。',
+    technicalExplanation: '证据需要标明来源、时间、环境与健康对照。',
+    whyItMatters: '真实客户系统信息不完整，证据让诊断与验证保持可追溯。',
+    commonMistakes: '不要把单条日志直接当成根因。',
+    relatedFoundation: ['foundation.evidence-basics'],
+    relatedCases: ['case-minimal'],
+  };
+}
+
+function conceptSource(
+  loadAll: () => Promise<readonly ConceptKnowledge[]> = () =>
+    Promise.resolve([conceptItem()]),
+): ConceptSource {
+  return {
+    loadAll: vi.fn(loadAll),
+    findById: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 function completedPass(): CompletedAttemptRecord {
   return {
     id: 'attempt-pass',
@@ -170,6 +201,7 @@ function renderRoute(
   source: ProductRepositories,
   path: string,
   foundation?: FoundationSource,
+  concepts?: ConceptSource,
 ) {
   return render(
     <ProductDataProvider repositories={source}>
@@ -182,6 +214,7 @@ function renderRoute(
                 {...(foundation === undefined
                   ? {}
                   : { foundationSource: foundation })}
+                {...(concepts === undefined ? {} : { conceptSource: concepts })}
               />
             }
           />
@@ -340,6 +373,19 @@ describe('TrainingRoutePage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Prerequisite Knowledge' }),
     ).toBeVisible();
+    const gate = screen
+      .getByRole('heading', { name: 'Prerequisite Knowledge' })
+      .closest('.training-prerequisite-gate');
+    expect(gate).not.toBeNull();
+    expect(
+      gate?.querySelector('.training-prerequisite-gate__panel'),
+    ).not.toBeNull();
+    expect(
+      gate?.querySelector('.training-prerequisite-gate__list'),
+    ).not.toBeNull();
+    expect(
+      gate?.querySelector('.training-prerequisite-gate__actions'),
+    ).not.toBeNull();
     expect(saveAttempt).not.toHaveBeenCalled();
     const learn = screen.getByRole('link', { name: 'Learn Evidence basics' });
     expect(learn).toHaveAttribute(
@@ -349,6 +395,87 @@ describe('TrainingRoutePage', () => {
 
     await user.click(learn);
     expect(saveAttempt).not.toHaveBeenCalled();
+  });
+
+  it('shows the API core concept with Pagination as a recommended supplement before starting', async () => {
+    const { saveAttempt, source } = repositories();
+    const pagination = {
+      ...foundationItem(),
+      id: 'api.pagination',
+      title: 'Pagination',
+      estimatedMinutes: 10,
+    };
+    const api = {
+      ...conceptItem(),
+      id: 'concept.api',
+      title: 'API：系统之间的可验证协作边界',
+      technicalTerm: 'API',
+      relatedFoundation: ['api.pagination'],
+    };
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      foundationSource(() => Promise.resolve([pagination])),
+      conceptSource(() => Promise.resolve([api])),
+    );
+
+    const coreConceptTitle = await screen.findByRole('heading', {
+      level: 2,
+      name: 'Core concept',
+    });
+    const coreConcept = coreConceptTitle.closest('section');
+    expect(coreConcept).not.toBeNull();
+    expect(within(coreConcept!).getByText('API')).toBeVisible();
+    const supplementTitle = screen.getByRole('heading', {
+      level: 2,
+      name: 'Recommended supplement',
+    });
+    const supplement = supplementTitle.closest('section');
+    expect(supplement).not.toBeNull();
+    expect(within(supplement!).getByText('Pagination')).toBeVisible();
+    expect(
+      within(supplement!).getByRole('link', {
+        name: 'Learn Pagination',
+      }),
+    ).toHaveAttribute('href', '/foundation/api.pagination');
+    expect(saveAttempt).not.toHaveBeenCalled();
+  });
+
+  it('previews related Concepts without creating an Attempt and keeps the Case non-blocking', async () => {
+    const user = userEvent.setup();
+    const { saveAttempt, source } = repositories();
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      foundationSource(() => Promise.resolve([])),
+      conceptSource(),
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Recommended concepts before you start',
+      }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Case terminology',
+      }),
+    ).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole('button', { name: 'View concept explanation' }),
+    );
+    expect(screen.getByText(conceptItem().simpleExplanation)).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
+    expect(
+      await screen.findByRole('heading', { name: /select the next action/i }),
+    ).toBeVisible();
+    expect(saveAttempt).toHaveBeenCalledOnce();
   });
 
   it('creates exactly one Attempt from the guarded direct-start action', async () => {
@@ -362,7 +489,7 @@ describe('TrainingRoutePage', () => {
     renderRoute(source, '/training/case-minimal', foundationSource());
 
     const start = await screen.findByRole('button', {
-      name: 'Start Case directly',
+      name: 'Continue Case',
     });
     await user.click(start);
 
@@ -390,7 +517,7 @@ describe('TrainingRoutePage', () => {
     renderRoute(source, '/training/case-minimal', foundationSource());
 
     const start = await screen.findByRole('button', {
-      name: 'Start Case directly',
+      name: 'Continue Case',
     });
     await user.click(start);
 
@@ -407,7 +534,7 @@ describe('TrainingRoutePage', () => {
     expect(saveAttempt).toHaveBeenCalledTimes(2);
   });
 
-  it('offers route retry when an immediate initial Attempt save fails', async () => {
+  it('keeps an empty advisory gate retryable when its initial Attempt save fails', async () => {
     const user = userEvent.setup();
     const { saveAttempt, source } = repositories();
     saveAttempt
@@ -419,11 +546,16 @@ describe('TrainingRoutePage', () => {
       foundationSource(() => Promise.resolve([])),
     );
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Initial save failed');
+    const start = await screen.findByRole('button', { name: 'Continue Case' });
+    expect(saveAttempt).not.toHaveBeenCalled();
+    await user.click(start);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The training session could not be created. Try again.',
+    );
     expect(saveAttempt).toHaveBeenCalledOnce();
 
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(start);
     expect(
       await screen.findByRole('heading', { name: /select the next action/i }),
     ).toBeVisible();
@@ -431,6 +563,7 @@ describe('TrainingRoutePage', () => {
   });
 
   it('fails open when the independent Foundation source cannot load', async () => {
+    const user = userEvent.setup();
     const { saveAttempt, source } = repositories();
     renderRoute(
       source,
@@ -439,12 +572,94 @@ describe('TrainingRoutePage', () => {
     );
 
     expect(
+      await screen.findByRole('heading', {
+        name: 'Recommended concepts before you start',
+      }),
+    ).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
+    expect(
       await screen.findByRole('heading', { name: /select the next action/i }),
     ).toBeVisible();
     expect(saveAttempt).toHaveBeenCalledOnce();
+  });
+
+  it('fails open when the independent Concept source cannot load', async () => {
+    const user = userEvent.setup();
+    const { saveAttempt, source } = repositories();
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      foundationSource(() => Promise.resolve([])),
+      conceptSource(() => Promise.reject(new Error('Concept source offline'))),
+    );
+
     expect(
-      screen.queryByRole('heading', { name: 'Prerequisite Knowledge' }),
-    ).not.toBeInTheDocument();
+      await screen.findByRole('heading', {
+        name: 'Recommended concepts before you start',
+      }),
+    ).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
+    expect(
+      await screen.findByRole('heading', { name: /select the next action/i }),
+    ).toBeVisible();
+    expect(saveAttempt).toHaveBeenCalledOnce();
+  });
+
+  it('keeps Continue available without waiting for a slow Concept source', async () => {
+    const user = userEvent.setup();
+    const { saveAttempt, source } = repositories();
+    const neverLoads = new Promise<readonly ConceptKnowledge[]>(() => {
+      // Intentionally unresolved: advisory content cannot block a new Case.
+    });
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      foundationSource(() => Promise.resolve([])),
+      conceptSource(() => neverLoads),
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Recommended concepts before you start',
+      }),
+    ).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
+    expect(
+      await screen.findByRole('heading', { name: /select the next action/i }),
+    ).toBeVisible();
+    expect(saveAttempt).toHaveBeenCalledOnce();
+  });
+
+  it('resumes an existing Attempt without waiting for a slow Concept source', async () => {
+    const { content, listAttempts, saveAttempt, source } = repositories();
+    listAttempts.mockResolvedValue([
+      inProgressAttempt(
+        'attempt-resume-with-slow-concepts',
+        content.metadata.version,
+        '2026-07-13T10:00:00.000Z',
+      ),
+    ]);
+    const neverLoads = new Promise<readonly ConceptKnowledge[]>(() => {
+      // Intentionally unresolved: advisory content cannot enter resume's path.
+    });
+
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      foundationSource(),
+      conceptSource(() => neverLoads),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: /select the next action/i }),
+    ).toBeVisible();
+    expect(saveAttempt).not.toHaveBeenCalled();
   });
 
   it.each(['mastery', 'attempt-history'] as const)(
@@ -465,13 +680,16 @@ describe('TrainingRoutePage', () => {
 
       expect(
         await screen.findByRole('heading', {
-          name: /select the next action/i,
+          name: 'Recommended concepts before you start',
         }),
       ).toBeVisible();
-      expect(saveAttempt).toHaveBeenCalledOnce();
+      expect(saveAttempt).not.toHaveBeenCalled();
       expect(
         screen.queryByRole('heading', { name: 'Prerequisite Knowledge' }),
       ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Continue Case' }),
+      ).toBeEnabled();
     },
   );
 
@@ -498,23 +716,20 @@ describe('TrainingRoutePage', () => {
     expect(screen.getByText('Mastered')).toBeVisible();
     expect(saveAttempt).not.toHaveBeenCalled();
 
-    await user.click(
-      screen.getByRole('button', { name: 'Start Case directly' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
     expect(
       await screen.findByRole('heading', { name: /select the next action/i }),
     ).toBeVisible();
     expect(saveAttempt).toHaveBeenCalledOnce();
   });
 
-  it('loads the exact version selected by the active catalog', async () => {
+  it('loads the exact version selected by the active catalog before Continue creates an Attempt', async () => {
+    const user = userEvent.setup();
     const { getVersion, listActive, listAttempts, saveAttempt, source } =
       repositories();
     renderRoute(source, '/training/case-minimal');
 
-    expect(
-      await screen.findByRole('heading', { name: /select the next action/i }),
-    ).toBeVisible();
+    const start = await screen.findByRole('button', { name: 'Continue Case' });
     expect(listActive).toHaveBeenCalledWith({
       status: 'published',
     });
@@ -524,6 +739,12 @@ describe('TrainingRoutePage', () => {
       caseId: 'case-minimal',
       status: 'in-progress',
     });
+    expect(saveAttempt).not.toHaveBeenCalled();
+
+    await user.click(start);
+    expect(
+      await screen.findByRole('heading', { name: /select the next action/i }),
+    ).toBeVisible();
     expect(saveAttempt).toHaveBeenCalledOnce();
   });
 
@@ -588,6 +809,10 @@ describe('TrainingRoutePage', () => {
     await waitFor(() => expect(foundation.loadAll).toHaveBeenCalledOnce());
     await user.click(screen.getByRole('button', { name: 'Open second case' }));
 
+    const start = await screen.findByRole('button', { name: 'Continue Case' });
+    expect(getVersion).toHaveBeenCalledWith(second.id, second.metadata.version);
+    expect(saveAttempt).not.toHaveBeenCalled();
+    await user.click(start);
     expect(await screen.findByText('Second case')).toBeVisible();
     expect(saveAttempt).toHaveBeenCalledOnce();
     expect(saveAttempt.mock.calls[0]?.[0]).toMatchObject({ caseId: second.id });
@@ -651,8 +876,14 @@ describe('TrainingRoutePage', () => {
       source,
       foundationSource(() => Promise.resolve([])),
     );
+    await user.click(
+      await screen.findByRole('button', { name: 'Continue Case' }),
+    );
     await screen.findByText(content.title);
     await user.click(screen.getByRole('button', { name: 'Open second case' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Continue Case' }),
+    );
     expect(await screen.findByText('Second case')).toBeVisible();
 
     expect(saveAttempt).toHaveBeenCalledTimes(2);
@@ -724,13 +955,23 @@ describe('TrainingRoutePage', () => {
     ]);
 
     const prerequisites = foundationSource();
-    renderRoute(source, '/training/case-minimal', prerequisites);
+    renderRoute(
+      source,
+      '/training/case-minimal',
+      prerequisites,
+      conceptSource(),
+    );
 
     expect(
       await screen.findByText(node.feedback.firstWrong),
     ).toBeInTheDocument();
     expect(saveAttempt).not.toHaveBeenCalled();
     expect(prerequisites.loadAll).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole('button', {
+        name: '证据：支持决策的可核验事实（Evidence）',
+      }),
+    ).toBeVisible();
   });
 
   it('surfaces a recoverable error when the saved attempt cannot resume without overwriting it', async () => {

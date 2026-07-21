@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.rest-resources",
+  "type": "foundation",
+  "title": "REST 资源：围绕稳定对象组织接口",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "software.foundations"],
+  "level": "beginner",
+  "order": 64,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "REST 风格接口用稳定 URI 标识资源，并让 HTTP 方法表达对资源的读取或变更，客户端操作的是资源表示而不是直接调用服务内部函数。",
+    "analogy": "资源像图书馆中有固定编号的书，地址指出哪一本，借阅、归还和更新目录由操作类型表达；不需要知道管理员在后台用了哪套内部流程。",
+    "technicalExplanation": "集合与单个资源使用一致路径层级，表示可包含链接、状态和可修改字段。方法、状态码、缓存与并发控制共同构成契约，服务内部实现可以独立演进。",
+    "example": "FDE 排查 Agent 创建任务超时后无法确认结果时，发现接口只暴露一次性动作且没有任务资源。增加稳定任务 ID 和查询终态后，客户端可先查结果再决定重试。",
+    "commonMistakes": "把每个业务函数都塞进随意命名的 POST 路径，会失去资源状态与通用语义。也不要强求所有动作纯粹资源化，关键是契约稳定、意图清楚且可诊断。"
+  },
+  "relatedCases": ["agent-tool-timeout-retry-001"]
+}

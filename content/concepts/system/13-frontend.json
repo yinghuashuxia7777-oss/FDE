@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.frontend",
+  "type": "concept",
+  "category": "system",
+  "order": 13,
+  "title": "前端：用户交互与客户端状态边界",
+  "technicalTerm": "Frontend",
+  "simpleExplanation": "前端是在浏览器或客户端中与用户直接交互的部分，负责展示信息、收集输入并调用后端。",
+  "analogy": "像餐厅前台：负责菜单、点单和反馈，但真正的库存与烹饪在后场；前台显示的状态不一定等于后场事实。",
+  "technicalExplanation": "前端包含构建产物、运行时配置、路由、状态管理和 API 客户端。部分环境变量在构建时被写入静态文件，部署后修改服务器变量并不会自动改变已经生成的浏览器代码。",
+  "whyItMatters": "FDE 需要分辨错误来自浏览器缓存、构建配置、请求生成还是后端响应。确认实际网络请求比只看界面文案更可靠。",
+  "commonMistakes": "认为前端能安全保存秘密；修改运行环境后不重新构建；只检查源代码中的地址，不检查已部署产物实际发出的请求。",
+  "relatedFoundation": [
+    "computer.frontend-backend",
+    "computer.environment-precedence"
+  ],
+  "relatedCases": ["frontend-build-env-endpoint-001"]
+}

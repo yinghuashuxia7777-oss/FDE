@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.json-types-null",
+  "type": "foundation",
+  "title": "JSON 类型与 null：区分缺失、空值和真实类型",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "software.foundations", "security.governance"],
+  "level": "beginner",
+  "order": 62,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "JSON 的字符串、数字、布尔值、数组、对象和 null 具有不同语义，字段缺失也不等于值为 null，接口双方必须在契约中明确处理方式。",
+    "analogy": "表格中没有某一栏、栏内写无以及栏内留空看起来相近，却可能分别表示未采集、不适用和空字符串；系统若混用就会做出错误决定。",
+    "technicalExplanation": "解析器不会自动保证业务类型，字符串形式的数字和布尔值仍是字符串。required 决定字段是否必须出现，nullable 语义则决定出现后能否为 null，默认值需显式定义。",
+    "example": "FDE 调查 RAG 越权结果时发现，连接器把缺失 ACL 序列化为 null，过滤服务却把 null 解释为公开资源。统一契约并对缺失权限采用拒绝默认后消除缺口。",
+    "commonMistakes": "用真假判断同时处理零、空字符串、null 和字段缺失，会吞掉合法数据。安全相关字段更不能在类型异常时默认放行，应拒绝请求并记录不含敏感值的错误码。"
+  },
+  "relatedCases": ["rag-permission-filter-gap-001"]
+}

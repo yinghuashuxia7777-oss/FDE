@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.port-binding",
+  "type": "foundation",
+  "title": "端口绑定：进程在哪里接收连接",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["systems.networking", "cloud.deployment"],
+  "level": "intermediate",
+  "order": 35,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "端口绑定是进程把某个协议、网络地址和端口注册为监听入口的动作，只有真实监听地址与容器、服务、探针和客户端使用的目标一致，连接才可能到达应用。",
+    "analogy": "端口号像分机号，绑定地址则说明这部分机只接内线、某个楼层还是所有入口的来电。前台把电话转到 8081，而员工只守着 8080，整栋楼即使通电也没人接听。",
+    "technicalExplanation": "监听在回环地址通常只允许同一网络命名空间访问，监听在全部接口则可由符合网络策略的外部来源访问。容器端口、服务目标端口和负载均衡端口可以不同，因此要沿请求路径逐段核对实际套接字、地址族、映射规则与探针目标。",
+    "example": "容器 Readiness 案例中，启动日志明确显示应用监听所有接口的 8081 端口，但探针仍请求 8080。最小修复是让探针引用已经声明的命名端口，先在预发布确认就绪接口成功，再逐个实例观察生产滚动状态。",
+    "commonMistakes": "连接被拒绝时只检查防火墙，会遗漏进程未监听、绑定到回环地址或端口映射漂移。把服务改为监听所有接口也不是通用答案，因为这可能扩大暴露面；修复应匹配预期访问范围并保留网络策略。"
+  },
+  "relatedCases": [
+    "container-readiness-port-001",
+    "docker-loopback-bind-unreachable-001"
+  ]
+}

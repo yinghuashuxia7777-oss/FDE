@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CheckCircle } from '@phosphor-icons/react';
 
 import {
   buildDomainSignals,
@@ -28,9 +29,10 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
-    const [cases, mastery, domainDefinitions, skillDefinitions] =
+    const [cases, attempts, mastery, domainDefinitions, skillDefinitions] =
       await Promise.all([
         source.cases.listActive({ status: 'published' }),
+        source.attempts.list({ userId: LOCAL_USER_ID, status: 'completed' }),
         source.skills.list(LOCAL_USER_ID),
         source.content.listActiveDomains(),
         source.content.listActiveSkills(),
@@ -39,6 +41,7 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
       cases: cases.filter(
         ({ level, status }) => status === 'published' && level !== 'expert',
       ),
+      attempts,
       mastery,
       domainDefinitions,
       skillDefinitions,
@@ -53,7 +56,13 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
         description={t('skills.description')}
       />
       <AsyncPage state={state} retry={retry}>
-        {({ cases, mastery, domainDefinitions, skillDefinitions }) => {
+        {({
+          cases,
+          attempts,
+          mastery,
+          domainDefinitions,
+          skillDefinitions,
+        }) => {
           const domains = buildDomainSignals(
             domainDefinitions,
             skillDefinitions,
@@ -61,6 +70,9 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
           );
           const masteryBySkill = new Map(
             mastery.map((record) => [record.skillId, record]),
+          );
+          const completedCaseIds = new Set(
+            attempts.map(({ caseId }) => caseId),
           );
           return (
             <div className="product-stack">
@@ -73,6 +85,9 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
                 {domains.map((domain) => {
                   const relatedCases = cases.filter(({ domains: values }) =>
                     values.includes(domain.id),
+                  );
+                  const completedRelatedCases = relatedCases.filter(({ id }) =>
+                    completedCaseIds.has(id),
                   );
                   const skills = skillDefinitions.filter(
                     ({ domainId }) => domainId === domain.id,
@@ -92,6 +107,32 @@ export function SkillsPage({ repositories: override }: SkillsPageProps) {
                             : `${Math.round(domain.score)} / 100`}
                         </strong>
                       </p>
+                      <div className="domain-cell__why">
+                        <strong>{t('skills.why.title')}</strong>
+                        {domain.sampleCount === 0 &&
+                        completedRelatedCases.length === 0 ? (
+                          <p>{t('skills.why.empty')}</p>
+                        ) : (
+                          <ul>
+                            {completedRelatedCases.slice(0, 2).map((item) => (
+                              <li key={item.id}>
+                                <CheckCircle aria-hidden="true" size={16} />
+                                {t('skills.why.completedCase', {
+                                  title: item.title,
+                                })}
+                              </li>
+                            ))}
+                            {domain.sampleCount > 0 ? (
+                              <li>
+                                <CheckCircle aria-hidden="true" size={16} />
+                                {t('skills.why.masterySamples', {
+                                  count: domain.sampleCount,
+                                })}
+                              </li>
+                            ) : null}
+                          </ul>
+                        )}
+                      </div>
                       <StatusBadge
                         tone={domain.status === 'Weak' ? 'warning' : 'neutral'}
                       >

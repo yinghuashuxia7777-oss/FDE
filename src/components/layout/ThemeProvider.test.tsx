@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { ThemeProvider, ThemeSelector } from './ThemeProvider';
+import {
+  THEME_STORAGE_KEY,
+  ThemeProvider,
+  ThemeSelector,
+} from './ThemeProvider';
 
 type ChangeListener = (event: MediaQueryListEvent) => void;
 
@@ -52,7 +56,24 @@ describe('ThemeProvider', () => {
   afterEach(() => {
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.removeProperty('color-scheme');
+    window.localStorage.removeItem(THEME_STORAGE_KEY);
     vi.restoreAllMocks();
+  });
+
+  it('follows the operating-system theme by default', () => {
+    const media = installMatchMedia(false);
+    render(
+      <ThemeProvider>
+        <ThemeSelector />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue(
+      'system',
+    );
+    expect(document.documentElement).toHaveAttribute('data-theme', 'system');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(media.matchMedia).toHaveBeenCalledOnce();
   });
 
   it('offers labeled light, dark, and system choices', async () => {
@@ -95,5 +116,31 @@ describe('ThemeProvider', () => {
     view.unmount();
     expect(media.listenerCount()).toBe(0);
     expect(media.removeEventListener).toHaveBeenCalledOnce();
+  });
+
+  it('restores a saved theme preference on the next mount', async () => {
+    installMatchMedia(false);
+    const user = userEvent.setup();
+    const first = render(
+      <ThemeProvider>
+        <ThemeSelector />
+      </ThemeProvider>,
+    );
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Theme' }),
+      'dark',
+    );
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe(
+      JSON.stringify({ theme: 'dark' }),
+    );
+    first.unmount();
+
+    render(
+      <ThemeProvider>
+        <ThemeSelector />
+      </ThemeProvider>,
+    );
+    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('dark');
   });
 });

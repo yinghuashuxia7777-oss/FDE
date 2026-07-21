@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.eval-dataset",
+  "type": "foundation",
+  "title": "评估数据集：建立独立且可追溯的能力样本",
+  "domain": "agent",
+  "track": "ai-basics",
+  "skills": ["agents.evaluation", "security.governance"],
+  "level": "intermediate",
+  "order": 86,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "评估数据集应从真实需求抽象出正常、边界和对抗任务，并与提示示例和训练材料隔离，通过版本、标签盲化、污染扫描和血缘记录保证分数衡量泛化能力。",
+    "analogy": "它像封存的驾照考试题库，练习题可以帮助训练，但出题者若把正式答案同时放进教材，高分只说明见过题；独立保管和换题记录才让成绩可信。",
+    "technicalExplanation": "每个数据集版本应绑定输入来源、许可、标签规则、风险分层和不可变标识，限制提示作者读取保留集标签，并在运行前扫描精确哈希、规范化重合与近重复。",
+    "example": "理赔摘要提示从共享仓库取了三十八个示例，而回归集仍来自同一仓库，离线分数升到百分之九十六；移除重合后仅百分之七十八，应废止污染结果并重建盲化保留集。",
+    "commonMistakes": "把生产敏感文本直接复制进评估、只随机切分同一来源、允许提示作者查看全部标签，或更新样本后沿用旧版本号都会使结果不可审计且可能泄露数据。"
+  },
+  "relatedCases": ["llm-eval-dataset-leakage-001"]
+}

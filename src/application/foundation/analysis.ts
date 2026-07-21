@@ -5,6 +5,7 @@ import type {
 } from '../../domain/foundation/types';
 import type {
   AttemptRecord,
+  CaseSummary,
   SkillMasteryRecord,
 } from '../../repositories/contracts';
 
@@ -136,6 +137,48 @@ export function selectNextFoundation(
     }))
     .filter(({ status }) => status !== 'mastered')
     .sort(compareProgress)[0]?.item;
+}
+
+export function selectFoundationForCase(
+  items: readonly FoundationKnowledge[],
+  targetCase: Pick<CaseSummary, 'id' | 'skills'>,
+  mastery: readonly SkillMasteryRecord[],
+  attempts: readonly AttemptRecord[],
+): FoundationKnowledge | undefined {
+  const caseSkills = new Set(targetCase.skills);
+  const bySkill = masteryBySkill(mastery);
+
+  return items
+    .filter(
+      (item) =>
+        item.relatedCases.includes(targetCase.id) &&
+        item.skills.some((skillId) => caseSkills.has(skillId)),
+    )
+    .map((item) => {
+      const status = foundationStatus(item, mastery, attempts);
+      const weakScore = item.skills
+        .filter((skillId) => caseSkills.has(skillId))
+        .map((skillId) => bySkill.get(skillId))
+        .filter(
+          (record): record is SkillMasteryRecord =>
+            record !== undefined && record.sampleCount > 0 && record.score < 40,
+        )
+        .reduce(
+          (lowest, record) => Math.min(lowest, record.score),
+          Number.POSITIVE_INFINITY,
+        );
+      return { item, status, weakScore };
+    })
+    .filter(({ status }) => status !== 'mastered')
+    .sort(
+      (left, right) =>
+        Number(Number.isFinite(right.weakScore)) -
+          Number(Number.isFinite(left.weakScore)) ||
+        left.weakScore - right.weakScore ||
+        STATUS_ORDER[left.status] - STATUS_ORDER[right.status] ||
+        left.item.order - right.item.order ||
+        left.item.id.localeCompare(right.item.id),
+    )[0]?.item;
 }
 
 export function prerequisitesForCase(

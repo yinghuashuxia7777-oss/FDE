@@ -1,9 +1,13 @@
 node_modules/
 dist/
+release/
 coverage/
 playwright-report/
 test-results/
+screenshots/
+.env
+.env.local
+.env.*.local
 .DS_Store
 .superpowers/
 *.tsbuildinfo
-

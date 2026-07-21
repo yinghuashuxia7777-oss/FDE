@@ -9,6 +9,7 @@ import {
   type TrainingState,
 } from '../../application/training';
 import { CaseEvidence, CaseScene, TrainingLayout } from '../../components/case';
+import { ConceptGlossary } from '../../components/concept';
 import { QuestionRenderer } from '../../components/question';
 import {
   AdaptiveFeedback,
@@ -23,14 +24,17 @@ import {
   StatusBadge,
 } from '../../components/ui';
 import type { NodeSubmission } from '../../domain/cases/types';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import { localizeUiError, useI18n } from '../../i18n';
 
 interface TrainingSessionPageProps {
+  concepts?: readonly ConceptKnowledge[];
   dependencies: TrainingDependencies;
   initialState: TrainingState;
 }
 
 export function TrainingSessionPage({
+  concepts = [],
   dependencies,
   initialState,
 }: TrainingSessionPageProps) {
@@ -49,29 +53,33 @@ export function TrainingSessionPage({
     const verdict = t(`training.verdict.${state.completedAttempt.verdict}`);
     return (
       <section className="training-complete">
-        <p className="eyebrow">{t('training.session.recordedLocally')}</p>
-        <h1 id="page-title" ref={pageTitleRef} tabIndex={-1}>
-          {t('training.session.completeTitle')}
-        </h1>
-        <p>
-          {t('training.session.result', {
-            score: Math.round(state.completedAttempt.score),
-            verdict,
-          })}
-        </p>
-        <p>{t('training.session.masteryUpdated')}</p>
-        <Link
-          className="button button--primary"
-          to={`/debrief/${state.completedAttempt.id}`}
-        >
-          {t('training.session.reviewDecisions')}
-        </Link>
-        <Link className="button button--secondary" to="/skills">
-          {t('training.session.viewMastery')}
-        </Link>
-        <Link className="button button--secondary" to="/">
-          {t('training.session.backToPlan')}
-        </Link>
+        <div className="training-complete__result">
+          <p className="eyebrow">{t('training.session.recordedLocally')}</p>
+          <h1 id="page-title" ref={pageTitleRef} tabIndex={-1}>
+            {t('training.session.completeTitle')}
+          </h1>
+          <p>
+            {t('training.session.result', {
+              score: Math.round(state.completedAttempt.score),
+              verdict,
+            })}
+          </p>
+          <p>{t('training.session.masteryUpdated')}</p>
+        </div>
+        <div className="training-complete__actions">
+          <Link
+            className="button button--primary"
+            to={`/debrief/${state.completedAttempt.id}`}
+          >
+            {t('training.session.reviewDecisions')}
+          </Link>
+          <Link className="button button--secondary" to="/skills">
+            {t('training.session.viewMastery')}
+          </Link>
+          <Link className="button button--secondary" to="/">
+            {t('training.session.backToPlan')}
+          </Link>
+        </div>
       </section>
     );
   }
@@ -179,6 +187,11 @@ export function TrainingSessionPage({
               </StatusBadge>
             </div>
             <p className="decision-context__prompt">{node.prompt}</p>
+            <ConceptGlossary
+              compact
+              concepts={concepts}
+              title={t('concept.glossary.caseTitle')}
+            />
             <TrainingProgress
               scoreEntries={state.scoreEntries}
               visitedNodeIds={state.visitedNodeIds}

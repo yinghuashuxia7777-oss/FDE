@@ -1,10 +1,13 @@
 # FDE Arena UI Design
 
+> The approved visual direction is defined by
+> `docs/superpowers/specs/2026-07-14-final-visual-upgrade.md`. This document
+> records the resulting production UI contract; it is not an invitation to
+> explore a different style.
+
 ## Design read
 
-FDE Arena is a dense engineering training workspace for career switchers and practicing FDEs. It should feel like a calm incident room: evidence is easy to scan, risk is explicit, and every action has a visible consequence. It must not look like a school quiz, a generic admin template, or a neon AI product.
-
-The primary UI skill is `ui-ux-pro-max`. Design dials are variance 5/10, motion 3/10, and density 8/10. `design-taste-frontend` contributed anti-template checks but is not used as the main system because it explicitly excludes dense dashboards.
+FDE Arena is a dark professional AI training system for career switchers and practicing FDEs. It should feel like a calm, high-end customer incident room: evidence is easy to scan, risk is explicit, and every action has a visible consequence. It must not look like a school quiz, generic SaaS admin template, marketing page, full-screen purple AI product, or neon cyberpunk interface.
 
 ## Design principles
 
@@ -24,19 +27,22 @@ All components use semantic CSS variables rather than raw colors.
 
 | Token | Light | Dark | Purpose |
 |---|---|---|---|
-| `--canvas` | `#F3F5F7` | `#0F141A` | App background |
-| `--surface` | `#FFFFFF` | `#171E26` | Primary surface |
-| `--surface-subtle` | `#E9EDF1` | `#202A35` | Grouped evidence and inactive controls |
-| `--text` | `#17202B` | `#F1F5F8` | Primary text |
-| `--text-muted` | `#566273` | `#AAB5C2` | Secondary text |
-| `--border` | `#CDD5DE` | `#384554` | Separators and control outlines |
-| `--accent` | `#176B87` | `#5AB3CE` | Selected, focus, primary action |
-| `--accent-strong` | `#0D526A` | `#82CCE0` | Active emphasis |
-| `--success` | `#257A57` | `#62C695` | Correct and complete |
-| `--warning` | `#9A6700` | `#E6B84C` | Caution and second hint |
-| `--danger` | `#B13A45` | `#F27D87` | Wrong and destructive |
-| `--critical` | `#7F1D2D` | `#FF9AA5` | Critical error |
-| `--focus` | `#005FCC` | `#8CC8FF` | Keyboard focus ring |
+| `--canvas` | `#F4F7FB` | `#07090D` | App background |
+| `--surface` | `#FFFFFF` | `#10141D` | Primary surface |
+| `--surface-subtle` | `#EDF2F8` | `#121826` | Grouped evidence and inactive controls |
+| `--surface-raised` | `#FFFFFF` | `#141A2A` | Elevated cards |
+| `--surface-inset` | `#E7EDF6` | `#080B12` | Immersive and evidence backgrounds |
+| `--text` | `#0B1020` | `#F7F9FC` | Primary text |
+| `--text-muted` | `#586579` | `#9EA8B7` | Secondary text |
+| `--border` | `#D5DDEA` | `#20283A` | Separators and control outlines |
+| `--accent` | `#2563EB` | `#3B82F6` | Selected, focus, primary action |
+| `--accent-strong` | `#1D4ED8` | `#4F8CFF` | Active emphasis |
+| `--accent-violet` | `#6D5CFF` | `#6D5CFF` | Local portal/path highlight only |
+| `--success` | `#257A57` | `#46C98B` | Correct and complete |
+| `--warning` | `#9A6700` | `#E7A93F` | Caution and second hint |
+| `--danger` | `#B13A45` | `#F06F7B` | Wrong and destructive |
+| `--critical` | `#7F1D2D` | `#FF8C98` | Critical error |
+| `--focus` | `#005FCC` | `#75A7FF` | Keyboard focus ring |
 
 Correctness never relies on red/green alone. Each state includes a text label and a consistent symbol.
 
@@ -51,8 +57,8 @@ Correctness never relies on red/green alone. Each state includes a text label an
 ### Geometry and elevation
 
 - Spacing: 4, 8, 12, 16, 24, 32, 48 px.
-- Control radius 8 px; panels 12 px; pills only for compact filters/status.
-- Borders organize dense data; shadows are reserved for overlays and the active decision panel.
+- Control radius 8–12 px; cards 16 px; Hero 24 px; pills only for compact filters/status.
+- Borders organize dense data. Restrained shadows separate Hero, elevated cards, overlays, and the active decision panel.
 - Layer scale: base 0, sticky 20, dropdown 40, modal 80, toast 100.
 
 ### Motion
@@ -60,11 +66,11 @@ Correctness never relies on red/green alone. Each state includes a text label an
 - State feedback 140 ms, disclosure 200 ms, route content fade 220 ms.
 - Animate only opacity and transform.
 - Motion explains selection, disclosure, or route continuity; no decorative loops.
-- `prefers-reduced-motion: reduce` removes transforms and reduces durations to near-zero.
+- `prefers-reduced-motion: reduce` reduces animation and transition durations to near-zero without exposing transform-hidden controls.
 
 ## Application shell
 
-Desktop at 1024 px and above uses a stable 240 px sidebar, a compact top context bar, and a content area capped at 1500 px. The sidebar contains dashboard, cases, skill map, mistakes, profile, and settings. Training is reached through a case and appears as an immersive route with a clear exit action.
+Desktop at 1024 px and above uses a stable 264 px sidebar, a compact top command bar with real Case search, and a content area capped at 1500 px. The sidebar contains Dashboard, Foundation, Cases, Skill map, Mistakes, Profile, and Settings. Training is reached through a Case and appears as an immersive route with a clear exit action.
 
 Below 1024 px the sidebar becomes a drawer. A five-item bottom bar exposes Home, Cases, Training, Skills, and More. Secondary pages live under More. The global bar is hidden during active training to protect vertical space while retaining a visible back action.
 
@@ -72,11 +78,19 @@ Below 1024 px the sidebar becomes a drawer. A five-item bottom bar exposes Home,
 
 ### Dashboard
 
-- Training recommendation is the primary action.
-- A compact metric strip shows completed cases, streak, pass rate, and critical risks.
-- The fourteen-domain overview uses labeled segmented cells, not decorative gauges.
-- Weak skills and recent mistakes use ranked lists with direct actions.
+- The Hero presents the FDE growth promise, today-task CTA, Foundation CTA, and a locally rendered customer-incident decision scene.
+- Today's recommendation is the primary Mission Card and remains driven by the existing recommendation engine.
+- The growth rail shows the evidence-derived level, score-derived XP projection, streak, Skill radar, achievements, weak skills, and mistakes. It does not create new persisted progress fields.
+- The three learning-path cards use real Foundation track progress.
+- The fourteen-day calendar, training stats, achievements, and fourteen-domain overview derive only from Attempt, Progress, Mastery, and active content data.
 - Empty state explains how the first case populates the dashboard.
+
+### Foundation
+
+- The library presents overall readiness, the next recommended concept, and three locally accented learning tracks.
+- Cards preserve authored order, stable routes, current evidence status, level, and estimated time.
+- Detail pages use a primary reading rail for the five authored chapters plus a responsive supporting rail for linked Skills and active Cases.
+- Foundation status remains a projection of existing Skill Mastery and Case evidence; reading does not create a separate progress store.
 
 ### Case library
 
@@ -129,4 +143,3 @@ Every interactive component implements default, hover, focus-visible, active, di
 - WCAG AA contrast, visible 2 px focus ring, semantic headings, skip link, and keyboard-complete flows.
 - Icons are decorative only when adjacent text supplies the accessible name; no emoji serve as structural icons.
 - Dynamic text at 200% remains operable and does not hide actions.
-

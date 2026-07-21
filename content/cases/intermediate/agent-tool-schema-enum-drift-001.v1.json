@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-tool-schema-enum-drift-001",
+  "slug": "agent-tool-schema-enum-drift-001",
+  "title": "Agent 工具枚举契约漂移",
+  "summary": "调查 CRM 工具枚举升级后 Agent 创建工单失败的问题，并建立版本化适配、契约测试与可回滚发布路径。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 25,
+  "domains": ["agents-evals", "api-integration", "reliability"],
+  "skills": [
+    "agents.evaluation",
+    "api.integration",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["incident-response", "build", "validate"],
+  "technicalLayers": ["agent-orchestration", "tool-schema", "http-api"],
+  "environments": ["production", "staging"],
+  "riskTypes": ["integration-failure", "reliability", "customer-trust"],
+  "behaviorPatterns": [
+    "contract-first-diagnosis",
+    "versioned-adapter",
+    "canary-validation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的企业服务平台使用 Agent 从客服对话中提取优先级，并调用 CRM API 创建升级工单。",
+    "background": "CRM 供应商把 priority 字段从 low、medium、high 迁移到 P3、P2、P1；生产工具定义仍来自昨日缓存。",
+    "initialIncident": "升级后 Agent 对高优先级请求反复调用创建工具，但客户看不到工单，成功率在十五分钟内下降到百分之六十二。",
+    "constraints": [
+      "不能停用客服人员的人工建单入口。",
+      "不得通过放宽 CRM 服务端校验接受任意字符串。",
+      "修复必须兼容尚未升级的测试租户。"
+    ],
+    "confirmedFacts": [
+      "失败请求均返回 INVALID_ENUM，并指出 priority 的允许值已经改变。",
+      "同一时间其他必填字段和认证请求均通过服务端校验。",
+      "生产 Agent 工具定义的缓存版本比 CRM OpenAPI 版本落后一天。"
+    ]
+  },
+  "startNodeId": "agent-tool-schema-enum-drift-001-node-01",
+  "nodes": [
+    {
+      "id": "agent-tool-schema-enum-drift-001-node-01",
+      "type": "log-analysis",
+      "title": "定位工具调用失败原因",
+      "prompt": "结合调用日志和当前契约，你应先采取哪项诊断与遏制措施？",
+      "skillWeights": {
+        "agents.evaluation": 0.6,
+        "api.integration": 0.4
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-01-evidence-01",
+          "type": "log",
+          "title": "Agent 工具调用",
+          "content": "run=run-731 tool=create_escalation args.priority=high attempt=1 status=422 code=INVALID_ENUM allowed=[P1,P2,P3]\nrun=run-731 attempt=2 status=422 code=INVALID_ENUM",
+          "language": "text"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-01-evidence-02",
+          "type": "json",
+          "title": "工具定义与供应商契约",
+          "content": "{\"toolCache\":{\"version\":\"2026-07-13\",\"priority\":{\"enum\":[\"low\",\"medium\",\"high\"]}},\"providerOpenApi\":{\"version\":\"2026-07-14\",\"priority\":{\"enum\":[\"P3\",\"P2\",\"P1\"]}}}",
+          "language": "json"
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-01-option-a",
+          "label": "提高失败重试次数，等待 CRM 偶尔接受旧枚举",
+          "explanation": "服务端已确定性拒绝旧枚举，增加重试只会重复同一个永久错误并消耗配额，不会改变契约结果。",
+          "errorType": "retry-permanent-error"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-01-option-b",
+          "label": "暂停该写工具自动重试，固定契约版本并核对枚举映射",
+          "explanation": "日志与契约直接证明枚举版本漂移；先停止确定性失败的写调用，再核对版本和映射能控制影响并保留人工入口。"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-01-option-c",
+          "label": "删除 priority 字段后重新提交所有失败请求",
+          "explanation": "priority 是 CRM 的业务必填字段，删除后仍会被校验拒绝，并且会丢失客户升级请求的关键分级语义。",
+          "errorType": "required-field-removal"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-schema-enum-drift-001-node-01-option-b"
+      },
+      "feedback": {
+        "firstWrong": "先判断错误是瞬时故障还是确定性的契约拒绝，再决定是否允许重试。",
+        "secondWrong": "响应已经给出允许值，且缓存与 OpenAPI 版本相差一天。",
+        "revealedAnswer": "应暂停确定性失败的自动重试，固定工具和 CRM 契约版本，并核对旧枚举到新枚举的显式映射。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-tool-schema-enum-drift-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-tool-schema-enum-drift-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "agent-tool-schema-enum-drift-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "设计兼容适配层",
+      "prompt": "在新旧租户并存时，哪种修复设计最能避免再次发生静默契约漂移？",
+      "skillWeights": {
+        "api.integration": 1
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-02-evidence-01",
+          "type": "http",
+          "title": "写前租户能力发现响应",
+          "content": "GET /v1/tenants/prod-42/capabilities\n200 OK\nETag: \"tenant-prod-42-contract-2026-07\"\nCache-Control: max-age=300\n{\"contractVersion\":\"2026-07\",\"toolSchemaUrl\":\"/schemas/crm-tool/2026-07\"}"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-02-evidence-02",
+          "type": "config",
+          "title": "迁移与缓存规则",
+          "content": "production.contractVersion=2026-07\nstaging.contractVersion=2026-06\ncapabilityCache.key=tenantId+contractVersion\ncapabilityCache.ttl=300s\ncapabilityCache.revalidate=If-None-Match\nunknownOrMissingVersion=block-before-write-and-route-manual"
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-02-option-a",
+          "label": "在 Prompt 中告诉模型尽量猜测不同租户需要的枚举",
+          "explanation": "自然语言提示不能保证严格枚举和租户版本一致，模型猜测会把确定性契约问题变成不可预测的生产失败。",
+          "errorType": "prompt-only-contract-control"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-02-option-b",
+          "label": "写前查询租户 capability，按租户和版本缓存并用 ETag、TTL 刷新，再选择显式映射",
+          "explanation": "独立只读端点会在 CRM 写入前提供可信版本；ETag 与 TTL 限制陈旧窗口，版本化适配器据此选择映射，未知版本则阻断并转人工。"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-02-option-c",
+          "label": "立即把所有环境统一写死为 P1、P2、P3",
+          "explanation": "测试租户仍使用旧契约，直接写死新枚举会修复生产却破坏尚未升级的环境，无法满足并行迁移约束。",
+          "errorType": "forced-version-cutover"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-schema-enum-drift-001-node-02-option-b"
+      },
+      "feedback": {
+        "firstWrong": "修复需要让同一个业务优先级在不同契约版本下得到确定输出。",
+        "secondWrong": "供应商提供独立只读 capability 端点，可在写入前发现租户版本，并通过 ETag 和 TTL 刷新缓存。",
+        "revealedAnswer": "应在写入前发现租户契约版本，按租户和版本缓存并刷新，再选择显式映射；未知版本必须在 CRM 写入前阻断。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "agent-tool-schema-enum-drift-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "agent-tool-schema-enum-drift-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "agent-tool-schema-enum-drift-001-node-03",
+      "type": "customer-response",
+      "title": "验证修复并同步客户",
+      "prompt": "修复进入 staging 后，哪项发布与客户沟通方案最完整？",
+      "skillWeights": {
+        "reliability.observability": 0.7,
+        "agents.evaluation": 0.3
+      },
+      "evidence": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "回放结果",
+          "content": "Golden replay: 300 conversations; capability discovery covered contract 2026-06 and 2026-07; ETag change refreshed after TTL; priority mapping accuracy=100%; unknown version rejected before write; create success=100%."
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-03-evidence-02",
+          "type": "customer-message",
+          "title": "客户询问",
+          "content": "客户要求说明哪些请求受影响、是否需要人工补建，以及恢复自动化前会观察什么指标。"
+        }
+      ],
+      "options": [
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-03-option-a",
+          "label": "直接全量发布，并只告诉客户问题已经解决",
+          "explanation": "全量发布缺少生产回滚门槛，模糊通知也没有交代影响范围和失败请求处置，无法重建客户信任。",
+          "errorType": "uncontrolled-rollout"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-03-option-b",
+          "label": "小流量 canary，监控枚举拒绝率与建单成功率，并提供受影响请求清单",
+          "explanation": "回放已覆盖新旧契约；生产 canary 配合错误率、成功率和明确回滚阈值，能验证真实流量并支持客户补建。"
+        },
+        {
+          "id": "agent-tool-schema-enum-drift-001-node-03-option-c",
+          "label": "等待供应商永久保留旧枚举后再恢复任何自动化",
+          "explanation": "供应商已发布新契约且未承诺回退，等待会延长业务中断，也绕开了可以由适配器解决的版本兼容问题。",
+          "errorType": "external-dependency-wait"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "agent-tool-schema-enum-drift-001-node-03-option-b"
+      },
+      "feedback": {
+        "firstWrong": "发布计划需要同时给出生产验证信号、回滚条件和客户影响处置。",
+        "secondWrong": "staging 回放证明逻辑正确，但仍需要受控验证真实生产契约与流量。",
+        "revealedAnswer": "应先做小流量 canary，监控枚举拒绝率和建单成功率；向客户提供时间窗、受影响请求和补建方案后再逐步放量。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": null
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": null
+        }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "生产工具定义落后于 CRM 契约，Agent 持续发送已废弃枚举并对永久错误重试。正确路径是先停止放大，再从独立 capability 端点写前发现租户版本，以版本化适配器兼容新旧租户，并通过契约回放和生产 canary 验证。",
+    "rootCause": "工具执行前没有从租户 capability 端点发现可信契约版本，Schema 缓存也没有按租户和版本绑定；枚举变更后缺少缓存刷新、契约测试与未知版本的安全失败策略，导致 Agent 使用旧值调用新接口。",
+    "correctApproach": [
+      "暂停确定性枚举错误的自动重试并核对工具与服务端契约版本。",
+      "建立写前租户 capability 发现，以 tenantId 与 contractVersion 缓存并通过 ETag、TTL 刷新，再选择显式业务值映射；未知版本在写入前阻断。",
+      "构建由各版本 OpenAPI 生成的契约测试，覆盖全部枚举和必填字段。",
+      "验证历史样本回放结果，再以小流量 canary 和明确阈值逐步恢复。"
+    ],
+    "keyLessons": [
+      "工具 Schema 是可版本化的执行契约，不只是给模型看的提示文本。",
+      "确定性的四百类契约错误不应通过重试恢复。",
+      "并行租户迁移需要通过写前可信版本发现选择显式适配，而不是依赖写调用结果或让模型猜测枚举。"
+    ],
+    "interviewerPerspective": "观察候选人能否用服务端错误和契约 diff 排除认证与网络假设，并提出版本化适配、契约测试和 canary 的完整闭环。",
+    "customerRiskPerspective": "枚举漂移会让高优先级请求静默丢失并削弱客户对自动化的信任；透明影响清单与受控恢复能够降低漏单风险。",
+    "remediation": [
+      "在 CRM 写入前调用租户 capability 端点，把工具定义缓存键扩展为 tenantId 与 contractVersion，并以 ETag 和五分钟 TTL 刷新。",
+      "实现新旧枚举的显式适配器和未知版本的写前阻断。",
+      "在 CI 中增加 OpenAPI diff 与生成式契约测试。"
+    ],
+    "verification": [
+      "模拟新旧租户的 capability 响应，回放全部优先级并确认发现版本、映射与创建结果正确。",
+      "改变 capability ETag 并等待 TTL 到期，确认缓存重新验证后使用新版本映射。",
+      "注入未知或缺失的 capability 契约版本，确认请求在任何 CRM 写入前被阻断并转人工。",
+      "确认 canary 的 INVALID_ENUM 比例为零且建单成功率恢复到基线。"
+    ],
+    "knowledgePoints": [
+      "agent tool schema versioning",
+      "enum contract migration",
+      "OpenAPI contract testing",
+      "canary recovery"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

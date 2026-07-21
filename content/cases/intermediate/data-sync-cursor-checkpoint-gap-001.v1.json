@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 1,
+  "id": "data-sync-cursor-checkpoint-gap-001",
+  "slug": "data-sync-cursor-checkpoint-gap-001",
+  "title": "游标先于数据提交导致同步缺口",
+  "summary": "根据源分页、事务日志与检查点定位崩溃窗口，并用原子提交、幂等重放和对账恢复完整数据同步。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 22,
+  "domains": ["data-engineering", "api-integration", "reliability"],
+  "skills": [
+    "data.engineering",
+    "api.integration",
+    "reliability.observability"
+  ],
+  "lifecycleStages": ["integrate", "operate", "incident-response"],
+  "technicalLayers": [
+    "cursor-pagination",
+    "database-transaction",
+    "checkpointing"
+  ],
+  "environments": ["staging", "production"],
+  "riskTypes": ["data-loss", "duplicate-processing", "customer-trust"],
+  "behaviorPatterns": [
+    "durable-checkpointing",
+    "idempotent-recovery",
+    "reconciliation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的费用管理平台每五分钟从合作银行 API 同步企业卡交易。",
+    "background": "新版同步器为减少重复读取，把 nextCursor 写入独立检查点表，但检查点与交易写入使用了不同提交顺序。",
+    "initialIncident": "一次工作器崩溃后任务显示成功恢复，客户对账却发现连续 100 笔交易从未进入平台。",
+    "constraints": [
+      "不得修改银行源交易或请求对方重新编号。",
+      "恢复重放必须按稳定 transactionId 幂等，不能生成重复费用。",
+      "需要先量化缺口和受影响账户，再向客户给出回补进度。"
+    ],
+    "confirmedFacts": [
+      "银行 API 的游标分页顺序稳定，缺失交易仍可从旧游标读取。",
+      "目标数据库没有缺失页的 transactionId，后续页交易已经存在。",
+      "同步器日志显示崩溃前写入了 nextCursor，但数据事务随后回滚。"
+    ]
+  },
+  "startNodeId": "data-sync-cursor-checkpoint-gap-001-node-01",
+  "nodes": [
+    {
+      "id": "data-sync-cursor-checkpoint-gap-001-node-01",
+      "type": "log-analysis",
+      "title": "确定安全恢复起点",
+      "prompt": "根据事务和游标时间线，下一步应如何恢复缺失交易并控制重复风险？",
+      "skillWeights": {
+        "data.engineering": 0.6,
+        "api.integration": 0.2,
+        "reliability.observability": 0.2
+      },
+      "evidence": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-evidence-01",
+          "type": "log",
+          "title": "崩溃前后的同步日志",
+          "content": "10:01:02 fetched cursor=c100 items=100 next=c200\n10:01:03 checkpoint_saved=c200\n10:01:04 db_transaction_begin page=c100\n10:01:05 worker_killed reason=node_restart\n10:01:05 db_transaction_rollback rows=100\n10:02:00 resume_cursor=c200"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-evidence-02",
+          "type": "json",
+          "title": "源目标对账",
+          "content": "{\"sourcePageCursor\":\"c100\",\"sourceCount\":100,\"targetMatchingTransactionIds\":0,\"nextPageCursor\":\"c200\",\"nextPageTargetCount\":100}"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-evidence-03",
+          "type": "config",
+          "title": "当前写入顺序",
+          "content": "steps:\n  - fetch_page\n  - save_next_cursor\n  - begin_target_transaction\n  - upsert_transactions\n  - commit_target_transaction"
+        }
+      ],
+      "options": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-option-a",
+          "label": "暂停推进游标，从 c100 幂等重放并按 transactionId 对账后再继续",
+          "explanation": "日志证明 c100 页事务回滚却把检查点推进到 c200；源页仍可读取，按稳定 ID 重放和对账能补缺且控制已有记录重复。"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-option-b",
+          "label": "从当前 c200 继续，因为检查点比数据库日志更接近最新状态",
+          "explanation": "检查点正是提前提交的错误状态，从 c200 继续会永久跳过已证实目标计数为零的 c100 页。",
+          "errorType": "trust-advanced-cursor-over-durable-data"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-01-option-c",
+          "label": "在目标库伪造 100 笔占位交易，使源目标总数暂时相等",
+          "explanation": "伪造记录没有银行 transactionId、金额和时间，会污染财务数据并掩盖真实缺口，违反不得修改源事实的约束。",
+          "errorType": "fabricate-financial-records-for-reconciliation"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "data-sync-cursor-checkpoint-gap-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "判断哪个状态已经持久化：nextCursor 还是该页的 100 条目标记录。",
+        "secondWrong": "c100 的数据库事务回滚，而 c200 检查点已经保存，因此安全起点必须退回 c100。",
+        "revealedAnswer": "应暂停游标推进，从 c100 按 transactionId 幂等重放，并对账确认缺口补齐后再恢复。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "data-sync-cursor-checkpoint-gap-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "data-sync-cursor-checkpoint-gap-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "关闭检查点与数据提交间隙",
+      "prompt": "哪种持久化设计最能保证崩溃后既不跳页又可安全重放？",
+      "skillWeights": {
+        "data.engineering": 0.6,
+        "reliability.observability": 0.4
+      },
+      "evidence": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-02-evidence-01",
+          "type": "diagram",
+          "title": "可用持久化边界",
+          "content": "target database transaction: [upsert rows by transactionId] + [update sync_checkpoint from c100 to c200] -> one COMMIT"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-02-evidence-02",
+          "type": "text",
+          "title": "源 API 契约",
+          "content": "旧游标在 24 小时内可重复读取同一逻辑页；每条交易包含全局稳定且不可变的 transactionId。"
+        }
+      ],
+      "options": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-02-option-a",
+          "label": "在同一目标数据库事务中 upsert 该页记录并更新 nextCursor，成功后一次提交",
+          "explanation": "记录和检查点共享提交边界，崩溃前要么两者都不可见、下次重放，要么两者都持久化；transactionId upsert 使重放安全。"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-02-option-b",
+          "label": "继续先保存游标，但把工作器重启延迟增加到十分钟",
+          "explanation": "延迟重启不能消除检查点与事务之间的崩溃窗口，任何进程或主机故障仍可能造成同样跳页。",
+          "errorType": "delay-restart-without-atomic-checkpoint"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-02-option-c",
+          "label": "完全不保存游标，每次都删除目标数据并从第一页全量重建",
+          "explanation": "删除已确认交易会造成财务数据和引用中断，全量重建成本高，也没有必要，因为稳定 ID 和原子检查点已支持安全增量。",
+          "errorType": "destructive-full-rebuild-instead-of-checkpointing"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "data-sync-cursor-checkpoint-gap-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "考虑进程在任意两步之间崩溃时，目标记录和检查点是否会出现不一致可见状态。",
+        "secondWrong": "把记录 upsert 与 checkpoint 更新放入同一数据库事务，可以让两者同时提交或同时回滚。",
+        "revealedAnswer": "应原子提交页面记录与 nextCursor，并依靠稳定 transactionId 使失败后的整页重放幂等。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "data-sync-cursor-checkpoint-gap-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "data-sync-cursor-checkpoint-gap-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "data-sync-cursor-checkpoint-gap-001-node-03",
+      "type": "configuration-review",
+      "title": "用故障注入验证恢复语义",
+      "prompt": "候选实现完成后，哪组验证最能支持生产恢复？",
+      "skillWeights": {
+        "data.engineering": 0.4,
+        "api.integration": 0.2,
+        "reliability.observability": 0.4
+      },
+      "evidence": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "预发布故障注入结果",
+          "content": "crash_before_commit_runs=20 replayed_pages=20 missing_transactions=0 duplicate_transactions=0 checkpoint_ahead_events=0"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-03-evidence-02",
+          "type": "json",
+          "title": "恢复后对账摘要",
+          "content": "{\"sourceTransactions\":12400,\"targetTransactions\":12400,\"sourceOnlyIds\":[],\"targetOnlyIds\":[],\"duplicateIds\":[],\"committedCursor\":\"c12400\"}"
+        }
+      ],
+      "options": [
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-03-option-a",
+          "label": "在提交前后注入崩溃，核对游标与稳定 ID，再分账户回补并监控缺失和重复",
+          "explanation": "故障注入直接覆盖原崩溃窗口，对账证明源目标集合一致；分账户回补与持续指标允许发现异常时暂停。"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-03-option-b",
+          "label": "只确认同步任务退出码为零，不比较源目标 transactionId",
+          "explanation": "原事故中任务同样显示恢复成功，退出码无法发现被游标跳过的页面，必须做集合级对账。",
+          "errorType": "job-success-without-data-reconciliation"
+        },
+        {
+          "id": "data-sync-cursor-checkpoint-gap-001-node-03-option-c",
+          "label": "一次性回补全部账户并关闭重复告警，避免历史重放触发噪声",
+          "explanation": "关闭重复信号会掩盖幂等缺陷，全量回补也会在错误时同时影响所有客户账户。",
+          "errorType": "disable-duplicate-alerts-during-global-replay"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "data-sync-cursor-checkpoint-gap-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证必须重新制造原故障窗口，并比较源目标稳定 ID，而不是只看任务状态。",
+        "secondWrong": "在事务提交前后终止工作器，确认游标不会领先且重放不产生缺失或重复。",
+        "revealedAnswer": "应通过故障注入和集合对账证明恢复语义，再分账户回补并持续监控缺失与重复。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "data-sync-cursor-checkpoint-gap-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "同步器在数据事务提交前推进了 nextCursor，崩溃后从新游标恢复并永久跳过回滚页面。修复需要记录与检查点原子提交及幂等重放。",
+    "rootCause": "检查点写入与目标交易写入不在同一事务且顺序错误，导致 c100 页回滚时 c200 游标仍然持久化，恢复流程把未提交页面误当作已完成。",
+    "correctApproach": [
+      "从最后安全游标 c100 按 transactionId 幂等重放并完成源目标对账。",
+      "在同一目标事务内 upsert 页面记录和更新 nextCursor，使两者同时提交。",
+      "通过提交边界故障注入和稳定 ID 集合对账后分账户恢复生产。"
+    ],
+    "keyLessons": [
+      "检查点代表已经持久化完成的工作，不能先于对应数据提交。",
+      "客户沟通应量化缺失账户和交易、说明源数据仍在、给出分批回补与下一次对账时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否重建崩溃时间线、选择幂等恢复起点，并用原子性与故障注入证明语义。",
+    "customerRiskPerspective": "交易缺失会造成费用报表和财务决策错误，盲目全量重放又可能制造重复扣账或费用。",
+    "remediation": [
+      "将页面数据和 nextCursor 放入同一数据库事务，并以 transactionId 建立唯一约束。",
+      "增加 checkpoint-ahead、源目标差异、重复 ID 和游标停滞告警。"
+    ],
+    "verification": [
+      "确认提交前后故障注入均不产生检查点领先、缺失或重复交易。",
+      "确认生产回补后源目标 transactionId 集合一致，受影响账户对账差异为零。"
+    ],
+    "knowledgePoints": [
+      "cursor checkpointing",
+      "atomic commit",
+      "idempotent data replay"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

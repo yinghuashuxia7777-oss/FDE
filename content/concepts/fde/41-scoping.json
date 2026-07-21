@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.scoping",
+  "type": "concept",
+  "category": "fde",
+  "order": 41,
+  "title": "范围界定：明确问题、边界与非目标",
+  "technicalTerm": "Scoping",
+  "simpleExplanation": "范围界定把模糊诉求变成一个有对象、场景、约束和边界的可解决问题。",
+  "analogy": "像医生先问清症状、持续时间和影响范围，再决定检查项目；不能因为“身体不舒服”就同时检查所有器官。",
+  "technicalExplanation": "Scoping 明确用户、工作流、当前状态、期望结果、成功标准、约束、依赖、风险与非目标，并记录仍需验证的假设。范围应足以交付端到端价值，但不把所有未来需求塞进当前阶段。",
+  "whyItMatters": "FDE 面对客户时最昂贵的错误往往不是代码写错，而是解决了错误的问题。清晰范围让 PoC、排障和生产化都能有可验证终点。",
+  "commonMistakes": "把解决方案当问题定义；没有写非目标；只听单一角色；范围扩大时不重新评估时间、风险和成功标准。",
+  "relatedFoundation": ["fde.problem-scoping"],
+  "relatedCases": ["fde-pilot-scope-control-001"]
+}

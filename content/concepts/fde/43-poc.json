@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.poc",
+  "type": "concept",
+  "category": "fde",
+  "order": 43,
+  "title": "概念验证：用最小实验回答关键未知",
+  "technicalTerm": "PoC",
+  "simpleExplanation": "PoC 是为验证最关键技术或业务假设而设计的有限实验，不是缩小版生产系统。",
+  "analogy": "像造桥前先做材料承重试验：目标是回答材料能否满足条件，而不是先建一座装饰齐全的小桥。",
+  "technicalExplanation": "PoC 应写出假设、代表性输入、控制变量、成功阈值、时间盒和退出条件。实验产生的证据用于决定继续、调整或停止，并明确哪些生产要求尚未验证。",
+  "whyItMatters": "FDE 可以用 PoC 快速降低最大不确定性，但若范围和证据不清，演示成功会被误读为生产就绪。",
+  "commonMistakes": "没有可证伪假设；只挑最容易的样例；为展示效果隐藏失败；不断加入功能而不结束实验；把 PoC 数据当生产容量证据。",
+  "relatedFoundation": ["fde.poc-hypothesis"],
+  "relatedCases": ["fde-pilot-scope-control-001"]
+}

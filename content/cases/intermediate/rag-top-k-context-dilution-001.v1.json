@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "id": "rag-top-k-context-dilution-001",
+  "slug": "rag-top-k-context-dilution-001",
+  "title": "过大的 top-k 引入冲突旧版本",
+  "summary": "根据排序、版本元数据与提示上下文定位检索稀释，并以版本过滤、重排和上下文预算恢复可依据的答案。",
+  "level": "intermediate",
+  "status": "published",
+  "estimatedMinutes": 22,
+  "domains": ["rag-search", "llm-applications", "reliability"],
+  "skills": ["rag.search", "llm.applications", "reliability.observability"],
+  "lifecycleStages": ["evaluate", "deploy", "operate"],
+  "technicalLayers": ["retrieval", "reranking", "context-assembly"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["answer-correctness", "stale-information", "customer-trust"],
+  "behaviorPatterns": [
+    "version-aware-retrieval",
+    "context-budgeting",
+    "canary-evaluation"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的软件供应商使用 RAG 助手回答企业客户的产品支持期限问题。",
+    "background": "为降低零结果率，团队把检索 top-k 从 6 提高到 35，但没有同步调整版本过滤、重排阈值或上下文预算。",
+    "initialIncident": "客户询问产品 X 4.0 的标准支持终止日期时，助手引用了 3.0 与草案公告并给出已经过期的日期。",
+    "constraints": [
+      "只有 status=published 的当前产品版本公告可以作为最终答案依据。",
+      "不能删除历史公告，因为授权支持人员仍需按版本查询。",
+      "修复必须保持高频问题的延迟和令牌成本在既定预算内。"
+    ],
+    "confirmedFacts": [
+      "产品 X 4.0 的已发布公告明确写明支持至 2027-09-30。",
+      "错误上下文同时包含 X 3.0、X 4.0 草案和 X 4.0 已发布公告。",
+      "正确公告在初始检索中排名第一，没有索引缺失。"
+    ]
+  },
+  "startNodeId": "rag-top-k-context-dilution-001-node-01",
+  "nodes": [
+    {
+      "id": "rag-top-k-context-dilution-001-node-01",
+      "type": "log-analysis",
+      "title": "定位冲突上下文来源",
+      "prompt": "根据检索与生成记录，下一步应如何遏制错误并验证根因？",
+      "skillWeights": {
+        "rag.search": 0.5,
+        "llm.applications": 0.3,
+        "reliability.observability": 0.2
+      },
+      "evidence": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-evidence-01",
+          "type": "log",
+          "title": "检索和上下文组装记录",
+          "content": "query='Product X 4.0 standard support end' retrieved=35 context_chunks=28 top1='x4-published' score=0.92 conflicting_versions=[x3-published,x4-draft] context_tokens=11940"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-evidence-02",
+          "type": "json",
+          "title": "三个高相关候选",
+          "content": "[{\"id\":\"x4-published\",\"productVersion\":\"4.0\",\"status\":\"published\",\"endDate\":\"2027-09-30\",\"rank\":1},{\"id\":\"x4-draft\",\"productVersion\":\"4.0\",\"status\":\"draft\",\"endDate\":\"2026-12-31\",\"rank\":7},{\"id\":\"x3-published\",\"productVersion\":\"3.0\",\"status\":\"published\",\"endDate\":\"2025-09-30\",\"rank\":11}]"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-evidence-03",
+          "type": "config",
+          "title": "最近参数变化",
+          "content": "retrievalTopK: 35\nmetadataFilter: productFamily == 'X'\nrerankThreshold: 0\nmaxContextTokens: 12000\npreviousTopK: 6"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-option-a",
+          "label": "回退 top-k 变更，并用版本与发布状态分群重放错误查询",
+          "explanation": "正确文档排名第一但大量旧版和草案进入上下文，且 top-k 是唯一参数变化；回退可控制错误，分群重放能验证稀释机制。"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-option-b",
+          "label": "继续提高 top-k 到 100，让模型看到更多可能正确的公告",
+          "explanation": "当前正确公告已经排名第一，继续加入更多冲突版本只会扩大上下文噪声、成本和错误引用概率。",
+          "errorType": "increase-context-after-conflict-evidence"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-01-option-c",
+          "label": "删除全部历史公告，使索引中只剩当前版本",
+          "explanation": "历史公告仍服务合法的按版本查询，删除权威记录会破坏审计和支持能力，且版本过滤即可解决当前问题。",
+          "errorType": "delete-authoritative-history-to-fix-filtering"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-top-k-context-dilution-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "确认正确文档是否缺失，并比较参数变化后进入上下文的版本和状态。",
+        "secondWrong": "正确公告排名第一；问题是 top-k=35 把草案和旧版本一起放进上下文。",
+        "revealedAnswer": "应回退扩大 top-k 的变更，并按版本和发布状态重放查询，验证冲突上下文是根因。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-top-k-context-dilution-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "rag-top-k-context-dilution-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "rag-top-k-context-dilution-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "rag-top-k-context-dilution-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "rag-top-k-context-dilution-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "设计版本感知的上下文选择",
+      "prompt": "哪套候选过滤与上下文策略最能修复问题而不删除历史内容？",
+      "skillWeights": { "rag.search": 0.5, "llm.applications": 0.5 },
+      "evidence": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-02-evidence-01",
+          "type": "metric",
+          "title": "候选方案离线评测",
+          "content": "top35_unfiltered: grounded=78% stale_citation=14% context_p95=11920\nfilter_version_status_top10: grounded=97% stale_citation=0% context_p95=4380\nfilter_version_status_rerank_top6: grounded=99% stale_citation=0% context_p95=2910"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-02-evidence-02",
+          "type": "config",
+          "title": "查询解析和候选元数据",
+          "content": "parsedProduct: X\nparsedVersion: '4.0'\nrequiredStatus: published\nretrievalCandidates: 20\nrerankTopN: 6\ncontextTokenBudget: 4000\nmetadataFields: [productFamily, productVersion, status, effectiveAt]"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-02-option-a",
+          "label": "按产品版本和 published 状态预过滤，再重排并把前六个候选装入上下文预算",
+          "explanation": "该方案保留历史索引供其他版本查询，却只让当前版本已发布材料进入本次候选；重排和预算进一步减少冲突与成本。"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-02-option-b",
+          "label": "不做元数据过滤，只要求提示优先相信排名更高的文档",
+          "explanation": "提示仍会接收草案和旧版本，无法强制模型忽略冲突证据；当前约束要求只有已发布当前版本可作为依据。",
+          "errorType": "prompt-priority-instead-of-version-filter"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-02-option-c",
+          "label": "把所有候选拼接到超长上下文，并关闭引用以避免显示冲突",
+          "explanation": "隐藏引用不会消除冲突或过期答案，超长上下文还提高成本并削弱客户核验答案依据的能力。",
+          "errorType": "hide-citations-and-expand-conflicting-context"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-top-k-context-dilution-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "约束要求保留历史内容，但本次答案只能使用当前版本的已发布公告。",
+        "secondWrong": "先用 productVersion=4.0、status=published 过滤，再重排并控制上下文数量。",
+        "revealedAnswer": "应采用版本和状态预过滤、重排 Top 6 与明确上下文预算，而不是依赖提示忽略冲突。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": []
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "rag-top-k-context-dilution-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "rag-top-k-context-dilution-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "rag-top-k-context-dilution-001-node-03",
+      "type": "configuration-review",
+      "title": "验证版本正确性与预算",
+      "prompt": "候选配置通过离线评测后，应如何验证并逐步恢复生产？",
+      "skillWeights": {
+        "rag.search": 0.35,
+        "llm.applications": 0.35,
+        "reliability.observability": 0.3
+      },
+      "evidence": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-03-evidence-01",
+          "type": "json",
+          "title": "版本和状态回归矩阵",
+          "content": "{\"currentPublished\":150,\"historicalVersion\":80,\"draftExclusion\":60,\"correctAnswers\":288,\"cases\":290,\"draftCitations\":0,\"wrongVersionCitations\":0}"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-03-evidence-02",
+          "type": "metric",
+          "title": "canary 运行指标",
+          "content": "grounded_rate=99.3% context_tokens_p95=3050 retrieval_p95_ms=176 zero_result_rate=1.1% stale_citation_rate=0 rollback_config_ready=1"
+        }
+      ],
+      "options": [
+        {
+          "id": "rag-top-k-context-dilution-001-node-03-option-a",
+          "label": "验证当前、历史和草案分群，灰度监控过期引用、零结果、延迟和令牌预算",
+          "explanation": "分群矩阵证明过滤不会破坏合法历史查询且草案被排除，线上指标覆盖正确性、召回副作用和成本，支持可暂停灰度。"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-03-option-b",
+          "label": "只观察零结果率下降，不记录引用版本和上下文令牌",
+          "explanation": "零结果少并不代表答案使用了正确版本，本次事故正是候选过多，因此必须观察过期引用和上下文预算。",
+          "errorType": "zero-result-only-retrieval-validation"
+        },
+        {
+          "id": "rag-top-k-context-dilution-001-node-03-option-c",
+          "label": "直接覆盖当前配置且删除旧参数版本，出现问题时再临时调试",
+          "explanation": "删除旧配置会失去快速回退和事故对照，直接全量发布也无法在过期引用回升时限制客户影响。",
+          "errorType": "unversioned-full-retrieval-cutover"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "rag-top-k-context-dilution-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "验证既要证明错误版本被排除，也要证明历史查询、延迟和令牌预算没有回归。",
+        "secondWrong": "按当前、历史、草案分群回归，并在线观察 stale citation、zero result 和 context tokens。",
+        "revealedAnswer": "应完成版本状态矩阵后灰度，监控过期引用、召回、延迟和成本，并保留旧配置回退。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 65,
+        "thirdTry": 35,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "rag-top-k-context-dilution-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "正确公告已排名第一，但扩大 top-k 把旧版本和草案一并装入上下文，导致模型选择冲突日期。修复应依赖版本状态过滤、重排和上下文预算。",
+    "rootCause": "团队只为降低零结果率把 top-k 从 6 提高到 35，却没有限制产品版本、发布状态和上下文数量，造成过期与草案证据稀释正确公告。",
+    "correctApproach": [
+      "回退 top-k 变更并按版本、状态分群重放错误查询。",
+      "配置候选阶段的当前产品版本与 published 状态过滤，再重排并限制上下文预算。",
+      "验证当前、历史和草案分群后灰度，持续观察过期引用、零结果、延迟和成本。"
+    ],
+    "keyLessons": [
+      "更多检索结果不等于更多有效证据，冲突版本会稀释已经排名靠前的正确材料。",
+      "客户沟通应明确错误日期的影响范围、已回退参数、当前权威日期和下一次验证更新。"
+    ],
+    "interviewerPerspective": "观察候选人是否区分召回不足和上下文稀释，并用元数据、分群评测和预算作出可验证权衡。",
+    "customerRiskPerspective": "错误支持期限会影响客户升级、续费和合规计划；隐藏引用会进一步削弱客户核验能力。",
+    "remediation": [
+      "将产品版本、发布状态和生效时间纳入检索过滤及重排配置。",
+      "为 top-k、上下文令牌和过期引用建立版本化评测与线上告警。"
+    ],
+    "verification": [
+      "确认当前与历史版本查询分别命中对应 published 公告，草案引用保持为零。",
+      "确认灰度的 grounding、零结果、检索延迟和上下文令牌均满足门槛，且配置回退可用。"
+    ],
+    "knowledgePoints": [
+      "retrieval top-k",
+      "context dilution",
+      "version-aware metadata filtering"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

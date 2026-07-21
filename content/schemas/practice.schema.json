@@ -1,0 +1,574 @@
+{
+  "$id": "https://fde-arena.local/schemas/practice.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "decision",
+            "diagnose",
+            "construct",
+            "evaluate",
+            "configure"
+          ],
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "responseContract": {
+          "additionalProperties": false,
+          "properties": {
+            "requiredFields": {
+              "items": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            "type": {
+              "enum": [
+                "single-choice",
+                "multiple-choice",
+                "text",
+                "json",
+                "configuration"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "requiredFields"
+          ],
+          "type": "object"
+        },
+        "scored": {
+          "const": true,
+          "type": "boolean"
+        },
+        "stimulus": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "maxLength": 10000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "type": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "content"
+            ],
+            "type": "object"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "prompt",
+        "stimulus",
+        "responseContract",
+        "scored"
+      ],
+      "type": "object"
+    },
+    "difficulty": {
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "type": "string"
+    },
+    "estimatedMinutes": {
+      "maximum": 8,
+      "minimum": 3,
+      "type": "integer"
+    },
+    "evaluation": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "answerContract": {
+              "additionalProperties": false,
+              "properties": {
+                "expectedFields": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 100,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    ]
+                  },
+                  "propertyNames": {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "scoring": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "mode": {
+                      "enum": [
+                        "exact-match",
+                        "required-field-match"
+                      ],
+                      "type": "string"
+                    },
+                    "passingScore": {
+                      "maximum": 100,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "passingScore"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "expectedFields",
+                "scoring"
+              ],
+              "type": "object"
+            },
+            "criterionIds": {
+              "items": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            "method": {
+              "const": "deterministic",
+              "type": "string"
+            },
+            "rubricRef": {
+              "additionalProperties": false,
+              "properties": {
+                "rubricId": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "skillId": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "version": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "rubricId",
+                "skillId",
+                "version"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "rubricRef",
+            "criterionIds",
+            "method",
+            "answerContract"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "answerContract": {
+              "additionalProperties": false,
+              "properties": {
+                "expectedFields": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 100,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    ]
+                  },
+                  "propertyNames": {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "scoring": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "mode": {
+                      "enum": [
+                        "exact-match",
+                        "required-field-match"
+                      ],
+                      "type": "string"
+                    },
+                    "passingScore": {
+                      "maximum": 100,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "passingScore"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "expectedFields",
+                "scoring"
+              ],
+              "type": "object"
+            },
+            "criterionIds": {
+              "items": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            "method": {
+              "const": "reviewed",
+              "type": "string"
+            },
+            "rubricRef": {
+              "additionalProperties": false,
+              "properties": {
+                "rubricId": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "skillId": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "version": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "rubricId",
+                "skillId",
+                "version"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "rubricRef",
+            "criterionIds",
+            "method"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "evidenceOutputContract": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactType": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+          "type": "string"
+        },
+        "criticalFailurePolicy": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "eligibilityRule": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "requiredFields": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array"
+        },
+        "sourceReferencePolicy": {
+          "enum": [
+            "required",
+            "optional",
+            "forbidden"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifactType",
+        "requiredFields",
+        "eligibilityRule",
+        "sourceReferencePolicy",
+        "criticalFailurePolicy"
+      ],
+      "type": "object"
+    },
+    "feedback": {
+      "additionalProperties": false,
+      "properties": {
+        "correct": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "criticalFailure": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "incorrect": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "partial": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "correct",
+        "partial",
+        "incorrect",
+        "criticalFailure"
+      ],
+      "type": "object"
+    },
+    "foundationIds": {
+      "items": {
+        "maxLength": 160,
+        "minLength": 1,
+        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string"
+        },
+        "reviewedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewer": {
+          "anyOf": [
+            {
+              "maxLength": 10000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "createdAt",
+        "reviewedAt",
+        "author",
+        "reviewer"
+      ],
+      "type": "object"
+    },
+    "primaryConceptId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "primaryLeafSkillId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "type": "string"
+    },
+    "rubricSetVersion": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "skillCatalogVersion": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "draft",
+        "reviewed",
+        "published",
+        "deprecated"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "version": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "skillCatalogVersion",
+    "rubricSetVersion",
+    "id",
+    "version",
+    "status",
+    "title",
+    "summary",
+    "primaryConceptId",
+    "foundationIds",
+    "primaryLeafSkillId",
+    "difficulty",
+    "estimatedMinutes",
+    "action",
+    "evaluation",
+    "evidenceOutputContract",
+    "feedback",
+    "metadata"
+  ],
+  "title": "FDE Arena Practice Definition",
+  "type": "object"
+}

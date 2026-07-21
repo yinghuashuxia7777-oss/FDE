@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "id": "docker-loopback-bind-unreachable-001",
+  "slug": "docker-loopback-bind-unreachable-001",
+  "title": "容器只监听回环地址导致外部不可达",
+  "summary": "通过容器内外连接与监听地址证据定位 127.0.0.1 绑定问题，并验证受控网络范围内的可达性。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["cloud-deployment", "systems-networking"],
+  "skills": ["cloud.deployment", "systems.networking"],
+  "lifecycleStages": ["deploy", "operate"],
+  "technicalLayers": ["containers", "tcp", "service-binding"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "network-exposure"],
+  "behaviorPatterns": ["layered-network-debugging", "controlled-exposure"],
+  "scenario": {
+    "customerProfile": "一家虚构的制造企业在内部容器平台部署机器状态评分 API。",
+    "background": "团队把服务从直接运行在虚拟机迁移到 Docker，并通过容器网络供内部网关访问。",
+    "initialIncident": "应用日志显示启动成功，容器内健康检查也成功，但网关连接发布端口时持续被拒绝。",
+    "constraints": [
+      "服务只应对内部容器网络开放，不能暴露到公共互联网。",
+      "不得关闭网关健康检查或把流量强制发送到不可达实例。",
+      "可以在预发布重新启动单个容器并保留旧版本回滚。"
+    ],
+    "confirmedFacts": [
+      "主机和容器防火墙没有丢弃该内部网段流量。",
+      "端口映射把主机内部地址的 18000 转发到容器端口 8000。",
+      "同一镜像在容器内部访问 127.0.0.1:8000 返回 200。"
+    ]
+  },
+  "startNodeId": "docker-loopback-bind-unreachable-001-node-01",
+  "nodes": [
+    {
+      "id": "docker-loopback-bind-unreachable-001-node-01",
+      "type": "log-analysis",
+      "title": "比较容器内外连接路径",
+      "prompt": "根据监听与端口映射证据，下一步应如何修复服务可达性？",
+      "skillWeights": {
+        "cloud.deployment": 0.5,
+        "systems.networking": 0.5
+      },
+      "evidence": [
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-01-evidence-01",
+          "type": "terminal",
+          "title": "容器内外测试",
+          "content": "$ docker exec score-api curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/health\n200\n$ curl http://10.20.0.15:18000/health\ncurl: (7) Failed to connect to 10.20.0.15 port 18000: Connection refused\n$ docker port score-api\n8000/tcp -> 10.20.0.15:18000"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-01-evidence-02",
+          "type": "log",
+          "title": "应用启动日志",
+          "content": "score-api version=1.4.2 server_started=true listen_address=127.0.0.1 listen_port=8000"
+        }
+      ],
+      "options": [
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-01-option-a",
+          "label": "让应用在容器内监听 0.0.0.0:8000，并保持主机端口仅绑定内部地址",
+          "explanation": "应用只监听容器回环接口，所以端口转发无法连接；监听容器全部接口并限制主机发布地址可以恢复内部访问且不公开暴露。"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-01-option-b",
+          "label": "删除端口映射，要求网关访问容器内的 127.0.0.1",
+          "explanation": "127.0.0.1 始终指向发起请求的网络命名空间，网关无法用自己的回环地址访问另一个容器，因此删除映射会保持不可达。",
+          "errorType": "cross-container-loopback-assumption"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-01-option-c",
+          "label": "把主机端口发布为 0.0.0.0:18000 并关闭内部访问限制",
+          "explanation": "扩大主机监听范围不能修复容器内部只绑定回环的问题，反而可能把服务意外暴露到不受信任网络。",
+          "errorType": "unnecessary-public-port-exposure"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "docker-loopback-bind-unreachable-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "区分容器回环接口、容器网络接口和主机发布地址。",
+        "secondWrong": "容器内回环请求成功，但应用日志明确只监听 127.0.0.1。",
+        "revealedAnswer": "应让应用在容器内监听 0.0.0.0:8000，同时把主机发布范围继续限制在内部地址。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "docker-loopback-bind-unreachable-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "docker-loopback-bind-unreachable-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "docker-loopback-bind-unreachable-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "docker-loopback-bind-unreachable-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "docker-loopback-bind-unreachable-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证内部可达与外部隔离",
+      "prompt": "预发布容器修改监听地址后，哪项验证最完整？",
+      "skillWeights": {
+        "cloud.deployment": 0.4,
+        "systems.networking": 0.6
+      },
+      "evidence": [
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-02-evidence-01",
+          "type": "config",
+          "title": "候选网络配置",
+          "content": "applicationListen: 0.0.0.0:8000\npublish:\n  hostAddress: 10.20.0.15\n  hostPort: 18000\n  containerPort: 8000\nallowedSources:\n  - internal-gateway",
+          "language": "yaml"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-02-evidence-02",
+          "type": "metric",
+          "title": "预发布连接矩阵",
+          "content": "container_loopback_status=200 internal_gateway_status=200 unauthorized_network_connection=denied health_check_success_rate=100% application_error_rate=0"
+        }
+      ],
+      "options": [
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-02-option-a",
+          "label": "验证容器内和内部网关成功、未授权网络失败，再逐实例替换并观察健康检查",
+          "explanation": "正向与负向连接测试证明服务既可被目标网关访问又未扩大暴露面，逐实例发布保留容量与回滚。"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-02-option-b",
+          "label": "只在容器内访问 127.0.0.1，成功后立即全量发布",
+          "explanation": "容器内回环在故障版本本来就成功，不能验证网关路径；全量发布会重复使用无效信号。",
+          "errorType": "repeat-non-discriminating-loopback-test"
+        },
+        {
+          "id": "docker-loopback-bind-unreachable-001-node-02-option-c",
+          "label": "只验证网关能访问，不检查未授权网络是否也能访问",
+          "explanation": "功能成功不能证明暴露范围正确，缺少负向测试可能把内部评分服务意外开放给其他网络。",
+          "errorType": "missing-network-negative-test"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "docker-loopback-bind-unreachable-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "网络修复既要验证目标路径成功，也要验证非目标路径仍被拒绝。",
+        "secondWrong": "使用内部网关正向测试和未授权网络负向测试，再逐实例观察。",
+        "revealedAnswer": "应验证内部网关成功与未授权来源失败，逐实例发布并向客户说明恢复范围和网络边界。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": []
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "应用只绑定容器回环地址，导致端口转发无法到达。正确修复是在容器内监听全部接口，同时把主机发布和来源限制保持在内部网络。",
+    "rootCause": "由于迁移后的启动参数仍绑定 127.0.0.1，服务只接受同一容器网络命名空间的连接，导致主机端口转发无法连接容器网络接口。",
+    "correctApproach": [
+      "把应用监听改为 0.0.0.0:8000，并保持主机端口只绑定内部地址。",
+      "执行目标网关正向和未授权网络负向测试，再逐实例替换并观察健康指标。"
+    ],
+    "keyLessons": [
+      "容器内 127.0.0.1 成功不能证明其他容器或主机能够访问服务。",
+      "FDE 应向客户说明应用本身未崩溃、影响位于网络绑定层，并给出安全恢复步骤。"
+    ],
+    "interviewerPerspective": "观察候选人是否理解网络命名空间，能修复监听地址同时避免扩大公共暴露。",
+    "customerRiskPerspective": "错误扩大端口范围可能把内部机器状态接口暴露给未经授权的网络。",
+    "remediation": [
+      "在容器启动配置中显式声明监听地址，并限制主机发布地址和允许来源。",
+      "为部署流水线增加容器内、网关和未授权来源三类连接测试。"
+    ],
+    "verification": [
+      "确认容器内与内部网关健康请求返回 200，未授权网络连接被拒绝。",
+      "确认逐实例发布期间健康检查成功率为 100%，应用错误率保持为零。"
+    ],
+    "knowledgePoints": [
+      "container network namespaces",
+      "loopback binding",
+      "positive and negative connectivity tests"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

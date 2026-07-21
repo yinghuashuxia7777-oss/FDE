@@ -6,6 +6,7 @@ import {
   FolderOpen,
   Gear,
   House,
+  Path,
   UserCircle,
   WarningCircle,
   X,
@@ -16,7 +17,10 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 
 const drawerDestinations = [
+  { to: '/journey', labelKey: 'nav.journey', Icon: Path },
   { to: '/foundation', labelKey: 'nav.foundation', Icon: BookOpenText },
+  { to: '/practices', labelKey: 'nav.practices', Icon: Crosshair },
+  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
   { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
   { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
   { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
@@ -37,7 +41,7 @@ interface InertSnapshot {
 function makeBackgroundInert() {
   const elements = [
     document.getElementById('main-content'),
-    document.querySelector<HTMLElement>('.context-bar'),
+    document.querySelector<HTMLElement>('.growth-os-header'),
     document.querySelector<HTMLElement>('.mobile-bottom-nav'),
   ].filter((element): element is HTMLElement => element !== null);
   const snapshots: InertSnapshot[] = elements.map((element) => ({

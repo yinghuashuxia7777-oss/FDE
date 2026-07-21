@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.filesystem-paths",
+  "type": "foundation",
+  "title": "文件系统路径：定位程序实际读取的文件",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations"],
+  "level": "beginner",
+  "order": 32,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "文件系统路径指出文件或目录在运行环境中的位置，相对路径还依赖进程当前工作目录，因此仓库里看到同名文件并不能证明生产进程读取的就是它。",
+    "analogy": "路径像写在取件单上的地址，绝对路径包含完整城市、街道和门牌，相对路径则是从你当前站的位置继续走。两张都写着配置的纸可能放在不同抽屉，名字相同不代表程序拿到的是同一张。",
+    "technicalExplanation": "绝对路径从文件系统根开始，相对路径由当前工作目录解析；容器挂载、符号链接和打包目录还会改变运行时视图。排查时应记录规范化后的非敏感路径、工作目录、文件存在性与加载来源，必要时比较镜像内路径和挂载后的路径。",
+    "example": "Python 配置优先级案例里，镜像中的配置文件确实写着 30 秒超时，但启动日志显示环境变量最终覆盖为 5 秒。FDE 仍应先确认应用加载的是预期路径，再沿来源优先级定位覆盖项，避免因查看了错误副本而形成第二个误判。",
+    "commonMistakes": "常见错误是在本地目录验证成功后默认容器目录完全相同，或用临时修改生产文件来证明猜想。另一个误区是递归输出整个目录与配置内容，这既制造噪声也可能泄露秘密；应只采集定位结论所需的最小元数据。"
+  },
+  "relatedCases": ["python-config-precedence-001"]
+}

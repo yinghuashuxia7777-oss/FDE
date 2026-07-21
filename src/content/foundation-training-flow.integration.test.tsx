@@ -116,7 +116,7 @@ describe('real bundled Foundation to training flow', () => {
     );
     const repositories = productRepositories(db, installer);
 
-    expect(foundationIndex).toHaveLength(30);
+    expect(foundationIndex).toHaveLength(100);
     expect(
       foundationIndex.find(({ id }) => id === FOUNDATION_ID),
     ).toMatchObject({
@@ -213,9 +213,7 @@ describe('real bundled Foundation to training flow', () => {
     ).toHaveAttribute('href', `/foundation/${FOUNDATION_ID}`);
     await expectNoTrainingWrites(repositories);
 
-    await user.click(
-      screen.getByRole('button', { name: 'Start Case directly' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Continue Case' }));
     expect(
       await screen.findByRole('heading', {
         name: firstNodeTitle,
@@ -318,6 +316,6 @@ describe('real bundled Foundation to training flow', () => {
     expect(screen.queryByText(newerRootCause)).not.toBeInTheDocument();
     expect(screen.getByText(`${summary.version}`)).toBeVisible();
     expect(exactVersionRead).toHaveBeenCalledWith(CASE_ID, summary.version);
-    expect(activeCatalogRead).not.toHaveBeenCalled();
+    expect(activeCatalogRead).toHaveBeenCalledWith({ status: 'published' });
   });
 });

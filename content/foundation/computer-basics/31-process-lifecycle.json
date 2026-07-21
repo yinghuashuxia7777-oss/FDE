@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.process-lifecycle",
+  "type": "foundation",
+  "title": "进程生命周期：从启动到安全退出",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["software.foundations", "cloud.deployment"],
+  "level": "beginner",
+  "order": 31,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "进程生命周期描述程序从被创建、完成初始化、持续运行到接收信号并退出的完整过程，FDE 必须据此区分进程仍在、实例已经就绪以及配置变更真正生效这三种不同状态。",
+    "analogy": "进程像一家门店从开门准备、正式营业到打烊交接的过程。卷帘门升起只表示员工进入店内，不代表收银、库存和配送都已可用，换了操作手册也要让当班人员重新领取才能生效。",
+    "technicalExplanation": "操作系统为进程分配标识、内存和文件描述符，启动代码随后加载配置、建立依赖连接并开始监听。部署平台还会发送终止信号并给予宽限期，因此诊断要同时查看启动日志、重启次数、退出码、信号处理和就绪状态，不能只凭进程列表下结论。",
+    "example": "容器端口案例中，应用进程持续运行却因 Readiness 检查了错误端口而不接流量；密钥轮换案例中，Secret 对象已更新但旧进程仍持有旧凭据。两者都要求先判断当前处于生命周期哪一阶段，再决定修正探针还是安全重启实例。",
+    "commonMistakes": "常见错误是把进程存在等同于服务可用，或在配置变化后假设所有运行实例会自动刷新。直接强杀全部实例还会丢失排空和清理机会，正确做法是保留容量、逐步重启，并用就绪、请求结果和退出日志验证。"
+  },
+  "relatedCases": [
+    "container-readiness-port-001",
+    "k8s-secret-rotation-rollout-001"
+  ]
+}

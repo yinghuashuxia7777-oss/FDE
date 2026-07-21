@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "computer.health-readiness",
+  "type": "foundation",
+  "title": "健康与就绪：区分存活、启动和接流量条件",
+  "domain": "computer-basics",
+  "track": "computer-basics",
+  "skills": ["cloud.deployment", "reliability.observability"],
+  "level": "intermediate",
+  "order": 38,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "健康检查回答进程是否仍能继续运行，就绪检查回答实例此刻是否应该接收流量，启动检查则为慢启动提供保护，三者目的不同且不能用一个永远成功的接口代替。",
+    "analogy": "医院医生在岗类似进程存活，诊室设备与药品齐备才表示可以接诊，早晨消毒准备则属于启动阶段。为了让排队数字好看而假报诊室可用，只会把患者送到无法处理的入口。",
+    "technicalExplanation": "编排器通常用存活失败触发重启，用就绪失败从流量端点移除实例，用启动检查延迟前两类检查的严格执行。探针应便宜、稳定并反映所需能力，关键依赖可纳入就绪判断，但要避免短暂外部故障造成所有实例同时退流。",
+    "example": "容器案例中，进程没有崩溃，真实监听端口为 8081，而 Readiness 误查 8080，结果是新实例持续未就绪且滚动停滞。正确做法是修正命名端口引用，在预发布验证接口，再保留旧容量逐个替换生产实例。",
+    "commonMistakes": "删除失败探针或强制流量进入未就绪实例，会把可控配置错误升级为客户故障。把存活探针设计成深度依赖检查也会引发重启风暴；应先明确每个检查的决策用途，再以延迟、错误率和合成请求补充验证。"
+  },
+  "relatedCases": ["container-readiness-port-001"]
+}

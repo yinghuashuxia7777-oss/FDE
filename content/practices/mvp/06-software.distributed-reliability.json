@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.software.distributed-reliability",
+  "version": 1,
+  "status": "draft",
+  "title": "Distributed Reliability Focused Practice",
+  "summary": "A focused transfer activity for Distributed Reliability.",
+  "primaryConceptId": "concept.timeout-retry",
+  "foundationIds": ["api.timeout-budget"],
+  "primaryLeafSkillId": "software.distributed-reliability",
+  "difficulty": "beginner",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.software.distributed-reliability",
+    "kind": "decision",
+    "prompt": "Set a bounded timeout and retry policy for one call chain.",
+    "stimulus": [
+      {
+        "id": "stimulus.software.distributed-reliability",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.software.distributed-reliability",
+      "skillId": "software.distributed-reliability",
+      "version": 1
+    },
+    "criterionIds": ["criterion.software.distributed-reliability.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "reliability-plan",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

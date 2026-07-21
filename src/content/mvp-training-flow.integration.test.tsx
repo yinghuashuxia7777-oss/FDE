@@ -86,7 +86,7 @@ async function finishCorrectPath(
 }
 
 describe('real bundled MVP training flow', () => {
-  it('loads, trains, scores, updates mastery, debriefs, and marks today complete', async () => {
+  it('loads, trains, scores, updates mastery, debriefs, and records dashboard evidence', async () => {
     const db = await openTestDatabase();
     const source = new LocalContentSource();
     const pack = await source.loadPack();
@@ -96,9 +96,9 @@ describe('real bundled MVP training flow', () => {
     const catalog = await installer.install(await installer.prepare(source));
     const repositories = productRepositories(db, installer);
 
-    expect(pack.manifest.contentVersion).toBe('1.2.0');
-    expect(pack.manifest.activePublishedCaseCount).toBe(24);
-    expect(pack.manifest.caseVersionCount).toBe(27);
+    expect(pack.manifest.contentVersion).toBe('1.3.0');
+    expect(pack.manifest.activePublishedCaseCount).toBe(50);
+    expect(pack.manifest.caseVersionCount).toBe(53);
     expect(catalog.activeCases).toContainEqual({ caseId: CASE_ID, version: 1 });
 
     const summary = (await repositories.cases.listActive()).find(
@@ -201,14 +201,21 @@ describe('real bundled MVP training flow', () => {
         <DashboardPage repositories={repositories} now={TEST_DAY} />
       </MemoryRouter>,
     );
-    const today = await screen.findByRole('region', {
-      name: /today's training/i,
+    const challenge = await screen.findByRole('region', {
+      name: "Today's challenge",
     });
-    expect(within(today).getByText('Completed')).toBeVisible();
-    expect(within(today).getByRole('link', { name: 'Review' })).toHaveAttribute(
-      'href',
-      `/debrief/${ATTEMPT_ID}`,
-    );
-    expect(today).toHaveTextContent(/1\s*\/\s*3\s*completed/i);
+    expect(within(challenge).getByText(content!.title)).toBeVisible();
+    expect(
+      within(challenge).getByText(content!.title).closest('a'),
+    ).toHaveAttribute('href', `/debrief/${ATTEMPT_ID}`);
+
+    const evidence = await screen.findByRole('region', {
+      name: 'Evidence timeline',
+    });
+    expect(within(evidence).getByText(content!.title)).toBeVisible();
+    expect(evidence).toHaveTextContent(/Excellent\s*·\s*Score 100/i);
+    expect(
+      within(evidence).getByRole('link', { name: 'Review evidence' }),
+    ).toHaveAttribute('href', `/debrief/${ATTEMPT_ID}`);
   });
 });

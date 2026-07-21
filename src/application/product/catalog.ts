@@ -191,7 +191,7 @@ export function buildDailyTrainingPlan(
   progress: readonly CaseProgressRecord[],
   mastery: readonly SkillMasteryRecord[],
   mistakes: readonly MistakeRecord[],
-  todayAttempts: readonly AttemptRecord[],
+  attempts: readonly AttemptRecord[],
   now = new Date(),
 ): DailyTrainingPlan {
   const eligibleCases = cases
@@ -215,13 +215,43 @@ export function buildDailyTrainingPlan(
   const masteryBySkill = new Map(
     mastery.map((record) => [record.skillId, record]),
   );
+  const completedAttempts = attempts.filter(
+    (attempt): attempt is Extract<AttemptRecord, { status: 'completed' }> =>
+      attempt.status === 'completed',
+  );
+  const unresolvedCriticalMistakes = mistakes.filter((mistake) => {
+    if (!mistake.critical) return false;
+    const mistakeTime = validTime(mistake.createdAt);
+    if (mistakeTime === undefined) return true;
+    return !completedAttempts.some((attempt) => {
+      const completedAt = validTime(attempt.completedAt);
+      return (
+        attempt.caseId === mistake.caseId &&
+        completedAt !== undefined &&
+        completedAt > mistakeTime &&
+        attempt.criticalErrorIds.length === 0 &&
+        (attempt.verdict === 'pass' || attempt.verdict === 'excellent') &&
+        attempt.roundHistory.some(
+          (round) =>
+            round.nodeId === mistake.nodeId &&
+            round.evaluation.isCorrect &&
+            !round.revealed,
+        )
+      );
+    });
+  });
   const criticalCases = new Set(
-    mistakes.filter(({ critical }) => critical).map(({ caseId }) => caseId),
+    unresolvedCriticalMistakes.map(({ caseId }) => caseId),
   );
   const criticalSkills = new Set(
-    mistakes
-      .filter(({ critical }) => critical)
-      .flatMap(({ skillIds }) => skillIds),
+    unresolvedCriticalMistakes
+      .flatMap(({ skillIds }) => skillIds)
+      .filter((skillId) => {
+        const signal = masteryBySkill.get(skillId);
+        return (
+          signal === undefined || signal.sampleCount === 0 || signal.score < 60
+        );
+      }),
   );
 
   const completedByCase = new Map<
@@ -229,7 +259,7 @@ export function buildDailyTrainingPlan(
     { attempt: Extract<AttemptRecord, { status: 'completed' }>; time: number }
   >();
   const todayKey = localDayKey(now);
-  for (const attempt of todayAttempts) {
+  for (const attempt of attempts) {
     if (attempt.status !== 'completed' || !eligibleById.has(attempt.caseId)) {
       continue;
     }
@@ -279,7 +309,10 @@ export function buildDailyTrainingPlan(
         criticalSkills.has(skillId),
       );
       const sameCaseCritical =
-        criticalCases.has(caseSummary.id) || record?.hasCriticalError === true;
+        criticalCases.has(caseSummary.id) ||
+        (record?.hasCriticalError === true &&
+          (record.latestVerdict === 'fail' ||
+            record.latestVerdict === 'critical-risk'));
 
       if (sameCaseCritical || criticalSkill !== undefined) {
         return {

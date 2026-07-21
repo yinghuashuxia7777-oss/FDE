@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "http.request-body-content-type",
+  "type": "foundation",
+  "title": "请求正文与 Content-Type：让字节按预期解释",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "software.foundations"],
+  "level": "beginner",
+  "order": 44,
+  "estimatedMinutes": 9,
+  "content": {
+    "simpleExplanation": "请求正文承载业务数据，而 Content-Type 告诉服务端这些字节采用什么媒体类型和字符编码，两者不一致时解析结果就可能错误或被拒绝。",
+    "analogy": "正文像装在盒中的零件，Content-Type 像盒外的装配说明；把图纸标成照片或把毫米误写成英寸，即使内容完整，接收方也无法按预期使用。",
+    "technicalExplanation": "常见正文包括 JSON、表单、文本和二进制数据，服务端可能返回 400 或 415 表示语法或媒体类型不被接受。序列化器、字符集和压缩方式也必须与头部声明一致。",
+    "example": "FDE 重放 webhook 时保留原始 JSON、Content-Type 和签名，确认接收端解析成功；时间线随后显示同步库存查询超过五秒确认窗口且缺少幂等账本，因此正文检查用于排除解析问题，而非伪造根因。",
+    "commonMistakes": "正文看起来像 JSON 就默认服务会按 JSON 解析，或在重放时自动格式化原始载荷，都会改变签名和解析行为。还要区分缺少正文、空对象与显式 null 的契约含义。"
+  },
+  "relatedCases": [
+    "api-webhook-idempotency-001",
+    "http-unsupported-media-type-001"
+  ]
+}

@@ -2,11 +2,14 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { FoundationItemProgress } from '../../application/foundation';
+import { ConceptGlossary } from '../../components/concept';
 import { StatusBadge } from '../../components/ui';
+import type { ConceptKnowledge } from '../../domain/concepts/types';
 import type { FoundationLearningStatus } from '../../domain/foundation/types';
 import { useI18n } from '../../i18n';
 
 interface PrerequisiteKnowledgeGateProps {
+  concepts: readonly ConceptKnowledge[];
   error: boolean;
   onStart: () => void;
   pending: boolean;
@@ -26,6 +29,7 @@ function statusTone(status: FoundationLearningStatus) {
 }
 
 export function PrerequisiteKnowledgeGate({
+  concepts,
   error,
   onStart,
   pending,
@@ -33,54 +37,92 @@ export function PrerequisiteKnowledgeGate({
 }: PrerequisiteKnowledgeGateProps) {
   const { t } = useI18n();
   const pageTitleRef = useRef<HTMLHeadingElement>(null);
+  const hasFoundationPrerequisites = prerequisites.length > 0;
 
   useEffect(() => {
     pageTitleRef.current?.focus();
   }, []);
 
   return (
-    <section className="training-session-page" aria-labelledby="page-title">
-      <div className="panel product-stack">
-        <header className="page-intro">
+    <section
+      className="training-session-page training-prerequisite-gate"
+      aria-labelledby="page-title"
+    >
+      <div className="panel product-stack training-prerequisite-gate__panel">
+        <header className="page-intro training-prerequisite-gate__intro">
           <p className="eyebrow">{t('foundation.prerequisite.eyebrow')}</p>
           <h1 id="page-title" ref={pageTitleRef} tabIndex={-1}>
-            {t('foundation.prerequisite.title')}
+            {t(
+              hasFoundationPrerequisites
+                ? 'foundation.prerequisite.title'
+                : 'concept.glossary.previewTitle',
+            )}
           </h1>
-          <p>{t('foundation.prerequisite.description')}</p>
+          <p>
+            {t(
+              hasFoundationPrerequisites
+                ? 'foundation.prerequisite.description'
+                : 'concept.glossary.previewDescription',
+            )}
+          </p>
         </header>
 
-        <section aria-labelledby="prerequisite-list-title">
-          <h2 id="prerequisite-list-title">
-            {t('foundation.prerequisite.recommended')}
-          </h2>
-          <ul className="plain-list">
-            {prerequisites.map(({ item, status }) => (
-              <li className="panel" key={item.id}>
-                <div className="section-heading">
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>
-                      {t('foundation.prerequisite.itemMeta', {
-                        minutes: item.estimatedMinutes,
-                      })}
-                    </p>
+        {concepts.length === 0 ? null : (
+          <section className="training-prerequisite-gate__concepts">
+            {hasFoundationPrerequisites ? (
+              <p>{t('concept.glossary.previewDescription')}</p>
+            ) : null}
+            <ConceptGlossary
+              concepts={concepts}
+              title={t(
+                hasFoundationPrerequisites
+                  ? 'foundation.prerequisite.coreConcept'
+                  : 'concept.glossary.caseTitle',
+              )}
+            />
+          </section>
+        )}
+
+        {prerequisites.length === 0 ? null : (
+          <section
+            className="training-prerequisite-gate__list"
+            aria-labelledby="prerequisite-list-title"
+          >
+            <h2 id="prerequisite-list-title">
+              {t('foundation.prerequisite.recommended')}
+            </h2>
+            <ul className="plain-list">
+              {prerequisites.map(({ item, status }) => (
+                <li
+                  className="panel training-prerequisite-gate__item"
+                  key={item.id}
+                >
+                  <div className="section-heading">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>
+                        {t('foundation.prerequisite.itemMeta', {
+                          minutes: item.estimatedMinutes,
+                        })}
+                      </p>
+                    </div>
+                    <StatusBadge tone={statusTone(status)}>
+                      {t(statusKeys[status])}
+                    </StatusBadge>
                   </div>
-                  <StatusBadge tone={statusTone(status)}>
-                    {t(statusKeys[status])}
-                  </StatusBadge>
-                </div>
-                <Link to={`/foundation/${item.id}`}>
-                  {t('foundation.prerequisite.learn', { title: item.title })}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+                  <Link to={`/foundation/${item.id}`}>
+                    {t('foundation.prerequisite.learn', { title: item.title })}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {error ? (
           <p role="alert">{t('foundation.prerequisite.startFailed')}</p>
         ) : null}
-        <div className="button-row">
+        <div className="button-row training-prerequisite-gate__actions">
           <button
             className="button button--primary"
             type="button"

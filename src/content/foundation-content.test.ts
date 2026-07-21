@@ -10,7 +10,7 @@ function readJson(file: string): unknown {
 }
 
 describe('bundled Foundation corpus', () => {
-  it('contains the complete 30-item MVP with valid stable references', () => {
+  it('contains the complete 100-item MVP with valid stable references', () => {
     const foundationDirectory = `${PROJECT_ROOT}/content/foundation`;
     const sources = existsSync(foundationDirectory)
       ? readContentSources(PROJECT_ROOT, 'content/foundation')
@@ -33,7 +33,7 @@ describe('bundled Foundation corpus', () => {
     const activeCaseVersions = new Set(
       config.activeCases.map(({ caseId, version }) => `${caseId}@${version}`),
     );
-    const activeCases = new Set(
+    const activeCaseById = new Map(
       cases
         .filter(
           (candidate) =>
@@ -42,14 +42,17 @@ describe('bundled Foundation corpus', () => {
               `${candidate.id}@${candidate.metadata.version}`,
             ),
         )
-        .map(({ id }) => id),
+        .map((candidate) => [candidate.id, candidate]),
     );
+    const activeCases = new Set(activeCaseById.keys());
 
-    expect(foundations).toHaveLength(30);
-    expect(new Set(foundations.map(({ id }) => id)).size).toBe(30);
-    expect(new Set(foundations.map(({ order }) => order)).size).toBe(30);
+    expect(activeCases.size).toBe(50);
+
+    expect(foundations).toHaveLength(100);
+    expect(new Set(foundations.map(({ id }) => id)).size).toBe(100);
+    expect(new Set(foundations.map(({ order }) => order)).size).toBe(100);
     expect(foundations.map(({ order }) => order).sort((a, b) => a - b)).toEqual(
-      Array.from({ length: 30 }, (_, index) => index + 1),
+      Array.from({ length: 100 }, (_, index) => index + 1),
     );
 
     expect(
@@ -60,10 +63,17 @@ describe('bundled Foundation corpus', () => {
         ]),
       ),
     ).toEqual({
-      'computer-basics': 10,
-      'network-api': 10,
-      'ai-basics': 10,
+      'computer-basics': 30,
+      'network-api': 40,
+      'ai-basics': 30,
     });
+
+    expect(
+      foundations.filter(({ domain }) => domain === 'computer-basics'),
+    ).toHaveLength(20);
+    expect(
+      foundations.filter(({ domain }) => domain === 'fde-methodology'),
+    ).toHaveLength(10);
 
     for (const item of foundations) {
       expect(item.skills.every((skillId) => activeSkills.has(skillId))).toBe(
@@ -72,6 +82,13 @@ describe('bundled Foundation corpus', () => {
       expect(item.relatedCases.every((caseId) => activeCases.has(caseId))).toBe(
         true,
       );
+      for (const caseId of item.relatedCases) {
+        const relatedCase = activeCaseById.get(caseId);
+        expect(
+          relatedCase !== undefined &&
+            item.skills.some((skillId) => relatedCase.skills.includes(skillId)),
+        ).toBe(true);
+      }
       const authoredSections = [
         item.content.simpleExplanation,
         item.content.analogy,
@@ -88,6 +105,13 @@ describe('bundled Foundation corpus', () => {
       expect(item.content.simpleExplanation).toMatch(/[.!?。！？]$/);
     }
 
+    const foundationLinkedCases = new Set(
+      foundations.flatMap(({ relatedCases }) => relatedCases),
+    );
+    expect(
+      [...activeCases].filter((caseId) => !foundationLinkedCases.has(caseId)),
+    ).toEqual([]);
+
     expect(foundations.map(({ id }) => id)).toEqual(
       expect.arrayContaining([
         'api-basic',
@@ -95,7 +119,48 @@ describe('bundled Foundation corpus', () => {
         'rag-basic',
         'agent-basic',
         'agent.tool-calling',
+        'computer.process-lifecycle',
+        'api.oauth-scope-audience',
+        'ai.chunking-strategy',
+        'fde.problem-scoping',
       ]),
     );
+  });
+
+  it('keeps every Foundation-to-Case relation on a shared active Skill', () => {
+    const foundations = readContentSources(
+      PROJECT_ROOT,
+      'content/foundation',
+    ).map(({ text }) => FoundationKnowledgeSchema.parse(JSON.parse(text)));
+    const cases = readContentSources(PROJECT_ROOT, 'content/cases').map(
+      ({ text }) => FdeCaseSchema.parse(JSON.parse(text)),
+    );
+    const config = ContentConfigSchema.parse(
+      readJson('content/manifests/content-config.json'),
+    );
+    const activeVersions = new Set(
+      config.activeCases.map(({ caseId, version }) => `${caseId}@${version}`),
+    );
+    const activeCaseById = new Map(
+      cases
+        .filter((candidate) =>
+          activeVersions.has(`${candidate.id}@${candidate.metadata.version}`),
+        )
+        .map((candidate) => [candidate.id, candidate]),
+    );
+
+    expect(
+      foundations.flatMap((foundation) =>
+        foundation.relatedCases.flatMap((caseId) => {
+          const relatedCase = activeCaseById.get(caseId);
+          return relatedCase !== undefined &&
+            foundation.skills.some((skillId) =>
+              relatedCase.skills.includes(skillId),
+            )
+            ? []
+            : [`${foundation.id}->${caseId}`];
+        }),
+      ),
+    ).toEqual([]);
   });
 });

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.oauth-scope-audience",
+  "type": "foundation",
+  "title": "OAuth Scope 与 Audience：权限和目标缺一不可",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "security.governance"],
+  "level": "intermediate",
+  "order": 55,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "Scope 表示令牌允许执行的操作范围，Audience 表示令牌预定交给哪个资源服务，两者都匹配时目标 API 才应接受调用，因此不能只校验其中一项。",
+    "analogy": "Scope 像通行证上允许进入的房间，Audience 像证件指定的园区；即使能进财务室，拿着另一座园区签发的证件也不应被当前门卫接受。",
+    "technicalExplanation": "客户端申请最小 scope，授权服务器将获批范围与目标资源写入令牌，资源服务器再验证 audience 和操作所需 scope。不同服务中同名 scope 也不能跨受众通用。",
+    "example": "FDE 比较合作方令牌声明和 API 契约后确认 audience 与有效期都正确，但客户端注册只获基础身份范围，缺少 billing.invoices.read；补齐最小读取 scope 后，调用才按契约恢复。",
+    "commonMistakes": "只看令牌未过期或只搜索 scope 字符串，容易漏掉受众不匹配。也不要为快速通过而申请通配范围，正确做法是明确资源、操作和最小授权组合。"
+  },
+  "relatedCases": ["api-oauth-scope-mismatch-001"]
+}

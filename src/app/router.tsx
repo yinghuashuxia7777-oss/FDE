@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
+import { useEffect } from 'react';
 import { createHashRouter, useParams } from 'react-router-dom';
 
 import { ApplicationShell } from '../components/layout/ApplicationShell';
+import { useLearningJourney } from '../components/onboarding';
 import {
   TrainingLandingPage,
   NotFoundPage,
@@ -13,9 +15,13 @@ import { DashboardPage } from '../pages/dashboard';
 import { CaseLibraryPage } from '../pages/cases';
 import { SkillsPage } from '../pages/skills';
 import { MistakesPage } from '../pages/mistakes';
-import { ProfilePage } from '../pages/profile';
+import { ProfilePage, PublicDemoProfilePage } from '../pages/profile';
+import { PracticeDetailPage, PracticeListPage } from '../pages/practices';
+import { ProjectDetailPage, ProjectListPage } from '../pages/projects';
 import { SettingsPage } from '../pages/settings';
 import { DebriefPage } from '../pages/debrief';
+import { FeedbackPage } from '../pages/feedback';
+import { JourneyPage } from '../pages/journey';
 import {
   FoundationDetailPage,
   FoundationLibraryPage,
@@ -29,7 +35,21 @@ function DebriefRoute() {
 
 function FoundationDetailRoute() {
   const { foundationId = '' } = useParams<{ foundationId: string }>();
+  const { markFoundationVisited } = useLearningJourney();
+  useEffect(() => {
+    if (foundationId !== '') markFoundationVisited(foundationId);
+  }, [foundationId, markFoundationVisited]);
   return <FoundationDetailPage foundationId={foundationId} />;
+}
+
+function PracticeDetailRoute() {
+  const { practiceId = '' } = useParams<{ practiceId: string }>();
+  return <PracticeDetailPage practiceId={practiceId} />;
+}
+
+function ProjectDetailRoute() {
+  const { projectId = '' } = useParams<{ projectId: string }>();
+  return <ProjectDetailPage projectId={projectId} />;
 }
 
 export function createAppRouter() {
@@ -71,6 +91,10 @@ export function createAppRouter() {
               element: <SkillsPage />,
             },
             {
+              path: 'journey',
+              element: <JourneyPage />,
+            },
+            {
               path: 'mistakes',
               element: <MistakesPage />,
             },
@@ -78,6 +102,15 @@ export function createAppRouter() {
               path: 'profile',
               element: <ProfilePage />,
             },
+            {
+              path: 'profile/demo',
+              element: <PublicDemoProfilePage />,
+            },
+            { path: 'practices', element: <PracticeListPage /> },
+            { path: 'practices/:practiceId', element: <PracticeDetailRoute /> },
+            { path: 'projects', element: <ProjectListPage /> },
+            { path: 'projects/:projectId', element: <ProjectDetailRoute /> },
+            { path: 'feedback', element: <FeedbackPage /> },
             {
               path: 'settings',
               element: <SettingsPage />,

@@ -34,6 +34,9 @@ export const foundationPagesZhCN: Record<string, string> = {
     '用技能 Mastery 与案件训练证据连接概念学习和实战决策。',
   'foundation.dashboard.openLibrary': '打开基础知识',
   'foundation.dashboard.nextItem': '下一项：{title}',
+  'foundation.dashboard.learnFirst': '先学习：{title}',
+  'foundation.dashboard.trainNext': '再训练：{title}',
+  'foundation.dashboard.trainRecommendedCase': '训练推荐案件：{title}',
   'foundation.detail.eyebrow': '基础知识',
   'foundation.detail.description':
     '按解释、类比、技术细节、示例和常见错误的顺序建立可用于案件训练的心智模型。',
@@ -48,12 +51,18 @@ export const foundationPagesZhCN: Record<string, string> = {
   'foundation.detail.technicalExplanation': '技术解释',
   'foundation.detail.example': '示例',
   'foundation.detail.commonMistakes': '常见错误',
+  'foundation.detail.chapterNavigation': '基础知识章节',
+  'foundation.detail.readingNoteTitle': '阅读与 Mastery 证据',
+  'foundation.detail.readingNoteBody':
+    '阅读帮助理解概念，但不会直接增加 Mastery。完成引导不代表已经掌握该技能；完成关联 Case 后，训练证据会更新能力。',
   'foundation.detail.skills': '关联技能',
   'foundation.detail.skillScore': '当前分数',
   'foundation.detail.noActiveSkills': '当前内容包没有对应的 active Skill。',
   'foundation.detail.relatedCases': '相关案件',
   'foundation.detail.relatedCasesDescription':
     '通过当前内容包中的已发布案件验证这项知识。',
+  'foundation.detail.learned': '当前知识点：{title}',
+  'foundation.detail.recommendedPractice': '推荐实践',
   'foundation.detail.noActiveCases': '没有当前可用的相关案件。',
   'foundation.detail.startCase': '开始案件：{title}',
   'foundation.notFound.eyebrow': '基础知识 404',
@@ -64,10 +73,11 @@ export const foundationPagesZhCN: Record<string, string> = {
   'foundation.prerequisite.title': '前置知识',
   'foundation.prerequisite.description':
     '这些基础知识与当前案件相关。你可以先学习，也可以直接开始案件。',
-  'foundation.prerequisite.recommended': '建议先掌握',
+  'foundation.prerequisite.coreConcept': '核心概念',
+  'foundation.prerequisite.recommended': '建议补充',
   'foundation.prerequisite.itemMeta': '预计 {minutes} 分钟',
   'foundation.prerequisite.learn': '学习 {title}',
-  'foundation.prerequisite.startDirect': '直接开始案件',
+  'foundation.prerequisite.startDirect': '继续案件',
   'foundation.prerequisite.starting': '正在开始案件',
   'foundation.prerequisite.startFailed': '无法创建训练会话，请重试。',
   'foundation.prerequisite.bypassNote': '前置知识是建议项，不会阻止训练。',
@@ -109,6 +119,10 @@ export const foundationPagesEnUS: Record<string, string> = {
     'Connect concept learning to applied decisions through Skill Mastery and Case evidence.',
   'foundation.dashboard.openLibrary': 'Open Foundation Knowledge',
   'foundation.dashboard.nextItem': 'Next: {title}',
+  'foundation.dashboard.learnFirst': 'Learn first: {title}',
+  'foundation.dashboard.trainNext': 'Then train: {title}',
+  'foundation.dashboard.trainRecommendedCase':
+    'Train recommended Case: {title}',
   'foundation.detail.eyebrow': 'Foundation Knowledge',
   'foundation.detail.description':
     'Build a Case-ready mental model through explanation, analogy, technical detail, an example, and common mistakes.',
@@ -123,6 +137,10 @@ export const foundationPagesEnUS: Record<string, string> = {
   'foundation.detail.technicalExplanation': 'Technical explanation',
   'foundation.detail.example': 'Example',
   'foundation.detail.commonMistakes': 'Common mistakes',
+  'foundation.detail.chapterNavigation': 'Foundation chapters',
+  'foundation.detail.readingNoteTitle': 'Reading and Mastery',
+  'foundation.detail.readingNoteBody':
+    'Reading helps you understand the concept, but does not directly increase Mastery. Completing this guide does not mean the skill is mastered. Training evidence from a related Case updates your capabilities.',
   'foundation.detail.skills': 'Related Skills',
   'foundation.detail.skillScore': 'Current score',
   'foundation.detail.noActiveSkills':
@@ -130,6 +148,8 @@ export const foundationPagesEnUS: Record<string, string> = {
   'foundation.detail.relatedCases': 'Related Cases',
   'foundation.detail.relatedCasesDescription':
     'Apply this knowledge in a published Case from the active Content Pack.',
+  'foundation.detail.learned': 'Current knowledge: {title}',
+  'foundation.detail.recommendedPractice': 'Recommended practice',
   'foundation.detail.noActiveCases': 'No active related case.',
   'foundation.detail.startCase': 'Start Case: {title}',
   'foundation.notFound.eyebrow': 'Foundation 404',
@@ -141,10 +161,11 @@ export const foundationPagesEnUS: Record<string, string> = {
   'foundation.prerequisite.title': 'Prerequisite Knowledge',
   'foundation.prerequisite.description':
     'These Foundation items relate to this Case. Learn them first or start the Case directly.',
-  'foundation.prerequisite.recommended': 'Recommended knowledge',
+  'foundation.prerequisite.coreConcept': 'Core concept',
+  'foundation.prerequisite.recommended': 'Recommended supplement',
   'foundation.prerequisite.itemMeta': '{minutes} min',
   'foundation.prerequisite.learn': 'Learn {title}',
-  'foundation.prerequisite.startDirect': 'Start Case directly',
+  'foundation.prerequisite.startDirect': 'Continue Case',
   'foundation.prerequisite.starting': 'Starting Case',
   'foundation.prerequisite.startFailed':
     'The training session could not be created. Try again.',

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "api.json-schema-contract",
+  "type": "foundation",
+  "title": "JSON Schema 契约：让数据边界可验证",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "software.foundations", "security.governance"],
+  "level": "intermediate",
+  "order": 63,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "JSON Schema 用机器可读规则描述字段类型、必填项、取值范围和嵌套结构，使生产者与消费者能在数据进入业务逻辑前发现契约偏差。",
+    "analogy": "Schema 像入库验收清单，不只看箱子是否送到，还核对型号、数量、必备附件和允许范围；不合格货物在进入生产线前就会被隔离。",
+    "technicalExplanation": "契约可使用 type、required、enum、format 和组合规则约束实例，并明确未知字段与版本兼容策略。边界验证应返回稳定错误码，而非依赖下游偶然报错。",
+    "example": "FDE 复盘 RAG 权限缺口时发现，上游新增 ACL 对象结构后消费者静默忽略未知嵌套字段，文档失去限制。部署契约验证和兼容性检查后，异常数据被拒绝。",
+    "commonMistakes": "只生成文档却不在边界执行验证，Schema 就无法阻止坏数据。过度宽松会掩盖拼写错误，突然禁止所有新增字段又可能破坏向后兼容，需要明确演进政策。"
+  },
+  "relatedCases": ["rag-permission-filter-gap-001"]
+}

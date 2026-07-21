@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.rollback",
+  "type": "concept",
+  "category": "system",
+  "order": 23,
+  "title": "回滚：在验证失败时恢复已知安全状态",
+  "technicalTerm": "Rollback",
+  "simpleExplanation": "回滚是在新变更不符合安全标准时，恢复到已知可工作的版本或配置。",
+  "analogy": "像登山遇到天气恶化时退回上一个确认安全的营地，而不是在未知路线继续试错。",
+  "technicalExplanation": "可回滚发布需要不可变制品、版本化配置、兼容数据变更、明确触发阈值和恢复验证。回滚也可能有风险，尤其当新版本已写入旧版本无法理解的数据。",
+  "whyItMatters": "FDE 在客户生产环境中应先定义失败条件和退出路径。没有回滚设计的“快速修复”会把一次变更变成不可控实验。",
+  "commonMistakes": "只回滚代码却不回滚配置；在数据库已发生破坏性变更后直接降级；回滚成功只看部署状态，不验证用户路径。",
+  "relatedFoundation": [
+    "fde.rollout-verification",
+    "computer.deployment-artifact"
+  ],
+  "relatedCases": [
+    "git-hotfix-wrong-branch-001",
+    "k8s-secret-rotation-rollout-001",
+    "zero-downtime-schema-migration-001"
+  ]
+}

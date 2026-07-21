@@ -80,7 +80,10 @@ export function CaseLibraryPage({
   };
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
+    <section
+      className="product-page product-page--case-library"
+      aria-labelledby="page-title"
+    >
       <PageHeader
         eyebrow={t('cases.eyebrow')}
         title={t('cases.title')}
@@ -179,7 +182,7 @@ export function CaseLibraryPage({
           return (
             <div className="product-stack" data-query={queryKey}>
               <form
-                className="filter-panel"
+                className="filter-panel case-library__toolbar"
                 aria-label={t('cases.filters.label')}
                 onSubmit={(event) => event.preventDefault()}
               >
@@ -303,78 +306,86 @@ export function CaseLibraryPage({
                   </select>
                 </label>
               </form>
-              {filtered.length === 0 ? (
-                <EmptyState
-                  title={t('cases.empty.title')}
-                  description={t('cases.empty.description')}
-                />
-              ) : (
-                <div className="case-grid">
-                  {filtered.map((summary) => {
-                    const record = progressByCase.get(summary.id);
-                    return (
-                      <article className="case-card" key={summary.id}>
-                        <div className="case-card__header">
-                          <div>
-                            <p className="eyebrow">
-                              {t(`product.common.level.${summary.level}`)}
-                            </p>
-                            <h2>{summary.title}</h2>
-                          </div>
-                          {record?.hasCriticalError === true ? (
-                            <StatusBadge tone="critical">
-                              {t('cases.card.criticalHistory')}
-                            </StatusBadge>
-                          ) : null}
-                        </div>
-                        <p>{summary.scenarioSummary ?? summary.summary}</p>
-                        <dl className="compact-facts">
-                          <div>
-                            <dt>{t('cases.card.time')}</dt>
-                            <dd>
-                              {t('product.common.minutesShort', {
-                                minutes: summary.estimatedMinutes,
-                              })}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>{t('cases.card.highest')}</dt>
-                            <dd>
-                              {record === undefined
-                                ? t('product.common.notAvailable')
-                                : `${Math.round(record.highestScore)}%`}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>{t('cases.card.latest')}</dt>
-                            <dd>
-                              {record === undefined
-                                ? t('cases.card.notAttempted')
-                                : t(verdictKeys[record.latestVerdict])}
-                            </dd>
-                          </div>
-                        </dl>
-                        <p
-                          className="tag-list"
-                          aria-label={t('cases.card.skillsLabel')}
+              <div className="case-library__results">
+                {filtered.length === 0 ? (
+                  <EmptyState
+                    title={t('cases.empty.title')}
+                    description={t('cases.empty.description')}
+                  />
+                ) : (
+                  <div className="case-grid">
+                    {filtered.map((summary) => {
+                      const record = progressByCase.get(summary.id);
+                      return (
+                        <article
+                          className="case-card case-card--incident"
+                          data-level={summary.level}
+                          key={summary.id}
                         >
-                          {summary.skills.map((value) => (
-                            <span key={value}>{value}</span>
-                          ))}
-                        </p>
-                        <Link
-                          className="button button--primary"
-                          to={`/training/${summary.id}`}
-                        >
-                          {inProgress.has(summary.id)
-                            ? t('cases.card.resume')
-                            : t('cases.card.start')}
-                        </Link>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
+                          <div className="case-card__header">
+                            <div>
+                              <p className="eyebrow">
+                                {t(`product.common.level.${summary.level}`)}
+                              </p>
+                              <h2>{summary.title}</h2>
+                            </div>
+                            {record?.hasCriticalError === true ? (
+                              <StatusBadge tone="critical">
+                                {t('cases.card.criticalHistory')}
+                              </StatusBadge>
+                            ) : null}
+                          </div>
+                          <p className="case-card__summary">
+                            {summary.scenarioSummary ?? summary.summary}
+                          </p>
+                          <dl className="compact-facts case-card__facts">
+                            <div>
+                              <dt>{t('cases.card.time')}</dt>
+                              <dd>
+                                {t('product.common.minutesShort', {
+                                  minutes: summary.estimatedMinutes,
+                                })}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>{t('cases.card.highest')}</dt>
+                              <dd>
+                                {record === undefined
+                                  ? t('product.common.notAvailable')
+                                  : `${Math.round(record.highestScore)}%`}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>{t('cases.card.latest')}</dt>
+                              <dd>
+                                {record === undefined
+                                  ? t('cases.card.notAttempted')
+                                  : t(verdictKeys[record.latestVerdict])}
+                              </dd>
+                            </div>
+                          </dl>
+                          <p
+                            className="tag-list case-card__skills"
+                            aria-label={t('cases.card.skillsLabel')}
+                          >
+                            {summary.skills.map((value) => (
+                              <span key={value}>{value}</span>
+                            ))}
+                          </p>
+                          <Link
+                            className="button button--primary case-card__action"
+                            to={`/training/${summary.id}`}
+                          >
+                            {inProgress.has(summary.id)
+                              ? t('cases.card.resume')
+                              : t('cases.card.start')}
+                          </Link>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           );
         }}

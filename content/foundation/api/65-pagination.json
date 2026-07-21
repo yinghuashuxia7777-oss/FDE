@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "api.pagination",
+  "type": "foundation",
+  "title": "分页：完整遍历持续变化的数据集",
+  "domain": "api",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "intermediate",
+  "order": 65,
+  "estimatedMinutes": 10,
+  "content": {
+    "simpleExplanation": "分页把大结果集拆成多个响应，客户端必须持续使用服务返回的游标或下一页链接，并理解数据变化时重复、遗漏和终止条件的约定。",
+    "analogy": "分页像按号码分批清点仓库，清点期间货物仍在进出时，仅记住第几页可能跳过或重复箱子；使用仓库发出的续查凭证更能保持进度。",
+    "technicalExplanation": "偏移分页简单但易受插入删除影响，游标分页可绑定稳定排序位置或快照。客户端应处理空页、游标过期、最大页大小和最终 next token 缺失。",
+    "example": "FDE 调查 RAG 越权时先核对 ACL 同步的首页、末页、next token 和群组总数，确认分页遍历完整；随后才定位到网关身份字段从 group_ids 漂移为 groups，并修复空过滤放行。",
+    "commonMistakes": "看到某页项目数少于请求上限就直接结束，可能违反服务终止契约。并发抓取依赖顺序的游标也会失效，分页过程还需要记录进度和可恢复检查点。"
+  },
+  "relatedCases": [
+    "rag-permission-filter-gap-001",
+    "api-pagination-first-page-only-001",
+    "data-sync-cursor-checkpoint-gap-001"
+  ]
+}

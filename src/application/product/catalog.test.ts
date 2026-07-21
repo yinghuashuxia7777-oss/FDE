@@ -165,6 +165,109 @@ describe('daily training plan', () => {
     expect(plan.nextCases[0]?.caseSummary.id).toBe('migration-check');
   });
 
+  it('does not let a repaired critical mistake permanently dominate the plan', () => {
+    const repaired = progress('repaired-critical', '2026-07-12T10:00:00.000Z');
+    repaired.hasCriticalError = true;
+    repaired.latestVerdict = 'pass';
+
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('repaired-critical', ['risk-skill']),
+        caseSummary('uncompleted', ['steady']),
+      ],
+      [repaired],
+      [mastery('risk-skill', 70, 3)],
+      [
+        {
+          caseId: 'repaired-critical',
+          nodeId: 'critical-node',
+          critical: true,
+          skillIds: ['risk-skill'],
+          createdAt: '2026-07-11T10:00:00.000Z',
+        } as MistakeRecord,
+      ],
+      [
+        completedAttempt('repaired-critical', '2026-07-12T10:00:00.000Z', {
+          criticalErrorIds: [],
+          verdict: 'pass',
+          roundHistory: [
+            {
+              nodeId: 'critical-node',
+              attemptNumber: 1,
+              submission: {
+                type: 'choice',
+                selectedOptionIds: ['correct'],
+              },
+              evaluation: {
+                isCorrect: true,
+                scoreRatio: 1,
+                errorTypes: [],
+                criticalErrorIds: [],
+                consequences: [],
+                branchKey: 'correct',
+              },
+              submittedAt: '2026-07-12T09:55:00.000Z',
+              revealed: false,
+            },
+          ],
+        }),
+      ],
+      now,
+    );
+
+    expect(plan.focusCase?.caseSummary.id).toBe('uncompleted');
+    expect(plan.nextCases[0]?.caseSummary.id).toBe('repaired-critical');
+    expect(plan.nextCases[0]?.reason).not.toMatch(/critical/i);
+  });
+
+  it('keeps a critical mistake unresolved when a later pass skips its node', () => {
+    const plan = buildDailyTrainingPlan(
+      [
+        caseSummary('critical-origin', ['risk-skill']),
+        caseSummary('uncompleted', ['steady']),
+      ],
+      [],
+      [mastery('risk-skill', 50, 3)],
+      [
+        {
+          caseId: 'critical-origin',
+          nodeId: 'critical-node',
+          critical: true,
+          skillIds: ['risk-skill'],
+          createdAt: '2026-07-11T10:00:00.000Z',
+        } as MistakeRecord,
+      ],
+      [
+        completedAttempt('critical-origin', '2026-07-12T10:00:00.000Z', {
+          roundHistory: [
+            {
+              nodeId: 'different-branch-node',
+              attemptNumber: 1,
+              submission: {
+                type: 'choice',
+                selectedOptionIds: ['correct'],
+              },
+              evaluation: {
+                isCorrect: true,
+                scoreRatio: 1,
+                errorTypes: [],
+                criticalErrorIds: [],
+                consequences: [],
+                branchKey: 'correct',
+              },
+              submittedAt: '2026-07-12T09:55:00.000Z',
+              revealed: false,
+            },
+          ],
+        }),
+      ],
+      now,
+    );
+
+    expect(plan.focusCase?.caseSummary.id).toBe('critical-origin');
+    expect(plan.focusCase?.reason).toMatch(/critical/i);
+  });
+
   it('retains today completed cases with the latest review attempt and remaining estimate', () => {
     const plan = buildDailyTrainingPlan(
       [

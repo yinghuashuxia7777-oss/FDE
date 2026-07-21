@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.log",
+  "type": "concept",
+  "category": "system",
+  "order": 19,
+  "title": "日志：记录可关联且受治理的运行证据",
+  "technicalTerm": "Log",
+  "simpleExplanation": "日志是系统按时间记录的运行事件，用于回答发生了什么、何时发生以及涉及哪个请求。",
+  "analogy": "像航班飞行记录器：它不是结论本身，而是按时间保留关键事实，供事后还原过程。",
+  "technicalExplanation": "有效日志应包含时间、级别、服务、事件、关联 ID 与必要的结构化字段，同时执行脱敏、访问控制和保留策略。跨服务排障依靠统一关联 ID 和时钟，而不是模糊文本搜索。",
+  "whyItMatters": "FDE 的判断必须能回到证据。设计良好的日志可连接客户端、网关、服务与工具调用，同时避免为了排障泄露 Token 或个人信息。",
+  "commonMistakes": "记录完整请求体和秘密；只写“失败了”而没有上下文；不同服务使用不一致时间；用错误堆栈数量代替用户影响判断。",
+  "relatedFoundation": [
+    "computer.logs",
+    "computer.log-correlation",
+    "api.correlation-id"
+  ],
+  "relatedCases": [
+    "observability-correlation-id-001",
+    "security-log-pii-exposure-001"
+  ]
+}

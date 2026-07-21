@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "id": "https-custom-domain-hostname-mismatch-001",
+  "slug": "https-custom-domain-hostname-mismatch-001",
+  "title": "自定义域名出现 TLS 主机名错误",
+  "summary": "结合 DNS、证书 SAN 与客户端握手证据定位主机名不匹配，并安全部署和验证正确证书。",
+  "level": "beginner",
+  "status": "published",
+  "estimatedMinutes": 15,
+  "domains": ["systems-networking", "security-governance", "api-integration"],
+  "skills": ["systems.networking", "security.governance", "api.integration"],
+  "lifecycleStages": ["integrate", "deploy", "operate"],
+  "technicalLayers": ["dns", "tls", "http"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "transport-security"],
+  "behaviorPatterns": ["layered-debugging", "secure-by-default"],
+  "scenario": {
+    "customerProfile": "一家虚构的保险服务商通过白标门户向经纪人提供理赔进度查询。",
+    "background": "团队为客户启用了 portal.insurance.example 自定义域名，并把 CNAME 指向现有边缘入口。",
+    "initialIncident": "DNS 变更生效后浏览器和 API 客户端都拒绝连接，客户准备在当天向首批经纪人开放门户。",
+    "constraints": [
+      "不得关闭客户端证书校验或临时回退到明文 HTTP。",
+      "证书私钥必须继续由受管证书服务保存，不能导出到工单。",
+      "修复需要先用合成域名检查通过，再切换真实客户流量。"
+    ],
+    "confirmedFacts": [
+      "客户域名解析到预期的边缘入口地址。",
+      "边缘服务本身健康，默认域名的 HTTPS 请求返回 200。",
+      "错误发生在任何 HTTP 响应到达客户端之前。"
+    ]
+  },
+  "startNodeId": "https-custom-domain-hostname-mismatch-001-node-01",
+  "nodes": [
+    {
+      "id": "https-custom-domain-hostname-mismatch-001-node-01",
+      "type": "log-analysis",
+      "title": "定位 TLS 身份不匹配",
+      "prompt": "根据 DNS 与证书证据，下一步应采取哪项安全修复？",
+      "skillWeights": {
+        "systems.networking": 0.4,
+        "security.governance": 0.4,
+        "api.integration": 0.2
+      },
+      "evidence": [
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-01-evidence-01",
+          "type": "terminal",
+          "title": "解析与握手结果",
+          "content": "$ dig +short portal.insurance.example\nedge.fde-arena.example.\n198.51.100.27\n$ curl -I https://portal.insurance.example/health\ncurl: (60) SSL: no alternative certificate subject name matches target host name 'portal.insurance.example'"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-01-evidence-02",
+          "type": "config",
+          "title": "边缘证书摘要",
+          "content": "issuer: Synthetic Managed CA\nvalidity: 2026-07-01T00:00:00Z..2026-10-01T00:00:00Z\nsubjectAlternativeNames:\n  - app.fde-arena.example\nchainStatus: trusted",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-01-option-a",
+          "label": "为 portal.insurance.example 完成域名验证并部署包含该 SAN 的受管证书",
+          "explanation": "DNS 已到达正确入口且证书链受信任，但 SAN 不含请求主机名；部署包含该域名的受管证书能修复身份匹配并保留安全边界。"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-01-option-b",
+          "label": "要求客户在浏览器中忽略证书警告继续访问",
+          "explanation": "忽略警告会移除端点身份验证，使用户无法区分正确服务与中间人，并违反不得关闭证书校验的约束。",
+          "errorType": "disable-tls-hostname-verification"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-01-option-c",
+          "label": "把门户改成 HTTP，等证书问题以后再处理",
+          "explanation": "明文 HTTP 会暴露会话和理赔查询内容，且问题并非 DNS 不通，而是可通过正确证书解决的身份不匹配。",
+          "errorType": "downgrade-to-plaintext-http"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "https-custom-domain-hostname-mismatch-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "区分 DNS 到达哪个地址、证书链是否可信以及证书是否代表请求主机名。",
+        "secondWrong": "解析和证书链都正常，但 SAN 列表没有 portal.insurance.example。",
+        "revealedAnswer": "应通过域名验证签发并部署包含客户域名 SAN 的受管证书，不能关闭校验或降级 HTTP。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "https-custom-domain-hostname-mismatch-001-node-01-option-b",
+          "https-custom-domain-hostname-mismatch-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "https-custom-domain-hostname-mismatch-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "https-custom-domain-hostname-mismatch-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "https-custom-domain-hostname-mismatch-001-node-02",
+      "type": "architecture-tradeoff",
+      "title": "验证证书切换",
+      "prompt": "新证书部署到预发布边缘后，应如何验证再开放客户流量？",
+      "skillWeights": {
+        "systems.networking": 0.3,
+        "security.governance": 0.4,
+        "api.integration": 0.3
+      },
+      "evidence": [
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-02-evidence-01",
+          "type": "config",
+          "title": "候选证书摘要",
+          "content": "subjectAlternativeNames:\n  - app.fde-arena.example\n  - portal.insurance.example\nchainStatus: trusted\nprivateKeyStorage: managed\nexpiresAt: 2026-10-12T00:00:00Z",
+          "language": "yaml"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-02-evidence-02",
+          "type": "http",
+          "title": "预发布合成检查",
+          "content": "GET /health HTTP/1.1\nHost: portal.insurance.example\nTLS SNI: portal.insurance.example\ncertificate_verify=ok hostname_verify=ok\nHTTP/1.1 200 OK\nX-Synthetic-Route: canary"
+        }
+      ],
+      "options": [
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-02-option-a",
+          "label": "验证链、有效期、SAN、SNI 和 HTTPS 合成请求，再小比例切流并监控握手失败",
+          "explanation": "这些检查覆盖证书信任、主机身份和真实请求路径，小比例切流又能在握手异常时暂停而不影响全部客户。"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-02-option-b",
+          "label": "只确认新证书文件已生成，就立即把全部客户流量切过去",
+          "explanation": "文件存在不能证明边缘已加载证书、SNI 选择正确或链完整，全量切流会把未验证错误扩大。",
+          "errorType": "certificate-existence-only-cutover"
+        },
+        {
+          "id": "https-custom-domain-hostname-mismatch-001-node-02-option-c",
+          "label": "把受管私钥导出到共享工单，请客户自行测试",
+          "explanation": "私钥不需要也不应离开受管服务，导出会造成严重凭据泄露，并不能替代服务端握手和路由验证。",
+          "errorType": "managed-private-key-exposure"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "https-custom-domain-hostname-mismatch-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "证书发布验证要覆盖信任链、主机身份、SNI 和实际 HTTPS 请求。",
+        "secondWrong": "候选证书包含目标 SAN，下一步仍需合成握手和小比例流量观察。",
+        "revealedAnswer": "应完成证书与请求全链路验证，灰度切流并向客户报告已验证事实、剩余风险和开放时间。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "https-custom-domain-hostname-mismatch-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "DNS 正确且证书链可信，但已部署证书不包含客户自定义域名。修复必须部署匹配 SAN 的受管证书并验证完整 TLS 请求路径。",
+    "rootCause": "自定义域名的 DNS 已切换，但证书申请与边缘绑定流程遗漏 portal.insurance.example，导致 TLS 主机名校验失败。",
+    "correctApproach": [
+      "完成域名控制验证并部署包含 portal.insurance.example SAN 的受管证书。",
+      "验证链、有效期、SAN、SNI 和合成 HTTPS 请求后，灰度开放客户流量。"
+    ],
+    "keyLessons": [
+      "DNS 可达、证书链可信和主机名匹配是三个不同的验证层。",
+      "FDE 应主动说明门户尚未发送业务数据、证书修复进度和下一次客户确认时间。"
+    ],
+    "interviewerPerspective": "观察候选人是否精确区分 DNS 与 TLS 身份问题，并拒绝关闭验证、明文降级和私钥共享。",
+    "customerRiskPerspective": "绕过证书校验会让经纪人面临凭据和理赔数据被中间人截获的风险。",
+    "remediation": [
+      "把自定义域名验证、证书签发和边缘绑定纳入同一自动化发布流程。",
+      "增加证书 SAN、到期时间和合成握手监控，提前阻断不完整切换。"
+    ],
+    "verification": [
+      "确认目标域名解析正确，证书链可信、未过期且 SAN 精确包含客户域名。",
+      "确认灰度期间 HTTPS 合成请求持续返回 200，主机名与握手错误率为零。"
+    ],
+    "knowledgePoints": [
+      "TLS hostname validation",
+      "certificate SAN",
+      "safe custom-domain rollout"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

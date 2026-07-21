@@ -4,6 +4,10 @@ import { z } from 'zod';
 
 import { caseIndex } from '../src/generated/case-index';
 import {
+  CONCEPT_AUTHORED_TEXT_PATTERN,
+  ConceptKnowledgeSchema,
+} from '../src/content/concept-schema';
+import {
   FOUNDATION_AUTHORED_TEXT_PATTERN,
   FoundationKnowledgeSchema,
 } from '../src/content/foundation-schema';
@@ -39,6 +43,7 @@ import {
   writeCliReport,
 } from './files';
 import type { ContentTextSource } from './validate-content';
+import type { ValidatedConceptSource } from './validate-content';
 import type { ValidatedDefinitionSource } from './validate-content';
 import type { ValidatedFoundationSource } from './validate-content';
 import type { ContentBundleTextSources } from './validate-content';
@@ -50,6 +55,7 @@ import type { ContentIssue } from './validate-graph';
 import { validateCaseGraph } from './validate-graph';
 
 const defaultIndexFile = 'src/generated/case-index.ts';
+const defaultConceptIndexFile = 'src/generated/concept-index.ts';
 const defaultFoundationIndexFile = 'src/generated/foundation-index.ts';
 
 function singleQuote(value: string): string {
@@ -181,13 +187,63 @@ export const foundationIndex: readonly FoundationIndexEntry[] = [${entries.lengt
 `;
 }
 
+export function generateConceptIndex(
+  sources: readonly ValidatedConceptSource[],
+  outputFile = defaultConceptIndexFile,
+): string {
+  const typeImport = relativeModuleSpecifier(
+    outputFile,
+    'src/domain/concepts/types',
+  );
+  const entries = [...sources]
+    .sort(
+      (left, right) =>
+        left.concept.order - right.concept.order ||
+        left.concept.id.localeCompare(right.concept.id) ||
+        left.file.localeCompare(right.file),
+    )
+    .map(({ file, concept }) => {
+      const path = normalizeProjectFile(file);
+      const importPath = relativeModuleSpecifier(outputFile, path);
+      return `  {
+    id: ${singleQuote(concept.id)},
+    title: ${singleQuote(concept.title)},
+    technicalTerm: ${singleQuote(concept.technicalTerm)},
+    category: ${singleQuote(concept.category)},
+    order: ${concept.order},
+    path: ${singleQuote(path)},
+    load: () =>
+      import(${singleQuote(importPath)}) as Promise<{
+        default: ConceptKnowledge;
+      }>,
+  }`;
+    });
+
+  return `import type { ConceptKnowledge } from ${singleQuote(typeImport)};
+
+export interface ConceptIndexEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly technicalTerm: string;
+  readonly category: ConceptKnowledge['category'];
+  readonly order: number;
+  readonly path: string;
+  readonly load: () => Promise<{ default: ConceptKnowledge }>;
+}
+
+export const conceptIndex: readonly ConceptIndexEntry[] = [${entries.length === 0 ? '' : `\n${entries.join(',\n')},\n`}];
+`;
+}
+
 export const contentArtifactPaths = {
   manifest: 'content/manifests/content-manifest.json',
   coverageReport: 'content/manifests/coverage-report.json',
   contentIndex: 'src/generated/content-index.ts',
+  conceptIndex: 'src/generated/concept-index.ts',
   foundationIndex: 'src/generated/foundation-index.ts',
   schemas: {
     case: 'content/schemas/fde-case.schema.json',
+    concept: 'content/schemas/concept.schema.json',
     foundation: 'content/schemas/foundation.schema.json',
     manifest: 'content/schemas/content-manifest.schema.json',
     pack: 'content/schemas/content-pack.schema.json',
@@ -202,6 +258,7 @@ export interface ContentArtifactInput {
   cases: readonly CaseSource[];
   domains: readonly ValidatedDefinitionSource<DomainDefinition>[];
   skills: readonly ValidatedDefinitionSource<SkillDefinition>[];
+  concepts?: readonly ValidatedConceptSource[];
   foundations?: readonly ValidatedFoundationSource[];
   coverage: CoveragePlan;
 }
@@ -267,6 +324,34 @@ export function generateFoundationJsonSchema(): Record<string, unknown> {
     field.pattern = FOUNDATION_AUTHORED_TEXT_PATTERN.source;
   });
   schemaRecord(properties.skills, 'properties.skills').uniqueItems = true;
+  schemaRecord(properties.relatedCases, 'properties.relatedCases').uniqueItems =
+    true;
+  return schema;
+}
+
+export function generateConceptJsonSchema(): Record<string, unknown> {
+  const schema = jsonSchema(
+    ConceptKnowledgeSchema,
+    'concept.schema.json',
+    'FDE Arena Concept Knowledge',
+  );
+  const properties = schemaRecord(schema.properties, 'properties');
+  [
+    'title',
+    'technicalTerm',
+    'simpleExplanation',
+    'analogy',
+    'technicalExplanation',
+    'whyItMatters',
+    'commonMistakes',
+  ].forEach((field) => {
+    schemaRecord(properties[field], `properties.${field}`).pattern =
+      CONCEPT_AUTHORED_TEXT_PATTERN.source;
+  });
+  schemaRecord(
+    properties.relatedFoundation,
+    'properties.relatedFoundation',
+  ).uniqueItems = true;
   schemaRecord(properties.relatedCases, 'properties.relatedCases').uniqueItems =
     true;
   return schema;
@@ -432,11 +517,17 @@ export function generateContentArtifacts(
     [contentArtifactPaths.manifest]: stablePrettyJson(manifest),
     [contentArtifactPaths.coverageReport]: stablePrettyJson(coverageReport),
     [contentArtifactPaths.contentIndex]: generateContentIndex(input, manifest),
+    [contentArtifactPaths.conceptIndex]: generateConceptIndex(
+      input.concepts ?? [],
+    ),
     [contentArtifactPaths.foundationIndex]: generateFoundationIndex(
       input.foundations ?? [],
     ),
     [contentArtifactPaths.schemas.case]: stablePrettyJson(
       jsonSchema(FdeCaseSchema, 'fde-case.schema.json', 'FDE Arena Case'),
+    ),
+    [contentArtifactPaths.schemas.concept]: stablePrettyJson(
+      generateConceptJsonSchema(),
     ),
     [contentArtifactPaths.schemas.foundation]: stablePrettyJson(
       generateFoundationJsonSchema(),
@@ -549,6 +640,7 @@ export function buildValidatedContentArtifacts(
       cases: validation.cases,
       domains: validation.domains,
       skills: validation.skills,
+      concepts: validation.concepts,
       foundations: validation.foundations,
       coverage: validation.coverage,
     }),
@@ -706,15 +798,18 @@ export function runBuildCaseIndexCli(args: readonly string[]): number {
           return 1;
         }
         generateCaseIndex(validation.cases);
+        generateConceptIndex(validation.concepts);
         generateFoundationIndex(validation.foundations);
         process.stdout.write(
           `${JSON.stringify(
             {
               ok: true,
               sampledCases: validation.cases.length,
+              sampledConcepts: validation.concepts.length,
               sampledFoundations: validation.foundations.length,
               files: [
                 contentArtifactPaths.contentIndex,
+                contentArtifactPaths.conceptIndex,
                 contentArtifactPaths.foundationIndex,
               ],
             },

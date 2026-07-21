@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ai.vector-indexing",
+  "type": "foundation",
+  "title": "向量索引：治理版本、传播与删除状态",
+  "domain": "rag",
+  "track": "ai-basics",
+  "skills": ["rag.search", "reliability.observability", "performance.scaling"],
+  "level": "intermediate",
+  "order": 77,
+  "estimatedMinutes": 11,
+  "content": {
+    "simpleExplanation": "向量索引把已切块内容、嵌入和元数据组织成可快速查询的版本化快照，生产可靠性取决于写入传播、权限变更、删除完成和各区域实际服务版本都能被追踪。",
+    "analogy": "它像多地分馆定期接收同一批档案目录，前台开门只说明服务在线，不说明目录已经同步；每次查询都要知道使用哪期目录以及撤回通知是否生效。",
+    "technicalExplanation": "索引流水线应为语料代次、嵌入模型和快照生成不可变标识，记录待应用年龄、版本差与删除水位；路由器需要读取数据新鲜度，不能只依赖进程健康和网络延迟。",
+    "example": "多区域助手在东区查询快照八一二，在西区查询八零九，刷新后产生矛盾引用，且撤销权限仍排在普通内容队列中；应按版本路由并把授权撤销独立失败关闭。",
+    "commonMistakes": "原文写入成功就宣称索引完成、删除数据库记录却不追踪向量副本、让不同嵌入版本混查，或仅监控查询毫秒数都会留下快速但陈旧的检索路径。"
+  },
+  "relatedCases": [
+    "multi-region-rag-consistency-001",
+    "rag-stale-policy-cache-001",
+    "large-scale-rag-reindex-cutover-001"
+  ]
+}

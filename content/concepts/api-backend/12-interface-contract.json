@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.interface-contract",
+  "type": "concept",
+  "category": "api-backend",
+  "order": 12,
+  "title": "接口契约：稳定定义输入、输出与错误",
+  "technicalTerm": "Interface Contract",
+  "simpleExplanation": "接口契约明确系统接受什么、返回什么，以及失败时如何表达，让双方可以独立实现并验证。",
+  "analogy": "像标准插座：尺寸、电压和接线都有约定。外观看似能插入并不代表电气参数兼容。",
+  "technicalExplanation": "契约覆盖字段类型、必填性、空值、枚举、版本、错误结构和兼容策略，可由 JSON Schema 或工具定义约束。演进时应区分向后兼容变更与破坏性变更，并用契约测试验证消费者。",
+  "whyItMatters": "数据管道、API 与 Agent 工具都会因字段漂移产生隐蔽故障。FDE 需要把“模型没按预期工作”拆成可验证的输入、结构校验和下游处理问题。",
+  "commonMistakes": "只记录成功响应示例；把 null、缺失和空字符串视为同一含义；直接改枚举或错误字段却不版本化；让提示词代替结构校验。",
+  "relatedFoundation": [
+    "api.json-types-null",
+    "api.json-schema-contract",
+    "api.versioned-error-contract",
+    "computer.data",
+    "ai.tool-schema"
+  ],
+  "relatedCases": [
+    "api-error-contract-version-drift-001",
+    "agent-tool-schema-enum-drift-001",
+    "etl-schema-drift-null-field-001",
+    "rag-permission-filter-gap-001"
+  ]
+}

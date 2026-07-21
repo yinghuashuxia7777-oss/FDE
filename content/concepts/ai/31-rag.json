@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.rag",
+  "type": "concept",
+  "category": "ai",
+  "order": 31,
+  "title": "RAG：先检索证据，再基于证据生成",
+  "technicalTerm": "RAG",
+  "simpleExplanation": "RAG 先从知识库找到相关材料，再让模型依据这些材料回答，以接入私有或最新知识。",
+  "analogy": "像允许答题者先查阅指定资料再作答：答案质量不仅取决于表达能力，也取决于是否找到正确、最新且有权限的资料。",
+  "technicalExplanation": "RAG 管线通常包含采集、切块、嵌入、索引、过滤、召回、重排、上下文组装、生成和引用。每一阶段都应可观测，并能把回答追溯到来源与版本。",
+  "whyItMatters": "错误答案可能来自旧文档、召回缺失、排序稀释或生成偏离。FDE 必须先定位失败阶段，再选择重建索引、调整检索或改提示词。",
+  "commonMistakes": "认为接入 RAG 就不会幻觉；只评估最终答案不看召回；混用不同租户文档；把全部资料塞入上下文。",
+  "relatedFoundation": ["rag-basic", "ai.rag-grounding-citations"],
+  "relatedCases": [
+    "rag-stale-policy-cache-001",
+    "multi-region-rag-consistency-001"
+  ]
+}

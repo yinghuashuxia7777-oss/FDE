@@ -1,27 +1,53 @@
 {
   "activeCaseIds": [
     "agent-approval-boundary-bypass-001",
+    "agent-tool-output-prompt-injection-001",
+    "agent-tool-schema-enum-drift-001",
     "agent-tool-timeout-retry-001",
+    "api-error-contract-version-drift-001",
     "api-oauth-scope-mismatch-001",
+    "api-pagination-first-page-only-001",
+    "api-rate-limit-retry-after-001",
+    "api-timeout-budget-cascade-001",
     "api-webhook-idempotency-001",
     "container-readiness-port-001",
+    "customer-ai-workflow-adoption-collapse-001",
     "customer-pilot-production-gap-001",
     "customer-success-criteria-001",
+    "data-sync-cursor-checkpoint-gap-001",
     "dns-private-endpoint-001",
+    "docker-loopback-bind-unreachable-001",
+    "docker-runtime-dependency-missing-001",
+    "enterprise-ai-fallback-guardrail-bypass-001",
     "etl-schema-drift-null-field-001",
     "fde-pilot-scope-control-001",
+    "frontend-build-env-endpoint-001",
     "git-hotfix-wrong-branch-001",
+    "git-merge-conflict-config-regression-001",
+    "http-unsupported-media-type-001",
+    "https-custom-domain-hostname-mismatch-001",
     "inference-gpu-oom-capacity-001",
     "inference-quantization-regression-001",
     "k8s-secret-rotation-rollout-001",
+    "large-scale-rag-reindex-cutover-001",
+    "linux-service-config-permission-001",
+    "linux-systemd-runtime-path-001",
+    "llm-cost-routing-quality-regression-001",
     "llm-eval-dataset-leakage-001",
     "llm-prompt-context-order-001",
+    "llm-streaming-backpressure-overload-001",
+    "multi-agent-delegation-loop-001",
     "multi-region-rag-consistency-001",
     "observability-correlation-id-001",
     "python-config-precedence-001",
+    "rag-chunk-boundary-answer-loss-001",
+    "rag-hybrid-search-product-code-001",
     "rag-permission-filter-gap-001",
     "rag-stale-policy-cache-001",
+    "rag-top-k-context-dilution-001",
     "security-log-pii-exposure-001",
+    "third-party-egress-allowlist-001",
+    "third-party-retry-storm-001",
     "warehouse-late-arrival-watermark-001",
     "zero-downtime-schema-migration-001"
   ],
@@ -31,11 +57,35 @@
       "version": 1
     },
     {
+      "caseId": "agent-tool-output-prompt-injection-001",
+      "version": 1
+    },
+    {
+      "caseId": "agent-tool-schema-enum-drift-001",
+      "version": 1
+    },
+    {
       "caseId": "agent-tool-timeout-retry-001",
       "version": 1
     },
     {
+      "caseId": "api-error-contract-version-drift-001",
+      "version": 1
+    },
+    {
       "caseId": "api-oauth-scope-mismatch-001",
+      "version": 1
+    },
+    {
+      "caseId": "api-pagination-first-page-only-001",
+      "version": 1
+    },
+    {
+      "caseId": "api-rate-limit-retry-after-001",
+      "version": 1
+    },
+    {
+      "caseId": "api-timeout-budget-cascade-001",
       "version": 1
     },
     {
@@ -47,6 +97,10 @@
       "version": 1
     },
     {
+      "caseId": "customer-ai-workflow-adoption-collapse-001",
+      "version": 1
+    },
+    {
       "caseId": "customer-pilot-production-gap-001",
       "version": 2
     },
@@ -55,7 +109,23 @@
       "version": 1
     },
     {
+      "caseId": "data-sync-cursor-checkpoint-gap-001",
+      "version": 1
+    },
+    {
       "caseId": "dns-private-endpoint-001",
+      "version": 1
+    },
+    {
+      "caseId": "docker-loopback-bind-unreachable-001",
+      "version": 1
+    },
+    {
+      "caseId": "docker-runtime-dependency-missing-001",
+      "version": 1
+    },
+    {
+      "caseId": "enterprise-ai-fallback-guardrail-bypass-001",
       "version": 1
     },
     {
@@ -67,7 +137,23 @@
       "version": 1
     },
     {
+      "caseId": "frontend-build-env-endpoint-001",
+      "version": 1
+    },
+    {
       "caseId": "git-hotfix-wrong-branch-001",
+      "version": 1
+    },
+    {
+      "caseId": "git-merge-conflict-config-regression-001",
+      "version": 1
+    },
+    {
+      "caseId": "http-unsupported-media-type-001",
+      "version": 1
+    },
+    {
+      "caseId": "https-custom-domain-hostname-mismatch-001",
       "version": 1
     },
     {
@@ -83,11 +169,35 @@
       "version": 1
     },
     {
+      "caseId": "large-scale-rag-reindex-cutover-001",
+      "version": 1
+    },
+    {
+      "caseId": "linux-service-config-permission-001",
+      "version": 1
+    },
+    {
+      "caseId": "linux-systemd-runtime-path-001",
+      "version": 1
+    },
+    {
+      "caseId": "llm-cost-routing-quality-regression-001",
+      "version": 1
+    },
+    {
       "caseId": "llm-eval-dataset-leakage-001",
       "version": 1
     },
     {
       "caseId": "llm-prompt-context-order-001",
+      "version": 1
+    },
+    {
+      "caseId": "llm-streaming-backpressure-overload-001",
+      "version": 1
+    },
+    {
+      "caseId": "multi-agent-delegation-loop-001",
       "version": 1
     },
     {
@@ -103,6 +213,14 @@
       "version": 1
     },
     {
+      "caseId": "rag-chunk-boundary-answer-loss-001",
+      "version": 1
+    },
+    {
+      "caseId": "rag-hybrid-search-product-code-001",
+      "version": 1
+    },
+    {
       "caseId": "rag-permission-filter-gap-001",
       "version": 1
     },
@@ -111,7 +229,19 @@
       "version": 1
     },
     {
+      "caseId": "rag-top-k-context-dilution-001",
+      "version": 1
+    },
+    {
       "caseId": "security-log-pii-exposure-001",
+      "version": 1
+    },
+    {
+      "caseId": "third-party-egress-allowlist-001",
+      "version": 1
+    },
+    {
+      "caseId": "third-party-retry-storm-001",
       "version": 1
     },
     {
@@ -123,30 +253,56 @@
       "version": 1
     }
   ],
-  "activePublishedCaseCount": 24,
+  "activePublishedCaseCount": 50,
   "allCaseIds": [
     "agent-approval-boundary-bypass-001",
+    "agent-tool-output-prompt-injection-001",
+    "agent-tool-schema-enum-drift-001",
     "agent-tool-timeout-retry-001",
+    "api-error-contract-version-drift-001",
     "api-oauth-scope-mismatch-001",
+    "api-pagination-first-page-only-001",
+    "api-rate-limit-retry-after-001",
+    "api-timeout-budget-cascade-001",
     "api-webhook-idempotency-001",
     "container-readiness-port-001",
+    "customer-ai-workflow-adoption-collapse-001",
     "customer-pilot-production-gap-001",
     "customer-success-criteria-001",
+    "data-sync-cursor-checkpoint-gap-001",
     "dns-private-endpoint-001",
+    "docker-loopback-bind-unreachable-001",
+    "docker-runtime-dependency-missing-001",
+    "enterprise-ai-fallback-guardrail-bypass-001",
     "etl-schema-drift-null-field-001",
     "fde-pilot-scope-control-001",
+    "frontend-build-env-endpoint-001",
     "git-hotfix-wrong-branch-001",
+    "git-merge-conflict-config-regression-001",
+    "http-unsupported-media-type-001",
+    "https-custom-domain-hostname-mismatch-001",
     "inference-gpu-oom-capacity-001",
     "inference-quantization-regression-001",
     "k8s-secret-rotation-rollout-001",
+    "large-scale-rag-reindex-cutover-001",
+    "linux-service-config-permission-001",
+    "linux-systemd-runtime-path-001",
+    "llm-cost-routing-quality-regression-001",
     "llm-eval-dataset-leakage-001",
     "llm-prompt-context-order-001",
+    "llm-streaming-backpressure-overload-001",
+    "multi-agent-delegation-loop-001",
     "multi-region-rag-consistency-001",
     "observability-correlation-id-001",
     "python-config-precedence-001",
+    "rag-chunk-boundary-answer-loss-001",
+    "rag-hybrid-search-product-code-001",
     "rag-permission-filter-gap-001",
     "rag-stale-policy-cache-001",
+    "rag-top-k-context-dilution-001",
     "security-log-pii-exposure-001",
+    "third-party-egress-allowlist-001",
+    "third-party-retry-storm-001",
     "warehouse-late-arrival-watermark-001",
     "zero-downtime-schema-migration-001"
   ],
@@ -160,6 +316,22 @@
       "version": 1
     },
     {
+      "caseId": "agent-tool-output-prompt-injection-001",
+      "contentHash": "sha256:029a7a17d2644786cf413cd9249fca4a37002db0f6369ce6ceecce7094bd0c35",
+      "path": "content/cases/intermediate/agent-tool-output-prompt-injection-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "agent-tool-schema-enum-drift-001",
+      "contentHash": "sha256:b826f958a6bcfac109d7dbbce3f585b2013df8ff0eebfe346364190e2d8dbf8e",
+      "path": "content/cases/intermediate/agent-tool-schema-enum-drift-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "agent-tool-timeout-retry-001",
       "contentHash": "sha256:f21b96ae93a79adc0e5064cef0fba9a7d012580d4b0c07501042e85d89cf4407",
       "path": "content/cases/intermediate/agent-tool-timeout-retry-001.v1.json",
@@ -168,9 +340,41 @@
       "version": 1
     },
     {
+      "caseId": "api-error-contract-version-drift-001",
+      "contentHash": "sha256:e8a0088b83bb6564085ef03731b042f707e566eb2098ffca65b36c639b815621",
+      "path": "content/cases/intermediate/api-error-contract-version-drift-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "api-oauth-scope-mismatch-001",
       "contentHash": "sha256:504a493a2136d457d06c1bbdd0dba57cafec00bab4019808903cf2230163450b",
       "path": "content/cases/beginner/api-oauth-scope-mismatch-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "api-pagination-first-page-only-001",
+      "contentHash": "sha256:7d587ed2d0226e7e04939bf8cf6a636e023c3d2648e6a73da5ea332574128afe",
+      "path": "content/cases/beginner/api-pagination-first-page-only-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "api-rate-limit-retry-after-001",
+      "contentHash": "sha256:a82327edec62982de926f3dd7af2b4c1999d4182139747b8ad2fa478d6205e73",
+      "path": "content/cases/beginner/api-rate-limit-retry-after-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "api-timeout-budget-cascade-001",
+      "contentHash": "sha256:980efccbd67052240d9565b8ec43a49e033ca2ea5bf991ecf9115da4720fbc9e",
+      "path": "content/cases/intermediate/api-timeout-budget-cascade-001.v1.json",
       "schemaVersion": 1,
       "status": "published",
       "version": 1
@@ -200,6 +404,14 @@
       "version": 1
     },
     {
+      "caseId": "customer-ai-workflow-adoption-collapse-001",
+      "contentHash": "sha256:8e75150b0e3a569957c9524d3f217e790a380b4f02c9078b6ebc47c664662c11",
+      "path": "content/cases/advanced/customer-ai-workflow-adoption-collapse-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "customer-pilot-production-gap-001",
       "contentHash": "sha256:07428ee54b8c8dae5997b627739e3f21427be0e7ba218d31618d35a635bdf994",
       "path": "content/cases/intermediate/customer-pilot-production-gap-001.v1.json",
@@ -224,9 +436,41 @@
       "version": 1
     },
     {
+      "caseId": "data-sync-cursor-checkpoint-gap-001",
+      "contentHash": "sha256:28c31073f6f64e742c4a897e723bd0a165fddf981fa56b066a2f01f7debe5941",
+      "path": "content/cases/intermediate/data-sync-cursor-checkpoint-gap-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "dns-private-endpoint-001",
       "contentHash": "sha256:e4a8c656f56bccdfd70d3d4259b05f172743c0ee510138f4549609baef846166",
       "path": "content/cases/beginner/dns-private-endpoint-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "docker-loopback-bind-unreachable-001",
+      "contentHash": "sha256:ac38ea58fcd0df05526afdbf163627348a39186ca372d9a1f320a9bbc940da27",
+      "path": "content/cases/beginner/docker-loopback-bind-unreachable-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "docker-runtime-dependency-missing-001",
+      "contentHash": "sha256:b43816f4449bab92ebc6ed30b3580aad906fbed9738575e6157f1d879d7abab9",
+      "path": "content/cases/beginner/docker-runtime-dependency-missing-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "enterprise-ai-fallback-guardrail-bypass-001",
+      "contentHash": "sha256:e2bbbd90b451f7dd8e2467a50ded96b9a0ba1a245e29a1d03868ae54eab9c022",
+      "path": "content/cases/advanced/enterprise-ai-fallback-guardrail-bypass-001.v1.json",
       "schemaVersion": 1,
       "status": "published",
       "version": 1
@@ -248,9 +492,41 @@
       "version": 1
     },
     {
+      "caseId": "frontend-build-env-endpoint-001",
+      "contentHash": "sha256:3271588d3c8c9747be5c461072e5c80753bd3a3148c2d4cfee32ae3bff7647f8",
+      "path": "content/cases/beginner/frontend-build-env-endpoint-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "git-hotfix-wrong-branch-001",
       "contentHash": "sha256:7729a505a48ed90ca8afcdd838fc5c83bc7aa00dcdd91f9d1766115f0a3e5231",
       "path": "content/cases/beginner/git-hotfix-wrong-branch-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "git-merge-conflict-config-regression-001",
+      "contentHash": "sha256:a425bd3571ea1d9c5af92714c4e93b1399914abdecc9147d74be58b45bee4624",
+      "path": "content/cases/beginner/git-merge-conflict-config-regression-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "http-unsupported-media-type-001",
+      "contentHash": "sha256:bcf041d447556abefe08f8321965ebdd6ca5c5647f99d0b84326a353e279a338",
+      "path": "content/cases/beginner/http-unsupported-media-type-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "https-custom-domain-hostname-mismatch-001",
+      "contentHash": "sha256:20c9920b721be1fd93626779dec733c3862003ee12cce34a8db00c4c20790cd5",
+      "path": "content/cases/beginner/https-custom-domain-hostname-mismatch-001.v1.json",
       "schemaVersion": 1,
       "status": "published",
       "version": 1
@@ -280,6 +556,38 @@
       "version": 1
     },
     {
+      "caseId": "large-scale-rag-reindex-cutover-001",
+      "contentHash": "sha256:fd342fecbfe7d4678d7e7f480ffd60ae51454e347a36872e65abb09e2db7fa89",
+      "path": "content/cases/advanced/large-scale-rag-reindex-cutover-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "linux-service-config-permission-001",
+      "contentHash": "sha256:1d349aa0ff944d2dde678ec2da95cc347ad131b3a997e457d2ab479090257737",
+      "path": "content/cases/beginner/linux-service-config-permission-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "linux-systemd-runtime-path-001",
+      "contentHash": "sha256:67b33f1eb60d1837a6c1aad907024a0330468d68c59aa4913f9113ffa472fe54",
+      "path": "content/cases/beginner/linux-systemd-runtime-path-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "llm-cost-routing-quality-regression-001",
+      "contentHash": "sha256:070eb05f2a9925ecfa73c7132a1c690b2687f8a812d6ce26c445852d5b7b959a",
+      "path": "content/cases/advanced/llm-cost-routing-quality-regression-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "llm-eval-dataset-leakage-001",
       "contentHash": "sha256:430ff60f1ec462436eb576ff7528de0639335a80aa322a9a40f7e06865a77cba",
       "path": "content/cases/intermediate/llm-eval-dataset-leakage-001.v1.json",
@@ -291,6 +599,22 @@
       "caseId": "llm-prompt-context-order-001",
       "contentHash": "sha256:e2b96e30f7606c3ba83355ea5e737f171108756950ce4df68617bce81022c7ca",
       "path": "content/cases/beginner/llm-prompt-context-order-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "llm-streaming-backpressure-overload-001",
+      "contentHash": "sha256:41a0cfea2a50dfb0cef648f1a4ac25980965f05f512b7f05e5ed79f223c4188e",
+      "path": "content/cases/advanced/llm-streaming-backpressure-overload-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "multi-agent-delegation-loop-001",
+      "contentHash": "sha256:5d0f040e3a860227afc340caf2a40a03f5143d985553be3db7d9211ae5bf214a",
+      "path": "content/cases/advanced/multi-agent-delegation-loop-001.v1.json",
       "schemaVersion": 1,
       "status": "published",
       "version": 1
@@ -328,6 +652,22 @@
       "version": 1
     },
     {
+      "caseId": "rag-chunk-boundary-answer-loss-001",
+      "contentHash": "sha256:3be550d816a30efa4d3ca16695ee1162b9a4f01520507e007d022ef588b42184",
+      "path": "content/cases/intermediate/rag-chunk-boundary-answer-loss-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "rag-hybrid-search-product-code-001",
+      "contentHash": "sha256:7823eba1e2baf7f87a0b51c580b77fdc0a95414492bd9723b400a4d32270d6b3",
+      "path": "content/cases/intermediate/rag-hybrid-search-product-code-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "rag-permission-filter-gap-001",
       "contentHash": "sha256:b011e298d96a8b12817f9fb1e716a5fdb673e435d4f98cc79e1122663d98a843",
       "path": "content/cases/intermediate/rag-permission-filter-gap-001.v1.json",
@@ -344,9 +684,33 @@
       "version": 1
     },
     {
+      "caseId": "rag-top-k-context-dilution-001",
+      "contentHash": "sha256:45f071ad40eafb94d6d56d1aa1f6ff5078d6156e54218b96d6dbc3a6e42c4bf7",
+      "path": "content/cases/intermediate/rag-top-k-context-dilution-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
       "caseId": "security-log-pii-exposure-001",
       "contentHash": "sha256:7cbf406d0cb087ed55a6695ce6b8353dccb0cd89ae705d964b0c1ee89541e9d7",
       "path": "content/cases/beginner/security-log-pii-exposure-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "third-party-egress-allowlist-001",
+      "contentHash": "sha256:c26ab9c2147f629be3e8d23343857639f34dd1d0e9e1b796be95ff474dbc1eb3",
+      "path": "content/cases/intermediate/third-party-egress-allowlist-001.v1.json",
+      "schemaVersion": 1,
+      "status": "published",
+      "version": 1
+    },
+    {
+      "caseId": "third-party-retry-storm-001",
+      "contentHash": "sha256:dc5b2487f76ed7ab06c30d5395d394ba586c1ee693b5c7053b9790ffd03ad640",
+      "path": "content/cases/intermediate/third-party-retry-storm-001.v1.json",
       "schemaVersion": 1,
       "status": "published",
       "version": 1
@@ -368,26 +732,26 @@
       "version": 1
     }
   ],
-  "caseVersionCount": 27,
-  "checksum": "sha256:93f635dffe44d29233208ae52b8222089e817a2cb46b6e76ec3e13bfde235147",
-  "contentVersion": "1.2.0",
+  "caseVersionCount": 53,
+  "checksum": "sha256:f859c71fe6e74a60818d43b4f690b308d143008778d1c2ddb63dc6de8644dfe4",
+  "contentVersion": "1.3.0",
   "displayName": "FDE Arena 内置题库",
   "domainCaseCounts": {
-    "agents-evals": 3,
-    "api-integration": 6,
-    "cloud-deployment": 4,
-    "customer-discovery": 2,
-    "data-engineering": 3,
-    "fde-adoption": 3,
-    "fine-tuning-inference": 2,
-    "git-delivery": 1,
-    "llm-applications": 2,
-    "performance-scale": 3,
-    "rag-search": 3,
-    "reliability": 9,
-    "security-governance": 6,
-    "software-foundations": 2,
-    "systems-networking": 1
+    "agents-evals": 9,
+    "api-integration": 18,
+    "cloud-deployment": 10,
+    "customer-discovery": 3,
+    "data-engineering": 7,
+    "fde-adoption": 5,
+    "fine-tuning-inference": 4,
+    "git-delivery": 2,
+    "llm-applications": 5,
+    "performance-scale": 9,
+    "rag-search": 7,
+    "reliability": 25,
+    "security-governance": 12,
+    "software-foundations": 9,
+    "systems-networking": 4
   },
   "domains": [
     "agents-evals",
@@ -407,6 +771,6 @@
     "systems-networking"
   ],
   "packId": "fde-arena-bundled",
-  "releasedAt": "2026-07-13T13:11:51.000Z",
+  "releasedAt": "2026-07-14T05:53:00.000Z",
   "schemaVersion": 1
 }

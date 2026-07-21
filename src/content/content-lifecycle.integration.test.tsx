@@ -499,9 +499,13 @@ describe('content lifecycle integration', () => {
         <ProfilePage repositories={repositories} />
       </MemoryRouter>,
     );
+    const historicalSkill = await screen.findByRole('article', {
+      name: skill.label,
+    });
+    expect(historicalSkill).toHaveTextContent(versionOne.title);
     expect(
-      await screen.findByRole('heading', { name: domain.label }),
-    ).toBeVisible();
+      screen.getByText('Evidence collected').parentElement,
+    ).toHaveTextContent('1');
   });
 
   it('T11 restores bundled content without deleting imported versions or user history', async () => {

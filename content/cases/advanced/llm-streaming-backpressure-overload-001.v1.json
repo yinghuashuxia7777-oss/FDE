@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "id": "llm-streaming-backpressure-overload-001",
+  "slug": "llm-streaming-backpressure-overload-001",
+  "title": "流式输出背压引发生产级联过载",
+  "summary": "从长连接、Token 输出、网关缓冲和扩缩容信号定位流式背压故障，并建立有界缓冲、取消传播与容量门禁。",
+  "level": "advanced",
+  "status": "published",
+  "estimatedMinutes": 35,
+  "domains": [
+    "performance-scale",
+    "reliability",
+    "cloud-deployment",
+    "api-integration",
+    "fine-tuning-inference"
+  ],
+  "skills": [
+    "performance.scaling",
+    "reliability.observability",
+    "cloud.deployment",
+    "api.integration",
+    "tuning.inference-deployment"
+  ],
+  "lifecycleStages": ["design", "deploy", "operate"],
+  "technicalLayers": ["streaming-api", "gateway", "inference", "autoscaling"],
+  "environments": ["staging", "production"],
+  "riskTypes": ["availability", "capacity", "cost", "customer-trust"],
+  "behaviorPatterns": [
+    "backpressure",
+    "bounded-admission",
+    "capacity-evidence"
+  ],
+  "scenario": {
+    "customerProfile": "一家虚构的企业软件公司在年度发布会上向全球客户开放流式文档助手。",
+    "background": "浏览器通过 SSE 接收 Token，边缘网关连接推理服务；扩缩容当前主要依据每秒请求数和 CPU。",
+    "initialIncident": "发布后慢速客户端大量增加，网关内存持续上升并重启，推理请求仍在生成，最终导致连接重试和区域级错误率攀升。",
+    "constraints": [
+      "必须保护已建立的企业会话，但允许对新低优先级请求进行有界降级。",
+      "客户端断开后必须停止下游生成，避免继续消耗推理容量。",
+      "不能通过无限增加缓冲或 GPU 暂时掩盖网关背压。",
+      "客户需要知道数据是否丢失、哪些会话受影响以及恢复节奏。"
+    ],
+    "confirmedFacts": [
+      "模型首 Token 延迟和 GPU 利用率在故障开始时仍在正常范围。",
+      "网关重启与活跃流连接、缓冲字节同时上升。",
+      "慢速客户端断开后部分推理任务仍继续到最大输出长度。",
+      "非流式健康检查持续返回 200。"
+    ]
+  },
+  "startNodeId": "llm-streaming-backpressure-overload-001-node-01",
+  "nodes": [
+    {
+      "id": "llm-streaming-backpressure-overload-001-node-01",
+      "type": "architecture-tradeoff",
+      "title": "控制连接与容量扩散",
+      "prompt": "在模型仍健康但网关持续重启时，哪项立即处置最能稳定系统？",
+      "skillWeights": {
+        "performance.scaling": 0.35,
+        "reliability.observability": 0.3,
+        "cloud.deployment": 0.2,
+        "api.integration": 0.15
+      },
+      "evidence": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-01-evidence-01",
+          "type": "metric",
+          "title": "故障时间线指标",
+          "content": "active_streams=18400 slow_consumers=7200 gateway_memory=94% gateway_restarts_10m=38 request_rate_change=+6% gpu_utilization=68% first_token_p95=920ms stream_error_rate=17.4%"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-01-evidence-02",
+          "type": "log",
+          "title": "断开后的下游行为",
+          "content": "trace=stream-synthetic-909 client_disconnect=true gateway_buffer_bytes=8388608 downstream_cancel_sent=false generated_tokens_after_disconnect=4096 gateway_exit=oom_killed"
+        }
+      ],
+      "options": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-01-option-a",
+          "label": "限制新低优先级流、缩短空闲与慢消费者期限，并把客户端断开立即传播为下游取消",
+          "explanation": "故障由活跃慢流和未取消生成驱动；有界准入与取消传播能直接降低网关和推理占用，同时保护已建立高优先级会话。"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-01-option-b",
+          "label": "只增加推理 GPU，因为流错误最终表现为模型请求失败",
+          "explanation": "GPU 和首 Token 延迟正常，网关内存与慢消费者才与重启相关；增加 GPU 不会让客户端更快读取或停止断开后的生成。",
+          "errorType": "scale-inference-for-gateway-backpressure"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-01-option-c",
+          "label": "取消所有租户优先级和连接上限，让重试请求尽快重新进入系统",
+          "explanation": "无界重试与新连接会进一步耗尽缓冲和推理容量，使局部慢消费者问题扩大为所有客户不可用。",
+          "errorType": "remove-admission-during-overload"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "llm-streaming-backpressure-overload-001-node-01-option-a"
+      },
+      "feedback": {
+        "firstWrong": "先找与重启同步变化的资源，而不是只看最终错误所在服务。",
+        "secondWrong": "网关内存和慢流上升，客户端断开也没有取消下游生成。",
+        "revealedAnswer": "应有界限制新流和慢消费者，并把断开传播到推理服务立即释放容量。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "llm-streaming-backpressure-overload-001-node-01-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-02"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-02"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-02"
+        }
+      ]
+    },
+    {
+      "id": "llm-streaming-backpressure-overload-001-node-02",
+      "type": "configuration-review",
+      "title": "定位缓冲与取消缺口",
+      "prompt": "根据网关和推理配置，哪项架构修改最直接解决背压根因？",
+      "skillWeights": {
+        "api.integration": 0.3,
+        "performance.scaling": 0.3,
+        "reliability.observability": 0.2,
+        "cloud.deployment": 0.2
+      },
+      "evidence": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-02-evidence-01",
+          "type": "config",
+          "title": "当前流式链路配置",
+          "content": "gateway:\n  perStreamBuffer: unlimited\n  slowConsumerTimeout: null\n  propagateDisconnect: false\n  maxActiveStreamsPerTenant: null\ninference:\n  maxOutputTokens: 4096\n  cancelEndpoint: enabled\n  requestDeadline: 180s",
+          "language": "yaml"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-02-evidence-02",
+          "type": "diagram",
+          "title": "数据与控制流",
+          "content": "browser --slow read--> gateway --fast token stream--> inference\nbrowser --disconnect-X gateway\ngateway --no cancel--> inference --continues generation--> discarded buffer"
+        }
+      ],
+      "options": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-02-option-a",
+          "label": "实现有界逐流缓冲、写入背压、慢消费者期限和端到端取消传播",
+          "explanation": "配置明确允许无限缓冲且不传播断开；因此有界缓冲和取消会把客户端消费能力反馈到上游，并停止无接收者的推理工作。"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-02-option-b",
+          "label": "把网关内存限制提高十倍，其他流式行为保持不变",
+          "explanation": "更大内存只会延后无界缓冲触发 OOM 的时间，不能建立背压或停止断开后的计算浪费。",
+          "errorType": "increase-memory-with-unbounded-buffer"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-02-option-c",
+          "label": "关闭推理取消端点，确保每次生成都完整执行并便于计费",
+          "explanation": "关闭取消会强制为已断开客户端继续生成，直接扩大容量浪费、成本和过载恢复时间。",
+          "errorType": "disable-inference-cancellation"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "llm-streaming-backpressure-overload-001-node-02-option-a"
+      },
+      "feedback": {
+        "firstWrong": "流式系统必须让下游消费能力和断开状态反馈到上游。",
+        "secondWrong": "当前缓冲无限、慢消费者无期限且取消端点没有被调用。",
+        "revealedAnswer": "应建立有界缓冲和慢消费者政策，并把客户端断开传播为推理取消。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "llm-streaming-backpressure-overload-001-node-02-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-03"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-03"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-03"
+        }
+      ]
+    },
+    {
+      "id": "llm-streaming-backpressure-overload-001-node-03",
+      "type": "architecture-tradeoff",
+      "title": "重建容量和扩缩容模型",
+      "prompt": "候选修复进入负载测试时，哪组容量信号和门禁最适合流式推理？",
+      "skillWeights": {
+        "performance.scaling": 0.35,
+        "tuning.inference-deployment": 0.3,
+        "cloud.deployment": 0.2,
+        "reliability.observability": 0.15
+      },
+      "evidence": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-03-evidence-01",
+          "type": "metric",
+          "title": "分层负载测试",
+          "content": "active_streams=20000 slow_consumer_ratio=40% gateway_memory=61% buffer_p99_kb=192 cancelled_after_disconnect=100% generated_tokens_after_disconnect=0 token_egress_per_second=182000 stream_error_rate=0.6%"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-03-evidence-02",
+          "type": "config",
+          "title": "候选扩缩容与门禁",
+          "content": "scaleSignals: [active_streams, buffered_bytes, output_tokens_per_second]\nadmission:\n  perTenantStreams: 500\n  globalOutputTokensPerSecondBudget: 200000\nrollbackWhen:\n  gatewayMemory: '> 75%'\n  disconnectCancelCoverage: '< 100%'\n  streamErrorRate: '> 1%'",
+          "language": "yaml"
+        }
+      ],
+      "options": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-03-option-a",
+          "label": "按活跃流、缓冲字节和输出 Token 扩缩容，并以租户并发、每秒全局输出 Token 预算和取消覆盖率控制准入",
+          "explanation": "这些信号反映长连接实际占用和生成工作量，配额与取消门禁能在客户端变慢时保持资源有界，而不是依赖请求瞬时计数。"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-03-option-b",
+          "label": "继续只按每秒请求数扩缩容，因为所有请求最终都会结束",
+          "explanation": "流连接持续时间和输出 Token 差异巨大，因此相同请求率可以对应完全不同的并发、缓冲和推理占用。",
+          "errorType": "request-rate-only-stream-capacity"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-03-option-c",
+          "label": "移除租户与 Token 预算，让最大客户独占容量以提高总体利用率",
+          "explanation": "移除隔离会让单个慢客户耗尽共享网关和推理资源，扩大噪声邻居影响并破坏企业会话优先级。",
+          "errorType": "remove-streaming-tenant-isolation"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "llm-streaming-backpressure-overload-001-node-03-option-a"
+      },
+      "feedback": {
+        "firstWrong": "流式容量由连接持续时间、缓冲和输出 Token 共同决定。",
+        "secondWrong": "负载测试证明新信号可观测，应以资源与取消门禁约束灰度。",
+        "revealedAnswer": "应按活跃流、缓冲和 Token 负载扩缩容，并保留租户与全局预算。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "llm-streaming-backpressure-overload-001-node-03-option-c"
+        ]
+      },
+      "branches": [
+        {
+          "key": "correct",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-04"
+        },
+        {
+          "key": "incorrect",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-04"
+        },
+        {
+          "key": "critical",
+          "nextNodeId": "llm-streaming-backpressure-overload-001-node-04"
+        }
+      ]
+    },
+    {
+      "id": "llm-streaming-backpressure-overload-001-node-04",
+      "type": "customer-response",
+      "title": "分阶段恢复并沟通会话影响",
+      "prompt": "生产灰度稳定后，哪种恢复与客户沟通方案最合适？",
+      "skillWeights": {
+        "reliability.observability": 0.25,
+        "performance.scaling": 0.2,
+        "cloud.deployment": 0.2,
+        "api.integration": 0.15,
+        "tuning.inference-deployment": 0.2
+      },
+      "evidence": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-04-evidence-01",
+          "type": "metric",
+          "title": "25% 生产灰度",
+          "content": "duration=60m traffic=25% gateway_restarts=0 stream_error_rate=0.4% disconnect_cancel_coverage=100% generated_tokens_after_disconnect=0 priority_session_success=99.7% data_loss_events=0"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-04-evidence-02",
+          "type": "customer-message",
+          "title": "客户运营团队问题",
+          "content": "哪些会话失败、是否有文档或回答被丢失、为何普通健康检查仍是绿色、以及何时恢复完整并发额度？"
+        }
+      ],
+      "options": [
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-04-option-a",
+          "label": "报告受影响流连接和无数据丢失，解释健康检查盲区，并按流错误、取消和资源门禁逐步恢复额度",
+          "explanation": "该回复区分连接中断与数据持久化，解释新容量信号，并用已验证灰度指标为客户提供可检查的恢复节奏。"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-04-option-b",
+          "label": "只说明模型服务始终健康，因此事件不属于平台故障",
+          "explanation": "客户经历的是完整流式链路失败，模型健康不能否定网关过载和会话中断，也无法回答恢复计划。",
+          "errorType": "deny-end-to-end-streaming-impact"
+        },
+        {
+          "id": "llm-streaming-backpressure-overload-001-node-04-option-c",
+          "label": "立即取消全部准入限制，并保证下次发布不会再发生任何流式错误",
+          "explanation": "移除限制会恢复过载条件，绝对保证也超出负载和灰度证据，可能再次影响所有企业会话。",
+          "errorType": "remove-overload-controls-and-overpromise"
+        }
+      ],
+      "answer": {
+        "correctOptionId": "llm-streaming-backpressure-overload-001-node-04-option-a"
+      },
+      "feedback": {
+        "firstWrong": "客户需要端到端影响、数据状态、监控盲区和可验证恢复门禁。",
+        "secondWrong": "说明流连接失败但没有持久数据丢失，并按取消覆盖与资源指标恢复。",
+        "revealedAnswer": "应透明报告会话影响和健康检查盲区，以灰度指标逐步恢复而非移除保护。"
+      },
+      "scoring": {
+        "firstTry": 100,
+        "secondTry": 60,
+        "thirdTry": 30,
+        "weight": 1,
+        "criticalErrorOptionIds": [
+          "llm-streaming-backpressure-overload-001-node-04-option-c"
+        ]
+      },
+      "branches": [
+        { "key": "correct", "nextNodeId": null },
+        { "key": "incorrect", "nextNodeId": null },
+        { "key": "critical", "nextNodeId": null }
+      ]
+    }
+  ],
+  "debrief": {
+    "summary": "慢客户端让网关无限缓冲 Token，客户端断开又没有取消下游生成；按请求率和 CPU 扩缩容无法看到长连接真实占用。",
+    "rootCause": "流式网关缺少有界缓冲、慢消费者政策和断开取消传播，容量模型又忽略活跃流与输出 Token，导致缓冲、无效生成和重试级联放大。",
+    "correctApproach": [
+      "限制新低优先级流和慢消费者，并把客户端断开传播为推理取消。",
+      "实现有界逐流缓冲、背压、租户并发与每秒全局输出 Token 预算。",
+      "按活跃流、缓冲字节和输出 Token 扩缩容，并通过负载与生产灰度验证。"
+    ],
+    "keyLessons": [
+      "流式 API 的资源单位不是请求次数，而是连接时间、缓冲和生成 Token。",
+      "健康检查只能证明探针路径可用，不能替代真实慢消费者与取消测试。",
+      "FDE 应向客户区分会话中断与数据丢失，并提供逐步恢复额度的量化条件。"
+    ],
+    "interviewerPerspective": "观察候选人是否沿浏览器、网关、推理和扩缩容信号定位背压，而不是盲目增加 GPU 或内存。",
+    "customerRiskPerspective": "无界流式资源会让少量慢客户端影响所有租户，并产生未被客户消费但仍需付费的推理工作。",
+    "remediation": [
+      "实现有界缓冲、写入背压、慢消费者超时和端到端取消。",
+      "建立租户并发与每秒全局输出 Token 预算，并按流式负载信号扩缩容。",
+      "增加慢消费者、断开、重连和峰值 Token 组合的发布负载门禁。"
+    ],
+    "verification": [
+      "确认慢消费者负载下网关内存和缓冲有界，重启与流错误率满足门槛。",
+      "确认客户端断开后取消覆盖率为 100%，额外生成 Token 为零。",
+      "确认灰度期间优先会话成功、无数据丢失并按客户承诺恢复额度。"
+    ],
+    "knowledgePoints": [
+      "streaming backpressure",
+      "cancellation propagation",
+      "token-aware capacity planning"
+    ]
+  },
+  "metadata": {
+    "version": 1,
+    "sourceType": "synthetic",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "reviewedAt": "2026-07-14T08:00:00.000Z",
+    "applicableVersions": [],
+    "author": "FDE Arena Content Team",
+    "reviewer": "FDE Arena Editorial Review"
+  }
+}

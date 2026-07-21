@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.evidence",
+  "type": "concept",
+  "category": "fde",
+  "order": 48,
+  "title": "证据：支持决策的可核验事实",
+  "technicalTerm": "Evidence",
+  "simpleExplanation": "证据是能够被他人检查、重复或追溯的事实，用来支持或反驳一个判断。",
+  "analogy": "像法庭中的带时间记录和来源的材料：传闻可以提示方向，但不能替代可核验的记录。",
+  "technicalExplanation": "工程证据包括原始请求、结构化日志、指标、追踪、配置版本、实验结果和来源引用。记录应说明时间、环境、对象、采集方法与限制，并区分观察、推断和结论。",
+  "whyItMatters": "FDE 跨越客户与工程团队，证据让问题可复现、决策可解释。RAG 场景还需要把回答追溯到具体文档版本与片段。",
+  "commonMistakes": "只保存截图不保存上下文；把相关性当因果；选择性记录支持原假设的数据；忽略时间、区域或版本差异。",
+  "relatedFoundation": [
+    "fde.requirement-evidence",
+    "fde.evidence-first-debugging",
+    "ai.rag-grounding-citations"
+  ],
+  "relatedCases": [
+    "observability-correlation-id-001",
+    "multi-region-rag-consistency-001",
+    "customer-success-criteria-001"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "skillCatalogVersion": "0.2.0",
+  "rubricSetVersion": "0.2.0",
+  "id": "practice.rag.chunking",
+  "version": 1,
+  "status": "draft",
+  "title": "RAG Chunking Focused Practice",
+  "summary": "A focused transfer activity for RAG Chunking.",
+  "primaryConceptId": "concept.chunk",
+  "foundationIds": ["ai.chunking-strategy"],
+  "primaryLeafSkillId": "rag.chunking",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 5,
+  "action": {
+    "id": "action.rag.chunking",
+    "kind": "decision",
+    "prompt": "Choose a chunk boundary that preserves the limiting condition.",
+    "stimulus": [
+      {
+        "id": "stimulus.rag.chunking",
+        "type": "scenario",
+        "content": "Use the supplied constraints and evidence. Do not assume facts that are not present."
+      }
+    ],
+    "responseContract": {
+      "type": "text",
+      "requiredFields": ["decision", "rationale"]
+    },
+    "scored": true
+  },
+  "evaluation": {
+    "rubricRef": {
+      "rubricId": "rubric.rag.chunking",
+      "skillId": "rag.chunking",
+      "version": 1
+    },
+    "criterionIds": ["criterion.rag.chunking.decision"],
+    "method": "reviewed"
+  },
+  "evidenceOutputContract": {
+    "artifactType": "chunking-decision",
+    "requiredFields": ["decision", "rationale"],
+    "eligibilityRule": "The decision must cite the supplied evidence and stay within the requested scope.",
+    "sourceReferencePolicy": "required",
+    "criticalFailurePolicy": "Reject unsafe actions, invented facts, or irreversible changes without a rollback boundary."
+  },
+  "feedback": {
+    "correct": "The decision is bounded, evidence-led, and verifiable.",
+    "partial": "The direction is useful but one evidence or verification link is missing.",
+    "incorrect": "The response does not address the scored engineering action.",
+    "criticalFailure": "The response crosses a safety or authorization boundary."
+  },
+  "metadata": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "reviewedAt": null,
+    "author": "FDE Arena MVP",
+    "reviewer": null
+  }
+}

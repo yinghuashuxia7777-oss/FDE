@@ -152,6 +152,27 @@ describe('complete content validation', () => {
     },
     relatedCases: ['case-minimal'],
   };
+  const concept = {
+    schemaVersion: 1 as const,
+    id: 'concept.request-response',
+    type: 'concept' as const,
+    category: 'api-backend' as const,
+    order: 1,
+    title: 'Request and response',
+    technicalTerm: 'Request / Response',
+    simpleExplanation:
+      'A client sends a request and a service returns a result.',
+    analogy:
+      'It is like placing an order and receiving the item with a receipt.',
+    technicalExplanation:
+      'The request carries method, target, headers, and body; the response carries status, headers, and body.',
+    whyItMatters:
+      'An FDE must locate whether a failure happened before, during, or after server processing.',
+    commonMistakes:
+      'Do not infer transport success from a business response or ignore response metadata.',
+    relatedFoundation: [foundation.id],
+    relatedCases: ['case-minimal'],
+  };
 
   function publishedCase() {
     const candidate = createMinimalValidCase();
@@ -176,6 +197,7 @@ describe('complete content validation', () => {
       domains: unknown[];
       skills: unknown[];
       foundations: unknown[];
+      concepts: unknown[];
     };
     const candidate = publishedCase();
     const result = validateContentBundleSources({
@@ -192,6 +214,9 @@ describe('complete content validation', () => {
       foundation: [
         json('content/foundation/network/http-request-basics.json', foundation),
       ],
+      concepts: [
+        json('content/concepts/api-backend/request-response.json', concept),
+      ],
       coverage: json('content/coverage/coverage-plan.json', {
         schemaVersion: 1,
         targetCaseCount: 1,
@@ -204,6 +229,58 @@ describe('complete content validation', () => {
     expect(result.domains).toHaveLength(1);
     expect(result.skills).toHaveLength(1);
     expect(result.foundations).toHaveLength(1);
+    expect(result.concepts).toHaveLength(1);
+  });
+
+  it('rejects duplicate Concept IDs and unresolved stable relations', async () => {
+    const { validateContentBundleSources } = await import('./validate-content');
+    const candidate = publishedCase();
+    const result = validateContentBundleSources({
+      config: json('content/manifests/content-config.json', {
+        packId: 'test-pack',
+        displayName: 'Test pack',
+        contentVersion: '1.0.0',
+        releasedAt: '2026-07-13T00:00:00.000Z',
+        activeCases: [{ caseId: candidate.id, version: 1 }],
+      }),
+      cases: [json('content/cases/beginner/case-minimal.json', candidate)],
+      domains: [json('content/domains/diagnostics.json', domain)],
+      skills: [json('content/skills/evidence-assessment.json', skill)],
+      foundation: [
+        json('content/foundation/network/http-request-basics.json', foundation),
+      ],
+      concepts: [
+        json('content/concepts/api-backend/a.json', concept),
+        json('content/concepts/api-backend/z.json', concept),
+        json('content/concepts/system/missing-foundation.json', {
+          ...concept,
+          id: 'concept.missing-foundation',
+          category: 'system',
+          order: 2,
+          relatedFoundation: ['foundation.missing'],
+        }),
+        json('content/concepts/fde/missing-case.json', {
+          ...concept,
+          id: 'concept.missing-case',
+          category: 'fde',
+          order: 3,
+          relatedCases: ['case-missing'],
+        }),
+      ],
+      coverage: json('content/coverage/coverage-plan.json', {
+        schemaVersion: 1,
+        targetCaseCount: 1,
+        domains: [{ domainId: domain.id, targetCaseCount: 1 }],
+      }),
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'duplicate_concept_id' }),
+        expect.objectContaining({ code: 'missing_foundation_reference' }),
+        expect.objectContaining({ code: 'missing_active_case_reference' }),
+      ]),
+    );
   });
 
   it('reports deterministic Foundation reference, identity, and path issues', async () => {

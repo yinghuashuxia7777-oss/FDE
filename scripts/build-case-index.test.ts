@@ -12,8 +12,10 @@ import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 
 import type { FdeCase } from '../src/domain/cases/types';
+import type { ConceptKnowledge } from '../src/domain/concepts/types';
 import type { FoundationKnowledge } from '../src/domain/foundation/types';
 import type { ContentPack } from '../src/content/contracts';
+import { ConceptKnowledgeSchema } from '../src/content/concept-schema';
 import { FoundationKnowledgeSchema } from '../src/content/foundation-schema';
 import { ContentManifestSchema } from '../src/content/schemas';
 import { validateAndNormalizeContentPack } from '../src/content/validate-content-pack';
@@ -26,6 +28,8 @@ import {
   emitCaseIndex,
   findContentArtifactDrift,
   generateCaseIndex,
+  generateConceptIndex,
+  generateConceptJsonSchema,
   generateFoundationJsonSchema,
 } from './build-case-index';
 
@@ -66,6 +70,26 @@ const foundationFixture: FoundationKnowledge = {
     example: 'GET /health asks for the health resource.',
     commonMistakes: 'Do not assume every successful transport is HTTP 200.',
   },
+  relatedCases: ['case-active'],
+};
+
+const conceptFixture: ConceptKnowledge = {
+  schemaVersion: 1,
+  id: 'concept.request-response',
+  type: 'concept',
+  category: 'api-backend',
+  order: 1,
+  title: 'Request and response',
+  technicalTerm: 'Request / Response',
+  simpleExplanation: 'A client sends a request and a service returns a result.',
+  analogy: 'It is like placing an order and receiving an item with a receipt.',
+  technicalExplanation:
+    'Requests carry methods, targets, headers, and bodies; responses carry status, headers, and bodies.',
+  whyItMatters:
+    'An FDE must identify which boundary produced an observed failure.',
+  commonMistakes:
+    'Do not confuse a successful transport with a successful business operation.',
+  relatedFoundation: [foundationFixture.id],
   relatedCases: ['case-active'],
 };
 
@@ -279,6 +303,55 @@ describe('generateCaseIndex', () => {
 });
 
 describe('deterministic content artifacts', () => {
+  it('generates a deterministic Concept index ordered by authored order and ID', () => {
+    const generated = generateConceptIndex([
+      {
+        file: 'content/concepts/system/later.json',
+        concept: { ...conceptFixture, id: 'concept.later', order: 2 },
+      },
+      {
+        file: 'content/concepts/api-backend/z.json',
+        concept: { ...conceptFixture, id: 'concept.zeta' },
+      },
+      {
+        file: 'content/concepts/api-backend/a.json',
+        concept: { ...conceptFixture, id: 'concept.alpha' },
+      },
+    ]);
+
+    expect(generated.indexOf("id: 'concept.alpha'")).toBeLessThan(
+      generated.indexOf("id: 'concept.zeta'"),
+    );
+    expect(generated.indexOf("id: 'concept.zeta'")).toBeLessThan(
+      generated.indexOf("id: 'concept.later'"),
+    );
+    expect(generated).toContain(
+      "load: () =>\n      import('../../content/concepts/system/later.json') as Promise<{\n        default: ConceptKnowledge;\n      }>",
+    );
+    expect(generated).toContain(
+      "import type { ConceptKnowledge } from '../domain/concepts/types'",
+    );
+  });
+
+  it('keeps Concept authoring schema aligned with runtime validation', () => {
+    const artifact = generateConceptJsonSchema();
+    const validatorArtifact = structuredClone(artifact);
+    delete validatorArtifact.$schema;
+    const validateAuthoring = new Ajv({
+      allErrors: true,
+      schemaId: 'auto',
+      validateSchema: false,
+    }).compile(validatorArtifact);
+    const invalid = {
+      ...conceptFixture,
+      relatedCases: ['case-active', 'case-active'],
+    };
+
+    expect(ConceptKnowledgeSchema.safeParse(invalid).success).toBe(false);
+    expect(validateAuthoring(invalid)).toBe(false);
+    expect(validateAuthoring(conceptFixture)).toBe(true);
+  });
+
   it('generates a deterministic Foundation index ordered by learning order and ID', async () => {
     const { generateFoundationIndex } = await import('./build-case-index');
     const later = {
@@ -451,6 +524,12 @@ describe('deterministic content artifacts', () => {
           foundation: foundationFixture,
         },
       ],
+      concepts: [
+        {
+          file: 'content/concepts/api-backend/request-response.json',
+          concept: conceptFixture,
+        },
+      ],
       coverage: {
         schemaVersion: 1,
         targetCaseCount: 1,
@@ -466,11 +545,16 @@ describe('deterministic content artifacts', () => {
       domains: [...input.domains],
       skills: [...input.skills],
       foundations: [...input.foundations],
+      concepts: [...input.concepts],
     });
 
     const withoutFoundation = generateContentArtifacts({
       ...input,
       foundations: [],
+    });
+    const withoutConcept = generateContentArtifacts({
+      ...input,
+      concepts: [],
     });
 
     expect(second.files).toEqual(first.files);
@@ -480,6 +564,8 @@ describe('deterministic content artifacts', () => {
     expect(first.files['content/manifests/content-manifest.json']).toBe(
       withoutFoundation.files['content/manifests/content-manifest.json'],
     );
+    expect(first.manifest).toEqual(withoutConcept.manifest);
+    expect(first.manifest.checksum).toBe(withoutConcept.manifest.checksum);
     expect(first.manifest).toMatchObject({
       activePublishedCaseCount: 1,
       caseVersionCount: 1,
@@ -496,6 +582,7 @@ describe('deterministic content artifacts', () => {
     expect(Object.keys(first.files).sort()).toEqual([
       'content/manifests/content-manifest.json',
       'content/manifests/coverage-report.json',
+      'content/schemas/concept.schema.json',
       'content/schemas/content-manifest.schema.json',
       'content/schemas/content-pack.schema.json',
       'content/schemas/coverage.schema.json',
@@ -503,6 +590,7 @@ describe('deterministic content artifacts', () => {
       'content/schemas/fde-case.schema.json',
       'content/schemas/foundation.schema.json',
       'content/schemas/skill.schema.json',
+      'src/generated/concept-index.ts',
       'src/generated/content-index.ts',
       'src/generated/foundation-index.ts',
     ]);
@@ -512,6 +600,9 @@ describe('deterministic content artifacts', () => {
     expect(first.files['src/generated/foundation-index.ts']).toContain(
       "import('../../content/foundation/network/http-request-basics.json')",
     );
+    expect(first.files['src/generated/concept-index.ts']).toContain(
+      "import('../../content/concepts/api-backend/request-response.json')",
+    );
     expect(
       JSON.parse(first.files['content/schemas/foundation.schema.json'] ?? ''),
     ).toMatchObject({
@@ -519,14 +610,24 @@ describe('deterministic content artifacts', () => {
       title: 'FDE Arena Foundation Knowledge',
     });
     expect(
+      JSON.parse(first.files['content/schemas/concept.schema.json'] ?? ''),
+    ).toMatchObject({
+      $id: 'https://fde-arena.local/schemas/concept.schema.json',
+      title: 'FDE Arena Concept Knowledge',
+    });
+    expect(
       findContentArtifactDrift(first.files, (path) =>
         path === 'content/schemas/foundation.schema.json' ||
-        path === 'src/generated/foundation-index.ts'
+        path === 'src/generated/foundation-index.ts' ||
+        path === 'content/schemas/concept.schema.json' ||
+        path === 'src/generated/concept-index.ts'
           ? null
           : (first.files[path] ?? null),
       ),
     ).toEqual([
+      'content/schemas/concept.schema.json',
       'content/schemas/foundation.schema.json',
+      'src/generated/concept-index.ts',
       'src/generated/foundation-index.ts',
     ]);
 

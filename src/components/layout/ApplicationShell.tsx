@@ -1,15 +1,19 @@
 import {
   BookOpenText,
   ChartPolar,
+  ClipboardText,
   FolderOpen,
   Gear,
   House,
+  MagnifyingGlass,
+  Path,
   UserCircle,
   WarningCircle,
+  ChatCircleText,
 } from '@phosphor-icons/react';
-import type { MouseEvent } from 'react';
+import type { FormEvent, MouseEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { useI18n } from '../../i18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -31,29 +35,41 @@ export function SkipLink() {
   );
 }
 
-const desktopDestinations = [
+const growthDestinations = [
   { to: '/', labelKey: 'nav.dashboard', Icon: House, end: true },
+  { to: '/journey', labelKey: 'nav.journey', Icon: Path, end: false },
   {
-    to: '/foundation',
-    labelKey: 'nav.foundation',
-    Icon: BookOpenText,
+    to: '/skills',
+    labelKey: 'nav.skillGraph',
+    Icon: ChartPolar,
     end: false,
   },
-  { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen, end: false },
-  { to: '/skills', labelKey: 'nav.skills', Icon: ChartPolar, end: false },
+  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen, end: false },
   {
-    to: '/mistakes',
-    labelKey: 'nav.mistakes',
-    Icon: WarningCircle,
+    to: '/profile',
+    labelKey: 'nav.evidence',
+    Icon: ClipboardText,
     end: false,
   },
-  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle, end: false },
-  { to: '/settings', labelKey: 'nav.settings', Icon: Gear, end: false },
+] as const;
+
+const workspaceDestinations = [
+  { to: '/journey', labelKey: 'nav.journey', Icon: Path },
+  { to: '/foundation', labelKey: 'nav.knowledge', Icon: BookOpenText },
+  { to: '/practices', labelKey: 'nav.practices', Icon: ClipboardText },
+  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
+  { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen },
+  { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
+  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
+  { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
+  { to: '/feedback', labelKey: 'nav.feedback', Icon: ChatCircleText },
 ] as const;
 
 export function ApplicationShell() {
   const { t } = useI18n();
-  const desktop = useMediaQuery('(min-width: 64rem)');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const desktop = useMediaQuery('(min-width: 80rem)');
   const mobileDrawerOpenRef = useRef(false);
   const handleDrawerOpenChange = useCallback((open: boolean) => {
     mobileDrawerOpenRef.current = open;
@@ -66,58 +82,113 @@ export function ApplicationShell() {
     document.getElementById('page-title')?.focus();
   }, [desktop]);
 
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = new FormData(event.currentTarget).get('workspace-search');
+    const query = typeof value === 'string' ? value.trim() : '';
+    void navigate(
+      query === '' ? '/cases' : `/cases?q=${encodeURIComponent(query)}`,
+    );
+  };
+
+  const searchValue =
+    location.pathname === '/cases'
+      ? (new URLSearchParams(location.search).get('q') ?? '')
+      : '';
+
   return (
-    <div className="application-shell">
+    <div className="application-shell application-shell--growth-os">
       <SkipLink />
-      {desktop ? (
-        <aside
-          className="desktop-sidebar"
-          aria-label={t('shell.applicationSidebar')}
-        >
+      <div className="workspace-column">
+        <header className="growth-os-header" data-testid="context-bar">
           <NavLink
-            className="brand-lockup"
+            className="brand-lockup growth-os-brand"
             to="/"
             aria-label={t('shell.homeLabel')}
           >
-            <span className="brand-lockup__mark" aria-hidden="true">
-              {t('shell.brandMark')}
+            <span className="growth-os-brand__mark" aria-hidden="true">
+              <span />
             </span>
             <span>
-              <strong>{t('shell.brandProduct')}</strong>
-              <small>{t('shell.tagline')}</small>
+              <strong>{t('shell.growthBrand')}</strong>
+              <small>{t('shell.growthBrandSubtitle')}</small>
             </span>
           </NavLink>
-          <nav
-            className="desktop-navigation"
-            aria-label={t('shell.primaryNavigation')}
-          >
-            {desktopDestinations.map(({ to, labelKey, Icon, end }) => (
-              <NavLink className="nav-link" end={end} key={to} to={to}>
-                <Icon aria-hidden="true" size={20} />
-                <span>{t(labelKey)}</span>
-              </NavLink>
-            ))}
-          </nav>
-          <div className="sidebar-status" role="status">
-            <span className="status-dot" aria-hidden="true" />
-            {t('shell.localReady')}
-          </div>
-        </aside>
-      ) : null}
 
-      <div className="workspace-column">
-        <header className="context-bar" data-testid="context-bar">
-          <div className="context-bar__identity">
-            <span className="context-bar__brand">{t('shell.brandName')}</span>
-            <span className="context-bar__channel">
-              {t('shell.contentReady')}
-            </span>
-          </div>
-          <div className="context-bar__identity context-bar__controls">
-            <LanguageSwitcher compact />
+          {desktop ? (
+            <nav
+              className="growth-os-navigation"
+              aria-label={t('shell.primaryNavigation')}
+            >
+              {growthDestinations.map((destination) => {
+                const { Icon, labelKey } = destination;
+                return (
+                  <NavLink
+                    className="growth-os-nav-link"
+                    end={destination.end}
+                    key={destination.to}
+                    to={destination.to}
+                  >
+                    <Icon aria-hidden="true" size={19} />
+                    <span>{t(labelKey)}</span>
+                  </NavLink>
+                );
+              })}
+            </nav>
+          ) : null}
+
+          <div className="growth-os-header__controls">
+            <LanguageSwitcher variant="header" />
             <ThemeSelector compact />
+            <details className="growth-workspace-menu">
+              <summary aria-label={t('shell.workspaceMenu.open')} role="button">
+                <UserCircle aria-hidden="true" size={24} weight="duotone" />
+                <span aria-hidden="true">FDE</span>
+              </summary>
+              <div className="growth-workspace-menu__panel">
+                <div className="growth-workspace-menu__heading">
+                  <strong>{t('shell.workspaceMenu.title')}</strong>
+                  <span>
+                    <span className="status-dot" aria-hidden="true" />
+                    {t('shell.localReady')}
+                  </span>
+                </div>
+                <form
+                  className="workspace-search"
+                  aria-label={t('shell.searchLabel')}
+                  onSubmit={submitSearch}
+                  role="search"
+                >
+                  <MagnifyingGlass aria-hidden="true" size={18} />
+                  <label className="sr-only" htmlFor="workspace-search">
+                    {t('shell.searchLabel')}
+                  </label>
+                  <input
+                    defaultValue={searchValue}
+                    id="workspace-search"
+                    key={`${location.pathname}:${location.search}`}
+                    name="workspace-search"
+                    placeholder={t('shell.searchPlaceholder')}
+                    type="search"
+                  />
+                  <span aria-hidden="true">↵</span>
+                </form>
+                <nav
+                  className="growth-workspace-navigation"
+                  aria-label={t('shell.workspaceNavigation')}
+                >
+                  {workspaceDestinations.map(({ to, labelKey, Icon }) => (
+                    <NavLink className="nav-link" key={to} to={to}>
+                      <Icon aria-hidden="true" size={19} />
+                      <span>{t(labelKey)}</span>
+                    </NavLink>
+                  ))}
+                </nav>
+              </div>
+            </details>
           </div>
         </header>
+
         <main
           id="main-content"
           className="workspace-main"

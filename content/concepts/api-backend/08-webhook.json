@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.webhook",
+  "type": "concept",
+  "category": "api-backend",
+  "order": 8,
+  "title": "Webhook：由事件触发的反向 API 调用",
+  "technicalTerm": "Webhook",
+  "simpleExplanation": "Webhook 是事件发生后，服务主动向订阅方地址发送通知，而不是让订阅方不断来问。",
+  "analogy": "像快递到站后主动发短信，而不是收件人每分钟打电话查询；短信可能延迟或重复，所以接收方仍需核对编号。",
+  "technicalExplanation": "Webhook 通常以 HTTP 请求投递事件，生产设计需包含签名验证、事件 ID、重试策略、幂等处理、顺序假设、超时响应和死信追踪。投递成功只表示接收端确认，不必然表示业务处理完成。",
+  "whyItMatters": "异步集成的重复、乱序和迟到是正常情况。FDE 必须验证接收方如何去重、如何推进水位以及失败事件是否可重放。",
+  "commonMistakes": "信任来源但不验签；把每次投递当成唯一事件；收到通知后执行长任务导致超时重试；用到达时间替代事件时间。",
+  "relatedFoundation": ["api.webhook-delivery", "api.webhook-signature"],
+  "relatedCases": [
+    "api-webhook-idempotency-001",
+    "warehouse-late-arrival-watermark-001"
+  ]
+}

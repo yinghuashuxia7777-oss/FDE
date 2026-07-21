@@ -46,7 +46,7 @@ describe('content CLI entrypoints', () => {
     expect(validation.status).toBe(0);
     expect(JSON.parse(validation.stdout)).toMatchObject({
       ok: true,
-      validCases: 27,
+      validCases: 53,
       validDomains: 15,
       validSkills: 15,
     });
@@ -55,7 +55,7 @@ describe('content CLI entrypoints', () => {
     expect(quality.status).toBe(0);
     expect(JSON.parse(quality.stdout)).toMatchObject({
       ok: true,
-      casesChecked: 27,
+      casesChecked: 53,
       validationIssueCount: 0,
       qualityIssueCount: 0,
       issues: [],
@@ -68,7 +68,7 @@ describe('content CLI entrypoints', () => {
       coverage: {
         schemaVersion: 1,
         targetCaseCount: 362,
-        publishedCases: 24,
+        publishedCases: 50,
       },
     });
   });

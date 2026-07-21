@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "http.status-success",
+  "type": "foundation",
+  "title": "成功状态码：区分完成、创建与已接收",
+  "domain": "network",
+  "track": "network-api",
+  "skills": ["api.integration", "reliability.observability"],
+  "level": "beginner",
+  "order": 46,
+  "estimatedMinutes": 8,
+  "content": {
+    "simpleExplanation": "二百段状态码都表示请求被成功处理到某个阶段，但 200、201、202 和 204 对结果位置、是否完成以及是否有正文的承诺并不相同。",
+    "analogy": "成功状态像餐厅的不同回执，已上菜、已下单等待制作和订单已取消后无内容都算流程正常，却不能因为都盖了绿色章就认为食物已经在桌上。",
+    "technicalExplanation": "200 通常携带结果，201 表示资源已创建并可配合 Location，202 只表示接受异步处理，204 则没有响应正文。客户端必须结合方法和接口契约判断终态。",
+    "example": "FDE 查看 Agent 调用 trace 后确认，首个写请求在客户端两秒超时后才返回 200，客户端没有看到成功状态便重试，服务端又缺少幂等保护；修复要同时调整超时契约并避免重复副作用。",
+    "commonMistakes": "把所有二百段响应都反序列化为同一正文结构，可能在 204 时制造假错误。也不要把 202 当成业务成功，后续异步任务仍可能失败并需要可观察的终态。"
+  },
+  "relatedCases": ["agent-tool-timeout-retry-001"]
+}
