@@ -154,7 +154,7 @@ describe('TrainingSessionPage controller', () => {
     renderSession(initialState, harness.dependencies, [concept]);
 
     const term = screen.getByRole('button', {
-      name: '证据：支持决策的可核验事实（Evidence）',
+      name: 'Evidence',
     });
     expect(
       screen.getByRole('button', { name: 'Submit decision' }),
@@ -162,8 +162,16 @@ describe('TrainingSessionPage controller', () => {
 
     await user.click(term);
 
-    expect(screen.getByText(concept.simpleExplanation)).toBeVisible();
-    expect(screen.getByText(concept.whyItMatters)).toBeVisible();
+    expect(
+      screen.getByText(
+        'Evidence is a core concept used to reason clearly about evidence-backed customer delivery.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        'Understanding Evidence helps an AI engineer diagnose the correct boundary, communicate trade-offs, and verify a safe outcome.',
+      ),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Evidence' })).toBeVisible();
     expect(harness.savedAttempts).toBe(savedBeforeViewing);
     expect(

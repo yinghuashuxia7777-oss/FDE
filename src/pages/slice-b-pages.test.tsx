@@ -611,9 +611,7 @@ describe('Slice B pages', () => {
     );
 
     const row = await screen.findByRole('article', { name: /mistake-one/i });
-    expect(
-      within(row).getByText(/text evidence \(evidence-1\)/i),
-    ).toBeVisible();
+    expect(within(row).getByText(/text evidence 1/i)).toBeVisible();
     expect(within(row).queryByText(/unknown evidence/i)).toBeNull();
   });
 

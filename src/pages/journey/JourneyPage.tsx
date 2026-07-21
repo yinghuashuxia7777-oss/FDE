@@ -23,6 +23,7 @@ import { bundledFoundationSource } from '../../content/foundation-source';
 import { mvpLeafSkills } from '../../content/mvp-capability-content';
 import { mvpPractices } from '../../content/mvp-practice-source';
 import { useI18n } from '../../i18n';
+import { localizeFoundations } from '../../i18n/content-localization';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
 import { AsyncPage, PageHeader } from '../shared';
 
@@ -31,7 +32,7 @@ interface JourneyPageProps {
 }
 
 export function JourneyPage({ repositories: override }: JourneyPageProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { goal, experienceLevel } = useLearningJourney();
   const { evidence, projectEvidence } = usePracticeEvidence();
   const getRepositories = useProductRepositories(override);
@@ -42,8 +43,12 @@ export function JourneyPage({ repositories: override }: JourneyPageProps) {
       source.attempts.list({ userId: LOCAL_USER_ID, status: 'completed' }),
       bundledFoundationSource.loadAll(),
     ]);
-    return { cases, attempts, foundations };
-  }, [getRepositories]);
+    return {
+      cases,
+      attempts,
+      foundations: localizeFoundations(foundations, language),
+    };
+  }, [getRepositories, language]);
 
   return (
     <section className="product-page journey-page" aria-labelledby="page-title">

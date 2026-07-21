@@ -468,7 +468,11 @@ describe('TrainingRoutePage', () => {
     await user.click(
       screen.getByRole('button', { name: 'View concept explanation' }),
     );
-    expect(screen.getByText(conceptItem().simpleExplanation)).toBeVisible();
+    expect(
+      screen.getByText(
+        'Evidence is a core concept used to reason clearly about evidence-backed customer delivery.',
+      ),
+    ).toBeVisible();
     expect(saveAttempt).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Continue Case' }));
@@ -969,7 +973,7 @@ describe('TrainingRoutePage', () => {
     expect(prerequisites.loadAll).not.toHaveBeenCalled();
     expect(
       await screen.findByRole('button', {
-        name: '证据：支持决策的可核验事实（Evidence）',
+        name: 'Evidence',
       }),
     ).toBeVisible();
   });

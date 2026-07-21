@@ -65,3 +65,26 @@ test('the core beta presentation routes render without an application error', as
     await expect(page.locator('body')).not.toContainText('Application error');
   }
 });
+
+test('English mode does not expose Chinese authored content', async ({
+  page,
+}) => {
+  await page.goto('/#/foundation/api.webhook-idempotency');
+  await page.getByRole('button', { name: 'English' }).click();
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Webhooks and Idempotency: Safely Handling Duplicate Events',
+    }),
+  ).toBeVisible();
+
+  for (const route of [
+    '/#/foundation/api.webhook-idempotency',
+    '/#/training/api-webhook-idempotency-001',
+    '/#/cases',
+  ]) {
+    await page.goto(route);
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
+  }
+});

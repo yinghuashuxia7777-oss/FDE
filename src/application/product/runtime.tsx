@@ -19,6 +19,8 @@ import type {
 } from '../../repositories/contracts';
 import { createIndexedDbRepositories } from '../../repositories/indexeddb';
 import { ContentInstaller } from '../../content/installer';
+import { useI18n } from '../../i18n';
+import { localizeCaseRepository } from '../../i18n/content-localization';
 import { openFdeArenaDatabase } from '../../storage/database';
 import {
   ContentManagementService,
@@ -111,19 +113,32 @@ export function ProductDataProvider({
 export function useProductRepositories(
   override?: ProductRepositories,
 ): RepositoryGetter {
+  const { language } = useI18n();
   const context = useContext(ProductRepositoriesContext);
   const overrideGetter = useMemo(
     () =>
       override === undefined ? undefined : () => Promise.resolve(override),
     [override],
   );
-  if (overrideGetter !== undefined) return overrideGetter;
-  if (context === undefined) {
+  const source = overrideGetter ?? context;
+  if (source === undefined) {
     throw new Error(
       'Product pages require ProductDataProvider or repositories.',
     );
   }
-  return context;
+  return useMemo(
+    () => async () => {
+      const repositories = await source();
+      if (language === 'zh-CN' || repositories.cases === undefined) {
+        return repositories;
+      }
+      return {
+        ...repositories,
+        cases: localizeCaseRepository(repositories.cases, language),
+      };
+    },
+    [language, source],
+  );
 }
 
 export type AsyncDataState<T> =

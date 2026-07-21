@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import type { ConceptKnowledge } from '../../domain/concepts/types';
 import { useI18n } from '../../i18n';
+import { localizeConcepts } from '../../i18n/content-localization';
 
 interface ConceptGlossaryProps {
   concepts: readonly ConceptKnowledge[];
@@ -16,17 +17,21 @@ export function ConceptGlossary({
   compact = false,
   headingLevel = 2,
 }: ConceptGlossaryProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [selectedId, setSelectedId] = useState<string>();
   const [familiarIds, setFamiliarIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const localizedConcepts = useMemo(
+    () => localizeConcepts(concepts, language),
+    [concepts, language],
+  );
   const selected = useMemo(
-    () => concepts.find(({ id }) => id === selectedId),
-    [concepts, selectedId],
+    () => localizedConcepts.find(({ id }) => id === selectedId),
+    [localizedConcepts, selectedId],
   );
 
-  if (concepts.length === 0) return null;
+  if (localizedConcepts.length === 0) return null;
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   const openConcept = (id: string) => {
@@ -40,7 +45,7 @@ export function ConceptGlossary({
   };
 
   const openSuggestedConcept = () => {
-    const concept = selected ?? concepts[0];
+    const concept = selected ?? localizedConcepts[0];
     if (concept === undefined) return;
     setSelectedId(concept.id);
     setFamiliarIds((current) => {
@@ -50,7 +55,7 @@ export function ConceptGlossary({
       return next;
     });
   };
-  const suggestedConcept = selected ?? concepts[0];
+  const suggestedConcept = selected ?? localizedConcepts[0];
   const suggestedExplanationId =
     suggestedConcept === undefined
       ? undefined
@@ -74,7 +79,7 @@ export function ConceptGlossary({
         </button>
       </header>
       <ul className="plain-list concept-glossary__terms">
-        {concepts.map((concept) => {
+        {localizedConcepts.map((concept) => {
           const expanded = selectedId === concept.id;
           const explanationId = `concept-explanation-${concept.id}`;
           return (
@@ -86,7 +91,7 @@ export function ConceptGlossary({
                 aria-expanded={expanded}
                 onClick={() => openConcept(concept.id)}
               >
-                {familiarIds.has(concept.id) ? (
+                {familiarIds.has(concept.id) || language === 'en-US' ? (
                   <span lang="en">{concept.technicalTerm}</span>
                 ) : (
                   <>
@@ -108,25 +113,25 @@ export function ConceptGlossary({
           <dl>
             <div>
               <dt>{t('concept.glossary.simpleExplanation')}</dt>
-              <dd lang="zh-CN">{selected.simpleExplanation}</dd>
+              <dd lang={language}>{selected.simpleExplanation}</dd>
             </div>
             <div>
               <dt>{t('concept.glossary.whyItMatters')}</dt>
-              <dd lang="zh-CN">{selected.whyItMatters}</dd>
+              <dd lang={language}>{selected.whyItMatters}</dd>
             </div>
             {compact ? null : (
               <>
                 <div>
                   <dt>{t('concept.glossary.analogy')}</dt>
-                  <dd lang="zh-CN">{selected.analogy}</dd>
+                  <dd lang={language}>{selected.analogy}</dd>
                 </div>
                 <div>
                   <dt>{t('concept.glossary.technicalExplanation')}</dt>
-                  <dd lang="zh-CN">{selected.technicalExplanation}</dd>
+                  <dd lang={language}>{selected.technicalExplanation}</dd>
                 </div>
                 <div>
                   <dt>{t('concept.glossary.commonMistakes')}</dt>
-                  <dd lang="zh-CN">{selected.commonMistakes}</dd>
+                  <dd lang={language}>{selected.commonMistakes}</dd>
                 </div>
               </>
             )}

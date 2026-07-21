@@ -20,6 +20,7 @@ import type {
   FoundationTrack,
 } from '../../domain/foundation/types';
 import { useI18n } from '../../i18n';
+import { localizeFoundations } from '../../i18n/content-localization';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
 import { AsyncPage, PageHeader } from '../shared';
 
@@ -50,7 +51,7 @@ export function FoundationLibraryPage({
   foundationSource = bundledFoundationSource,
   repositories: override,
 }: FoundationLibraryPageProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
@@ -59,8 +60,12 @@ export function FoundationLibraryPage({
       source.skills.list(LOCAL_USER_ID),
       source.attempts.list({ userId: LOCAL_USER_ID }),
     ]);
-    return { items, mastery, attempts };
-  }, [foundationSource, getRepositories]);
+    return {
+      items: localizeFoundations(items, language),
+      mastery,
+      attempts,
+    };
+  }, [foundationSource, getRepositories, language]);
 
   return (
     <section className="product-page" aria-labelledby="page-title">

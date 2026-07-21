@@ -18,6 +18,7 @@ import {
   type TrainingState,
 } from '../application/training';
 import { foundationIndex } from '../generated/foundation-index';
+import { localizeCase, localizeFoundation } from '../i18n/content-localization';
 import { DebriefPage } from '../pages/debrief';
 import { FoundationDetailPage } from '../pages/foundation';
 import { TrainingRoutePage } from '../pages/training/TrainingRoutePage';
@@ -157,7 +158,9 @@ describe('real bundled Foundation to training flow', () => {
     if (content === undefined) {
       throw new Error(`Missing exact Case ${summary.id}@${summary.version}.`);
     }
-    const firstNodeTitle = content.nodes[0]?.title;
+    const displayedFoundation = localizeFoundation(foundation, 'en-US');
+    const displayedContent = localizeCase(content, 'en-US');
+    const firstNodeTitle = displayedContent.nodes[0]?.title;
     if (firstNodeTitle === undefined) {
       throw new Error(
         `Case ${summary.id}@${summary.version} has no first-node title.`,
@@ -175,14 +178,16 @@ describe('real bundled Foundation to training flow', () => {
       </MemoryRouter>,
     );
     expect(
-      await screen.findByRole('heading', { name: foundation.title }),
+      await screen.findByRole('heading', { name: displayedFoundation.title }),
     ).toBeVisible();
     expect(
-      screen.getByText(foundation.content.simpleExplanation),
+      screen.getByText(displayedFoundation.content.simpleExplanation),
     ).toBeVisible();
     expect(screen.getByText(skill!.label)).toBeVisible();
     expect(
-      screen.getByRole('link', { name: `Start Case: ${content.title}` }),
+      screen.getByRole('link', {
+        name: `Start Case: ${displayedContent.title}`,
+      }),
     ).toHaveAttribute('href', `/training/${CASE_ID}`);
     await expectNoTrainingWrites(repositories);
     foundationView.unmount();
@@ -209,7 +214,9 @@ describe('real bundled Foundation to training flow', () => {
       await screen.findByRole('heading', { name: 'Prerequisite Knowledge' }),
     ).toBeVisible();
     expect(
-      screen.getByRole('link', { name: `Learn ${foundation.title}` }),
+      screen.getByRole('link', {
+        name: `Learn ${displayedFoundation.title}`,
+      }),
     ).toHaveAttribute('href', `/foundation/${FOUNDATION_ID}`);
     await expectNoTrainingWrites(repositories);
 
@@ -312,7 +319,7 @@ describe('real bundled Foundation to training flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Case assessment' }),
     ).toBeVisible();
-    expect(screen.getByText(content.debrief.rootCause)).toBeVisible();
+    expect(screen.getByText(displayedContent.debrief.rootCause)).toBeVisible();
     expect(screen.queryByText(newerRootCause)).not.toBeInTheDocument();
     expect(screen.getByText(`${summary.version}`)).toBeVisible();
     expect(exactVersionRead).toHaveBeenCalledWith(CASE_ID, summary.version);

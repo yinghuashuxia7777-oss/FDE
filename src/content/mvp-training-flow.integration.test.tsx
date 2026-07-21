@@ -18,6 +18,7 @@ import {
 } from '../application/training';
 import { DashboardPage } from '../pages/dashboard';
 import { DebriefPage } from '../pages/debrief';
+import { localizeCase } from '../i18n/content-localization';
 import { LOCAL_USER_ID } from '../repositories/contracts';
 import { createIndexedDbRepositories } from '../repositories/indexeddb';
 import {
@@ -110,6 +111,7 @@ describe('real bundled MVP training flow', () => {
       summary!.version,
     );
     expect(content).toBeDefined();
+    const displayedContent = localizeCase(content!, 'en-US');
 
     let clock = Date.parse('2026-07-13T09:00:00.000Z');
     const dependencies: TrainingDependencies = {
@@ -164,7 +166,7 @@ describe('real bundled MVP training flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Case assessment' }),
     ).toBeVisible();
-    expect(screen.getByText(content!.debrief.rootCause)).toBeVisible();
+    expect(screen.getByText(displayedContent.debrief.rootCause)).toBeVisible();
     debrief.unmount();
 
     const [activeCases, progress, mastery, mistakes, attempts] =
@@ -204,15 +206,15 @@ describe('real bundled MVP training flow', () => {
     const challenge = await screen.findByRole('region', {
       name: "Today's challenge",
     });
-    expect(within(challenge).getByText(content!.title)).toBeVisible();
+    expect(within(challenge).getByText(displayedContent.title)).toBeVisible();
     expect(
-      within(challenge).getByText(content!.title).closest('a'),
+      within(challenge).getByText(displayedContent.title).closest('a'),
     ).toHaveAttribute('href', `/debrief/${ATTEMPT_ID}`);
 
     const evidence = await screen.findByRole('region', {
       name: 'Evidence timeline',
     });
-    expect(within(evidence).getByText(content!.title)).toBeVisible();
+    expect(within(evidence).getByText(displayedContent.title)).toBeVisible();
     expect(evidence).toHaveTextContent(/Excellent\s*·\s*Score 100/i);
     expect(
       within(evidence).getByRole('link', { name: 'Review evidence' }),

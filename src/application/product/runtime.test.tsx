@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 
+import { I18nProvider } from '../../i18n';
+import { createMinimalValidCase } from '../../tests/fixtures/cases';
 import {
   bootstrapDefaultRepositories,
   createRetryableRepositoryGetter,
@@ -9,6 +11,24 @@ import {
   useAsyncPageData,
   useProductRepositories,
 } from './runtime';
+
+function LocalizedCaseProbe() {
+  const getRepositories = useProductRepositories();
+  const { state } = useAsyncPageData(async () => {
+    const repositories = await getRepositories();
+    return repositories.cases.getVersion('case-minimal', 1);
+  }, [getRepositories]);
+
+  if (state.status !== 'ready' || state.data === undefined) {
+    return <output>{state.status}</output>;
+  }
+
+  return (
+    <output>
+      {state.data.title} · {state.data.nodes[0]?.prompt}
+    </output>
+  );
+}
 
 function RepositoryProbe() {
   const getRepositories = useProductRepositories();
@@ -63,5 +83,34 @@ describe('product repository runtime', () => {
 
     expect(await screen.findByText('ready')).toBeVisible();
     expect(factory).toHaveBeenCalledOnce();
+  });
+
+  it('projects Case content into English without changing stable IDs', async () => {
+    const authored = createMinimalValidCase();
+    authored.title = '中文案例标题';
+    authored.summary = '中文案例摘要';
+    authored.nodes[0]!.prompt = '请选择下一步行动。';
+    const getVersion = vi.fn().mockResolvedValue(authored);
+    const repositories = {
+      cases: {
+        getVersion,
+        list: vi.fn().mockResolvedValue([]),
+        listActive: vi.fn().mockResolvedValue([]),
+        seed: vi.fn(),
+      },
+    } as unknown as ProductRepositories;
+
+    render(
+      <I18nProvider initialLanguage="en-US">
+        <ProductDataProvider repositories={repositories}>
+          <LocalizedCaseProbe />
+        </ProductDataProvider>
+      </I18nProvider>,
+    );
+
+    const content = await screen.findByText(/Case Minimal/u);
+    expect(content).not.toHaveTextContent(/[\u3400-\u9fff]/u);
+    expect(getVersion).toHaveBeenCalledWith('case-minimal', 1);
+    expect(authored.id).toBe('case-minimal');
   });
 });

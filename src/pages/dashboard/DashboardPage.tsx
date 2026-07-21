@@ -37,6 +37,7 @@ import {
 import { mvpPractices } from '../../content/mvp-practice-source';
 import { DashboardLearningJourney } from '../../components/onboarding';
 import { useI18n } from '../../i18n';
+import { localizeFoundations } from '../../i18n/content-localization';
 import type {
   CaseSummary,
   CompletedAttemptRecord,
@@ -218,9 +219,9 @@ export function DashboardPage({
       mistakes,
       attempts,
       skillDefinitions,
-      foundationItems,
+      foundationItems: localizeFoundations(foundationItems, language),
     };
-  }, [foundationSource, getRepositories]);
+  }, [foundationSource, getRepositories, language]);
 
   return (
     <section

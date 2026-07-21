@@ -29,6 +29,7 @@ import { ErrorState, LoadingState } from '../../components/ui';
 import type { FdeCase } from '../../domain/cases/types';
 import type { ConceptKnowledge } from '../../domain/concepts/types';
 import { localizeUiError, useI18n } from '../../i18n';
+import { localizeFoundations } from '../../i18n/content-localization';
 import { LOCAL_USER_ID } from '../../repositories/contracts';
 import { TrainingSessionPage } from './TrainingSessionPage';
 import { PrerequisiteKnowledgeGate } from './PrerequisiteKnowledgeGate';
@@ -271,7 +272,10 @@ function TrainingRouteForCase({
         };
       }
       try {
-        const foundationItems = await foundationSource.loadAll();
+        const foundationItems = localizeFoundations(
+          await foundationSource.loadAll(),
+          language,
+        );
         if (
           foundationItems.some((item) => item.relatedCases.includes(active.id))
         ) {
@@ -307,7 +311,7 @@ function TrainingRouteForCase({
     })();
     pending.current = { caseId: selectedCaseId, value };
     return value;
-  }, [caseId, conceptSource, foundationSource, getRepositories, t]);
+  }, [caseId, conceptSource, foundationSource, getRepositories, language, t]);
 
   if (state.status === 'loading') {
     return (

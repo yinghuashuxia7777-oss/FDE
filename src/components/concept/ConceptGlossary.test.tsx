@@ -87,19 +87,24 @@ describe('ConceptGlossary', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: '调试：用证据缩小故障范围（Debugging）',
+        name: 'Debugging',
       }),
     );
 
-    expect(screen.getByText(second.simpleExplanation)).toBeVisible();
+    expect(
+      screen.getByText(
+        'Debugging is a core concept used to reason clearly about evidence-backed customer delivery.',
+      ),
+    ).toBeVisible();
     const familiarTerm = screen.getByRole('button', { name: 'Debugging' });
     expect(familiarTerm).toHaveAttribute('aria-expanded', 'true');
     expect(familiarTerm.querySelector('[lang="en"]')).toHaveTextContent(
       'Debugging',
     );
-    expect(screen.getByText(second.simpleExplanation)).toHaveAttribute(
-      'lang',
-      'zh-CN',
-    );
+    expect(
+      screen.getByText(
+        'Debugging is a core concept used to reason clearly about evidence-backed customer delivery.',
+      ),
+    ).toHaveAttribute('lang', 'en-US');
   });
 });

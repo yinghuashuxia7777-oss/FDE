@@ -25,6 +25,10 @@ import type { ConceptKnowledge } from '../../domain/concepts/types';
 import type { FoundationLearningStatus } from '../../domain/foundation/types';
 import { useI18n } from '../../i18n';
 import {
+  localizeFoundation,
+  localizeFoundations,
+} from '../../i18n/content-localization';
+import {
   LOCAL_USER_ID,
   type AttemptRecord,
   type CaseSummary,
@@ -157,7 +161,7 @@ function FoundationNextStepPanel({
   foundationSource: FoundationSource;
   mastery: readonly SkillMasteryRecord[];
 }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [snapshot, setSnapshot] = useState<{
     currentId: string;
     next: Awaited<ReturnType<FoundationSource['findById']>>;
@@ -171,11 +175,12 @@ function FoundationNextStepPanel({
       .then(
         (items) => {
           if (!active) return;
+          const localizedItems = localizeFoundations(items, language);
           setSnapshot({
             currentId,
             next: selectJourneyNextFoundation(
               currentId,
-              items,
+              localizedItems,
               mastery,
               attempts,
             ),
@@ -189,7 +194,7 @@ function FoundationNextStepPanel({
     return () => {
       active = false;
     };
-  }, [attempts, currentId, foundationSource, mastery]);
+  }, [attempts, currentId, foundationSource, language, mastery]);
 
   const next =
     snapshot?.source === foundationSource && snapshot.currentId === currentId
@@ -218,7 +223,7 @@ export function FoundationDetailPage({
   foundationSource = bundledFoundationSource,
   repositories: override,
 }: FoundationDetailPageProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const getRepositories = useProductRepositories(override);
   const { state, retry } = useAsyncPageData(async () => {
     const source = await getRepositories();
@@ -231,13 +236,13 @@ export function FoundationDetailPage({
         source.cases.listActive({ status: 'published' }),
       ]);
     return {
-      item,
+      item: item === undefined ? undefined : localizeFoundation(item, language),
       mastery,
       attempts,
       skillDefinitions,
       cases,
     };
-  }, [foundationId, foundationSource, getRepositories]);
+  }, [foundationId, foundationSource, getRepositories, language]);
   const readyItem = state.status === 'ready' ? state.data.item : undefined;
   const notFound = state.status === 'ready' && readyItem === undefined;
   const unavailable = state.status === 'error';

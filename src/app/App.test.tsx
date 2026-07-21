@@ -482,7 +482,7 @@ describe('application shell', () => {
     expect(
       await screen.findByRole(
         'heading',
-        { name: 'API：系统之间可验证的协作契约' },
+        { name: 'API Basics: Verifiable Contracts Between Systems' },
         { timeout: 3000 },
       ),
     ).toBeVisible();
@@ -561,7 +561,7 @@ describe('application shell', () => {
     expect(
       await screen.findByRole(
         'heading',
-        { name: 'API：系统之间可验证的协作契约' },
+        { name: 'API Basics: Verifiable Contracts Between Systems' },
         { timeout: 3000 },
       ),
     ).toBeVisible();
@@ -581,7 +581,7 @@ describe('application shell', () => {
     expect(target).toHaveFocus();
     expect(
       screen.getByRole('heading', {
-        name: 'API：系统之间可验证的协作契约',
+        name: 'API Basics: Verifiable Contracts Between Systems',
       }),
     ).toBeVisible();
   });
@@ -592,14 +592,14 @@ describe('application shell', () => {
     renderApp('en-US', foundationRouteRepositories());
 
     const detail = await screen.findByRole('link', {
-      name: 'API：系统之间可验证的协作契约',
+      name: 'API Basics: Verifiable Contracts Between Systems',
     });
     await user.click(detail);
 
     await waitFor(() => {
       expect(
         screen.getByRole('heading', {
-          name: 'API：系统之间可验证的协作契约',
+          name: 'API Basics: Verifiable Contracts Between Systems',
         }),
       ).toHaveFocus();
     });

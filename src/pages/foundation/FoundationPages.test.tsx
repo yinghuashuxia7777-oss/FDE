@@ -26,6 +26,14 @@ const authoredContent = {
   commonMistakes: '常见错误是只处理表面症状，却没有确认根因和回归结果。',
 };
 
+const englishApiTitle = 'API Basics: Verifiable Contracts Between Systems';
+const englishApiContent = {
+  simpleExplanation:
+    'An API is a documented boundary that lets two systems exchange requests and results in a predictable way.',
+  technicalExplanation:
+    'A reliable API contract defines inputs, outputs, authentication, errors, compatibility rules, and observable behavior. Connectivity alone does not prove that the contract is satisfied.',
+};
+
 function foundationItem(
   order: number,
   track: FoundationTrack,
@@ -248,6 +256,27 @@ function repositories(): ProductRepositories {
 }
 
 describe('Foundation pages', () => {
+  it('does not expose authored Chinese content when the interface is English', async () => {
+    const { container } = render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <FoundationDetailPage
+            conceptSource={concepts()}
+            foundationId="api-basic"
+            foundationSource={source()}
+            repositories={repositories()}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    await screen.findByRole('heading', { level: 1 });
+
+    expect(container.textContent).not.toMatch(/[\u3400-\u9fff]/u);
+    expect(container).toHaveTextContent('API');
+    expect(container).toHaveTextContent('Active API incident');
+  });
+
   it('groups 10/10/10 dynamically, derives progress, and keeps stable links', async () => {
     const { container } = render(
       <I18nProvider initialLanguage="en-US">
@@ -298,9 +327,10 @@ describe('Foundation pages', () => {
       'value',
       '1',
     );
-    expect(
-      screen.getByRole('link', { name: '作者编写的 API 基础' }),
-    ).toHaveAttribute('href', '/foundation/api-basic');
+    expect(screen.getByRole('link', { name: englishApiTitle })).toHaveAttribute(
+      'href',
+      '/foundation/api-basic',
+    );
     expect(
       screen.getByRole('link', { name: 'Continue learning' }),
     ).toHaveAttribute('href', '/foundation/foundation-item-02');
@@ -329,9 +359,9 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: '作者编写的 API 基础' }),
+      await screen.findByRole('heading', { name: englishApiTitle }),
     ).toBeVisible();
-    expect(screen.getByText(authoredContent.simpleExplanation)).toBeVisible();
+    expect(screen.getByText(englishApiContent.simpleExplanation)).toBeVisible();
     const detailLayout = container.querySelector('.foundation-detail-layout');
     const article = detailLayout?.querySelector(':scope > article');
     const aside = detailLayout?.querySelector(':scope > aside');
@@ -381,7 +411,7 @@ describe('Foundation pages', () => {
     expect(screen.getByText('72 / 100')).toBeVisible();
     expect(screen.getByText('Competent')).toBeVisible();
     expect(
-      screen.getByText('Current knowledge: 作者编写的 API 基础'),
+      screen.getByText(`Current knowledge: ${englishApiTitle}`),
     ).toBeVisible();
     expect(screen.getByText('Recommended practice')).toBeVisible();
     expect(
@@ -389,7 +419,7 @@ describe('Foundation pages', () => {
     ).toBeVisible();
     expect(
       screen.getByRole('button', {
-        name: 'API：系统之间的可验证协作边界（API）',
+        name: 'API',
       }),
     ).toBeVisible();
     const conceptNextStep = screen.getByRole('region', {
@@ -440,7 +470,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: '作者编写的 API 基础' }),
+      await screen.findByRole('heading', { name: englishApiTitle }),
     ).toBeVisible();
     const readingNote = screen.getByRole('note', {
       name: 'Reading and Mastery',
@@ -483,7 +513,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByText(authoredContent.technicalExplanation),
+      await screen.findByText(englishApiContent.technicalExplanation),
     ).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Start Case: Active API incident' }),
@@ -516,7 +546,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByText(authoredContent.technicalExplanation),
+      await screen.findByText(englishApiContent.technicalExplanation),
     ).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Start Case: Active API incident' }),
@@ -546,7 +576,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByText(authoredContent.technicalExplanation),
+      await screen.findByText(englishApiContent.technicalExplanation),
     ).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Start Case: Active API incident' }),
@@ -574,7 +604,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByText(authoredContent.technicalExplanation),
+      await screen.findByText(englishApiContent.technicalExplanation),
     ).toBeVisible();
     expect(
       screen.queryByRole('heading', { name: 'Related Concepts' }),
@@ -599,7 +629,7 @@ describe('Foundation pages', () => {
     );
 
     expect(
-      await screen.findByText(authoredContent.technicalExplanation),
+      await screen.findByText(englishApiContent.technicalExplanation),
     ).toBeVisible();
     expect(screen.getByText('No active related case.')).toBeVisible();
     expect(screen.queryByRole('link', { name: /third-party/i })).toBeNull();
