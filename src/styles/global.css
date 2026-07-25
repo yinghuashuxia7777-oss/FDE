@@ -7787,3 +7787,586 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   BLACK BOX · 黑匣子档案局视觉层（V4 定稿方向）
+   只追加，不改动上方任何既有规则。
+   ============================================================ */
+
+/* 纸张颗粒质感（深色主题） */
+:root[data-theme='dark'] body,
+:root[data-theme='system'] body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+:root[data-theme='dark'] body::after,
+:root[data-theme='system'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgb(0 0 0 / 50%));
+}
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* PageHeader 保留给屏幕阅读器，视觉由 Hero 承接 */
+.dashboard-page__a11y-header {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Hero ---------- */
+.bb-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+  padding: clamp(1.5rem, 4vh, 3rem) 0 clamp(2.5rem, 6vh, 4rem);
+}
+@media (max-width: 56rem) {
+  .bb-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bb-hero__boot {
+  display: grid;
+  gap: 0.15rem;
+  min-height: 4.4rem;
+  margin-bottom: 1.6rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-1);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+:root[data-theme='dark'] .bb-hero__boot,
+:root[data-theme='system'] .bb-hero__boot {
+  border-left-color: rgb(245 181 68 / 30%);
+  color: rgb(154 143 120 / 90%);
+}
+
+.bb-hero__eyebrow {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: clamp(0.78rem, 1.2vw, 0.95rem);
+  letter-spacing: 0.42em;
+  color: var(--accent);
+}
+:root[data-theme='dark'] .bb-hero__eyebrow,
+:root[data-theme='system'] .bb-hero__eyebrow {
+  text-shadow: 0 0 20px rgb(245 181 68 / 35%);
+}
+
+.bb-hero__title {
+  margin: 0 0 1.3rem;
+  font-size: clamp(2.4rem, 5.4vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.bb-hero__title em {
+  font-style: normal;
+  color: var(--accent);
+}
+:root[data-theme='dark'] .bb-hero__title em,
+:root[data-theme='system'] .bb-hero__title em {
+  text-shadow: 0 0 32px rgb(245 181 68 / 40%);
+}
+
+.bb-hero__description {
+  max-width: 34rem;
+  margin: 0 0 2.2rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-4);
+}
+
+.bb-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bb-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: 0.85rem 1.6rem;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: transform var(--duration-feedback), box-shadow var(--duration-feedback),
+    border-color var(--duration-feedback), background var(--duration-feedback);
+}
+.bb-btn--primary {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+:root[data-theme='dark'] .bb-btn--primary,
+:root[data-theme='system'] .bb-btn--primary {
+  box-shadow: 0 0 28px rgb(245 181 68 / 30%);
+}
+.bb-btn--primary:hover {
+  transform: translateY(-2px);
+}
+:root[data-theme='dark'] .bb-btn--primary:hover,
+:root[data-theme='system'] .bb-btn--primary:hover {
+  box-shadow: 0 0 44px rgb(245 181 68 / 45%);
+}
+.bb-btn--ghost {
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.bb-btn--ghost:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ---------- 卷宗卡 ---------- */
+.bb-dossier {
+  position: relative;
+}
+.bb-dossier__tab {
+  position: absolute;
+  top: -0.8rem;
+  left: 2rem;
+  z-index: 2;
+  padding: 0.3rem 0.9rem;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+}
+.bb-dossier__card {
+  position: relative;
+  padding: 1.9rem 1.8rem 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: linear-gradient(175deg, var(--surface-raised), var(--surface));
+  box-shadow: var(--shadow-card);
+}
+:root[data-theme='dark'] .bb-dossier__card::before,
+:root[data-theme='system'] .bb-dossier__card::before {
+  content: '';
+  position: absolute;
+  left: 0.7rem;
+  top: 1rem;
+  bottom: 1rem;
+  width: 1px;
+  background: repeating-linear-gradient(var(--border-strong) 0 6px, transparent 6px 14px);
+}
+.bb-dossier__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.1rem;
+  padding-left: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+.bb-dossier__live {
+  color: var(--accent);
+}
+.bb-dossier__title {
+  margin: 0 0 1rem;
+  padding-left: 1rem;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1.4;
+  color: var(--text);
+}
+.bb-dossier__meta {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0 0 1.2rem;
+  padding-left: 1rem;
+}
+.bb-dossier__meta dt {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+.bb-dossier__meta dd {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-size-2);
+  color: var(--text);
+}
+.bb-dossier__foot {
+  padding-left: 1rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.9rem;
+}
+.bb-dossier__foot a {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-decoration: none;
+}
+.bb-dossier__foot a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* 结案橡皮章 */
+.bb-stamp {
+  position: absolute;
+  right: 1.3rem;
+  bottom: 3.2rem;
+  padding: 0.3rem 0.8rem;
+  border: 2.5px solid var(--accent);
+  border-radius: 4px;
+  font-family: var(--font-serif);
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  transform: rotate(-9deg);
+  pointer-events: none;
+}
+:root[data-theme='dark'] .bb-stamp,
+:root[data-theme='system'] .bb-stamp {
+  text-shadow: 0 0 20px rgb(245 181 68 / 40%);
+  box-shadow: 0 0 24px rgb(245 181 68 / 20%), inset 0 0 14px rgb(245 181 68 / 12%);
+}
+
+/* Hero 入场（尊重减少动态偏好） */
+@media (prefers-reduced-motion: no-preference) {
+  .bb-hero__left > *,
+  .bb-dossier {
+    animation: bb-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .bb-hero__left > *:nth-child(2) { animation-delay: 0.12s; }
+  .bb-hero__left > *:nth-child(3) { animation-delay: 0.22s; }
+  .bb-hero__left > *:nth-child(4) { animation-delay: 0.32s; }
+  .bb-hero__left > *:nth-child(5) { animation-delay: 0.42s; }
+  .bb-dossier { animation-delay: 0.4s; }
+  @keyframes bb-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* ---------- 事故走马灯（V4 定稿） ---------- */
+.bb-ticker {
+  overflow: hidden;
+  margin: 0 calc(50% - 50vw) clamp(2rem, 5vh, 3rem);
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+.bb-ticker__track {
+  display: flex;
+  gap: 3.5rem;
+  width: max-content;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-1);
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  animation: bb-ticker-scroll 36s linear infinite;
+}
+.bb-ticker__item {
+  white-space: nowrap;
+}
+.bb-ticker__item b {
+  margin-right: 0.6rem;
+  color: var(--accent);
+  font-weight: 400;
+}
+.bb-ticker:hover .bb-ticker__track {
+  animation-play-state: paused;
+}
+@keyframes bb-ticker-scroll {
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-ticker__track {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   V4 悬浮选中 + 浮起动效（继承定稿交互）
+   只加 transition/hover，不改任何布局。
+   ============================================================ */
+.growth-card,
+.first-loop-preview article,
+.onboarding-starting-points__grid label {
+  transition: transform var(--duration-disclosure),
+    border-color var(--duration-disclosure),
+    box-shadow var(--duration-disclosure),
+    background var(--duration-disclosure);
+}
+.growth-card:hover,
+.first-loop-preview article:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card), 0 0 22px var(--accent-soft);
+}
+
+/* 首次设置选项卡：悬浮浮起 + 选中态 */
+.onboarding-starting-points__grid label:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 0 18px var(--accent-soft);
+}
+.onboarding-starting-points__grid label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 18px var(--accent-soft);
+}
+
+/* 成长旅程 / 闭环步骤：悬浮右移 + 高亮（V4 时间线手感） */
+.growth-journey__steps li,
+.onboarding-value-loop li,
+.first-loop-preview__workflow li {
+  border-radius: var(--radius-control);
+  transition: transform var(--duration-disclosure),
+    background var(--duration-disclosure),
+    color var(--duration-disclosure);
+}
+.growth-journey__steps li:hover,
+.onboarding-value-loop li:hover,
+.first-loop-preview__workflow li:hover {
+  transform: translateX(6px);
+  background: var(--accent-soft);
+}
+.growth-journey__steps li:hover > span,
+.onboarding-value-loop li:hover > span {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 能力点亮图节点：悬浮发光，不改变布局 */
+.capability-node {
+  transition: transform var(--duration-disclosure),
+    filter var(--duration-disclosure);
+}
+.capability-node:hover {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px var(--accent-soft));
+}
+@media (prefers-reduced-motion: reduce) {
+  .growth-card:hover,
+  .first-loop-preview article:hover,
+  .onboarding-starting-points__grid label:hover,
+  .growth-journey__steps li:hover,
+  .onboarding-value-loop li:hover,
+  .first-loop-preview__workflow li:hover,
+  .capability-node:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Hero 案例演示卡（V4 定稿：打字机 + 证据点亮） ---------- */
+.bb-demo__frame {
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  box-shadow: var(--shadow-card);
+}
+.bb-demo__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.bb-demo__bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.bb-demo__bar i:first-child { background: #f87171; }
+.bb-demo__bar i:nth-child(2) { background: #fbbf24; }
+.bb-demo__bar i:nth-child(3) { background: #34d399; }
+.bb-demo__bar b {
+  margin-left: auto;
+  color: var(--accent);
+  letter-spacing: 0.14em;
+}
+.bb-demo__body {
+  padding: 1.4rem 1.5rem 1.2rem;
+}
+.bb-demo__tag {
+  display: inline-block;
+  margin-bottom: 0.9rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--accent-soft);
+  border-radius: 4px;
+  background: var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.bb-demo__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.bb-demo__reason {
+  margin: 0 0 1.1rem;
+  font-size: var(--font-size-2);
+  color: var(--text-muted);
+}
+.bb-demo__typing {
+  min-height: 4.6rem;
+  margin: 0 0 1.1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-inset);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--accent-strong);
+  white-space: pre-wrap;
+}
+.bb-demo__typing::after {
+  content: '▌';
+  color: var(--accent);
+  animation: bb-caret 1s steps(1) infinite;
+}
+@keyframes bb-caret {
+  50% { opacity: 0; }
+}
+.bb-demo__evidence {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  transition: border-color 0.6s, background 0.6s, box-shadow 0.6s;
+}
+.bb-demo__evidence-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background 0.6s, box-shadow 0.6s;
+}
+.bb-demo__evidence-copy {
+  display: grid;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: color 0.6s;
+}
+.bb-demo__evidence-copy strong {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.bb-demo__evidence[data-lit] {
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 28px var(--accent-soft);
+}
+.bb-demo__evidence[data-lit] .bb-demo__evidence-dot {
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent);
+}
+.bb-demo__evidence[data-lit] .bb-demo__evidence-copy {
+  color: var(--accent);
+}
+.bb-demo__foot a {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-decoration: none;
+}
+.bb-demo__foot a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-demo__typing::after {
+    animation: none;
+  }
+  .bb-demo__evidence,
+  .bb-demo__evidence-dot,
+  .bb-demo__evidence-copy {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   浅色模式 · 暖羊皮纸档案（解决"太白太单调"）
+   ============================================================ */
+:root[data-theme='light'] body {
+  background-image:
+    radial-gradient(
+      ellipse 90% 55% at 50% -8%,
+      rgb(255 205 110 / 22%),
+      transparent 62%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+
+/* 大标题重点词：荧光笔高亮痕 */
+:root[data-theme='light'] .bb-hero__title em {
+  padding: 0 0.08em;
+  background: linear-gradient(
+    transparent 58%,
+    rgb(255 190 70 / 45%) 58%,
+    rgb(255 190 70 / 45%) 94%,
+    transparent 94%
+  );
+}
+
+/* 浅色下的强调元素更有色彩存在感 */
+:root[data-theme='light'] .bb-hero__eyebrow {
+  color: var(--accent-strong);
+}
+:root[data-theme='light'] .bb-demo__tag,
+:root[data-theme='light'] .bb-ticker {
+  background: var(--accent-soft);
+}
+:root[data-theme='light'] .bb-btn--primary {
+  box-shadow: 0 10px 26px rgb(176 119 8 / 32%);
+}
+:root[data-theme='light'] .bb-btn--primary:hover {
+  box-shadow: 0 12px 32px rgb(176 119 8 / 42%);
+}
+:root[data-theme='light'] .bb-demo__evidence[data-lit] {
+  box-shadow: 0 0 26px rgb(255 190 70 / 55%);
+}
+:root[data-theme='light'] .bb-demo__evidence[data-lit] .bb-demo__evidence-dot {
+  box-shadow: 0 0 12px rgb(168 110 6 / 60%);
+}

@@ -60,7 +60,7 @@ describe('ThemeProvider', () => {
     vi.restoreAllMocks();
   });
 
-  it('follows the operating-system theme by default', () => {
+  it('defaults to the dark black-box theme', () => {
     const media = installMatchMedia(false);
     render(
       <ThemeProvider>
@@ -69,11 +69,11 @@ describe('ThemeProvider', () => {
     );
 
     expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue(
-      'system',
+      'dark',
     );
-    expect(document.documentElement).toHaveAttribute('data-theme', 'system');
-    expect(document.documentElement.style.colorScheme).toBe('light');
-    expect(media.matchMedia).toHaveBeenCalledOnce();
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+    expect(media.matchMedia).not.toHaveBeenCalled();
   });
 
   it('offers labeled light, dark, and system choices', async () => {

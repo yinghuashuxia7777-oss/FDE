@@ -1,107 +1,99 @@
 :root,
-:root[data-theme='light'],
-:root[data-theme='system'] {
+:root[data-theme='light'] {
   color-scheme: light;
-  --canvas: #f4f7fb;
-  --surface: #ffffff;
-  --surface-subtle: #edf2f8;
-  --surface-raised: #ffffff;
-  --surface-inset: #e7edf6;
-  --text: #0b1020;
-  --text-muted: #586579;
-  --border: #d5ddea;
-  --border-strong: #b7c3d5;
-  --accent: #2563eb;
-  --accent-strong: #1d4ed8;
-  --accent-soft: rgb(37 99 235 / 10%);
-  --accent-violet: #6d5cff;
-  --accent-violet-soft: rgb(109 92 255 / 10%);
-  --success: #257a57;
-  --warning: #9a6700;
-  --danger: #b13a45;
-  --critical: #7f1d2d;
-  --focus: #005fcc;
+  --canvas: #f5efe1;
+  --surface: #fffdf6;
+  --surface-subtle: #efe7d3;
+  --surface-raised: #fffaf0;
+  --surface-inset: #eae0c9;
+  --text: #2a2214;
+  --text-muted: #77684e;
+  --border: rgb(74 58 28 / 16%);
+  --border-strong: rgb(74 58 28 / 32%);
+  --accent: #a86e06;
+  --accent-strong: #7c5204;
+  --accent-soft: rgb(176 119 8 / 13%);
+  --accent-violet: #a86e06;
+  --accent-violet-soft: rgb(176 119 8 / 11%);
+  --success: #1f7a4d;
+  --warning: #a05e00;
+  --danger: #b23a2f;
+  --critical: #8f1d25;
+  --focus: #a86e06;
   --on-accent: #ffffff;
-  --overlay: rgb(15 20 26 / 58%);
-  --shadow-card: 0 1.25rem 3.5rem rgb(28 45 78 / 10%);
-  --shadow-hero: 0 2rem 6rem rgb(37 99 235 / 14%);
-  --shadow-overlay: 0 1.5rem 4rem rgb(23 32 43 / 18%);
-  --shadow-float:
-    0 0.25rem 0.75rem rgb(42 57 83 / 7%), 0 1.75rem 4rem rgb(63 82 113 / 17%),
-    0 4rem 7rem rgb(88 105 132 / 11%);
-  --shadow-float-front:
-    0 0.35rem 1rem rgb(42 57 83 / 9%), 0 2.25rem 4.75rem rgb(52 72 105 / 22%),
-    0 5rem 8rem rgb(79 99 128 / 15%);
+  --overlay: rgb(42 34 20 / 55%);
+  --shadow-card: 0 1.25rem 3.5rem rgb(90 64 14 / 12%);
+  --shadow-hero: 0 2rem 6rem rgb(168 110 6 / 16%);
+  --shadow-overlay: 0 1.5rem 4rem rgb(42 34 20 / 20%);
+  --glow-accent: 0 0 22px rgb(176 119 8 / 26%);
+  --glow-accent-strong: 0 0 40px rgb(176 119 8 / 38%);
 }
 
+/* ============================================================
+   BLACK BOX · 黑匣子档案局（深色 = 默认主题）
+   暖墨黑纸面 + 琥珀金荧光 + 档案质感
+   ============================================================ */
+:root:not([data-theme]),
+:root[data-theme='system'],
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --canvas: #07090d;
-  --surface: #10141d;
-  --surface-subtle: #121826;
-  --surface-raised: #141a2a;
-  --surface-inset: #080b12;
-  --text: #f7f9fc;
-  --text-muted: #9ea8b7;
-  --border: #20283a;
-  --border-strong: #33405a;
-  --accent: #3b82f6;
-  --accent-strong: #4f8cff;
-  --accent-soft: rgb(59 130 246 / 13%);
-  --accent-violet: #6d5cff;
-  --accent-violet-soft: rgb(109 92 255 / 13%);
+  --canvas: #0d0b08;
+  --surface: #16130c;
+  --surface-subtle: #121009;
+  --surface-raised: #1b1710;
+  --surface-inset: #0a0806;
+  --text: #ece3d0;
+  --text-muted: #9a8f78;
+  --border: rgb(236 227 208 / 10%);
+  --border-strong: rgb(236 227 208 / 22%);
+  --accent: #f5b544;
+  --accent-strong: #ffd584;
+  --accent-soft: rgb(245 181 68 / 13%);
+  --accent-violet: #ffd584;
+  --accent-violet-soft: rgb(245 181 68 / 10%);
   --success: #46c98b;
   --warning: #e7a93f;
-  --danger: #f06f7b;
+  --danger: #e05d4f;
   --critical: #ff8c98;
-  --focus: #75a7ff;
-  --on-accent: #ffffff;
-  --overlay: rgb(2 4 9 / 78%);
-  --shadow-card: 0 1.25rem 3.5rem rgb(0 0 0 / 30%);
-  --shadow-hero: 0 2rem 7rem rgb(28 72 168 / 24%);
-  --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 54%);
-  --shadow-float:
-    0 0.25rem 0.75rem rgb(0 0 0 / 24%), 0 1.75rem 4rem rgb(0 0 0 / 44%),
-    0 4rem 7rem rgb(0 0 0 / 28%);
-  --shadow-float-front:
-    0 0.35rem 1rem rgb(0 0 0 / 28%), 0 2.25rem 4.75rem rgb(0 0 0 / 54%),
-    0 5rem 8rem rgb(0 0 0 / 34%);
+  --focus: #f5b544;
+  --on-accent: #241703;
+  --overlay: rgb(5 3 2 / 78%);
+  --shadow-card: 0 1.25rem 3.5rem rgb(0 0 0 / 45%);
+  --shadow-hero: 0 2rem 7rem rgb(245 181 68 / 12%);
+  --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 60%);
+  --glow-accent: 0 0 22px rgb(245 181 68 / 30%);
+  --glow-accent-strong: 0 0 40px rgb(245 181 68 / 45%);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]),
-  :root[data-theme='system'] {
-    color-scheme: dark;
-    --canvas: #07090d;
-    --surface: #10141d;
-    --surface-subtle: #121826;
-    --surface-raised: #141a2a;
-    --surface-inset: #080b12;
-    --text: #f7f9fc;
-    --text-muted: #9ea8b7;
-    --border: #20283a;
-    --border-strong: #33405a;
-    --accent: #3b82f6;
-    --accent-strong: #4f8cff;
-    --accent-soft: rgb(59 130 246 / 13%);
-    --accent-violet: #6d5cff;
-    --accent-violet-soft: rgb(109 92 255 / 13%);
-    --success: #46c98b;
-    --warning: #e7a93f;
-    --danger: #f06f7b;
-    --critical: #ff8c98;
-    --focus: #75a7ff;
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system']:not([data-blackbox-lock]) {
+    color-scheme: light;
+    --canvas: #f5efe1;
+    --surface: #fffdf6;
+    --surface-subtle: #efe7d3;
+    --surface-raised: #fffaf0;
+    --surface-inset: #eae0c9;
+    --text: #2a2214;
+    --text-muted: #77684e;
+    --border: rgb(74 58 28 / 16%);
+    --border-strong: rgb(74 58 28 / 32%);
+    --accent: #a86e06;
+    --accent-strong: #7c5204;
+    --accent-soft: rgb(176 119 8 / 13%);
+    --accent-violet: #a86e06;
+    --accent-violet-soft: rgb(176 119 8 / 11%);
+    --success: #1f7a4d;
+    --warning: #a05e00;
+    --danger: #b23a2f;
+    --critical: #8f1d25;
+    --focus: #a86e06;
     --on-accent: #ffffff;
-    --overlay: rgb(2 4 9 / 78%);
-    --shadow-card: 0 1.25rem 3.5rem rgb(0 0 0 / 30%);
-    --shadow-hero: 0 2rem 7rem rgb(28 72 168 / 24%);
-    --shadow-overlay: 0 1.5rem 4rem rgb(0 0 0 / 54%);
-    --shadow-float:
-      0 0.25rem 0.75rem rgb(0 0 0 / 24%), 0 1.75rem 4rem rgb(0 0 0 / 44%),
-      0 4rem 7rem rgb(0 0 0 / 28%);
-    --shadow-float-front:
-      0 0.35rem 1rem rgb(0 0 0 / 28%), 0 2.25rem 4.75rem rgb(0 0 0 / 54%),
-      0 5rem 8rem rgb(0 0 0 / 34%);
+    --overlay: rgb(42 34 20 / 55%);
+    --shadow-card: 0 1.25rem 3.5rem rgb(90 64 14 / 12%);
+    --shadow-hero: 0 2rem 6rem rgb(168 110 6 / 16%);
+    --shadow-overlay: 0 1.5rem 4rem rgb(42 34 20 / 20%);
+    --glow-accent: 0 0 22px rgb(176 119 8 / 26%);
+    --glow-accent-strong: 0 0 40px rgb(176 119 8 / 38%);
   }
 }
 
@@ -129,6 +121,8 @@
   --font-sans:
     system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Noto Sans CJK SC', sans-serif;
+  --font-serif:
+    'Songti SC', 'Noto Serif CJK SC', 'STSong', Georgia, serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'Cascadia Code', 'Roboto Mono', monospace;
   --font-size-1: 0.75rem;

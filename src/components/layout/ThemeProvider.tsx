@@ -15,14 +15,14 @@ function isThemePreference(value: unknown): value is ThemePreference {
 }
 
 function readStoredTheme(): ThemePreference {
-  if (typeof window === 'undefined') return 'system';
+  if (typeof window === 'undefined') return 'dark';
   try {
     const stored = JSON.parse(
       window.localStorage.getItem(THEME_STORAGE_KEY) ?? 'null',
     ) as { theme?: unknown } | null;
-    return isThemePreference(stored?.theme) ? stored.theme : 'system';
+    return isThemePreference(stored?.theme) ? stored.theme : 'dark';
   } catch {
-    return 'system';
+    return 'dark';
   }
 }
 

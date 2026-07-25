@@ -104,8 +104,9 @@ export const productPagesZhCN: Record<string, string> = {
     '依据本地训练证据继续刻意练习，而不是追逐笼统的活跃指标。',
   'dashboard.hero.label': 'AI 工程师成长',
   'dashboard.hero.eyebrow': 'FDE ARENA · 实战决策训练',
-  'dashboard.hero.titleLead': '把每一次判断，练成',
-  'dashboard.hero.titleAccent': 'AI 工程师的专业底气',
+  'dashboard.hero.titleLead': '进入',
+  'dashboard.hero.titleAccent': '真实事故',
+  'dashboard.hero.titleTail': '的训练竞技场。',
   'dashboard.hero.description':
     '在真实客户事件中调查证据、做出取舍并复盘后果，让工程判断成为可重复验证的能力。',
   'dashboard.hero.primaryAction': '开始今日任务',
@@ -780,8 +781,9 @@ export const productPagesEnUS: Record<string, string> = {
     'Resume deliberate practice from local evidence, not generic activity targets.',
   'dashboard.hero.label': 'AI engineer growth',
   'dashboard.hero.eyebrow': 'FDE ARENA · FIELD DECISION TRAINING',
-  'dashboard.hero.titleLead': 'Build the judgment of a trusted',
-  'dashboard.hero.titleAccent': 'AI engineer',
+  'dashboard.hero.titleLead': 'Enter the arena of ',
+  'dashboard.hero.titleAccent': 'real incidents',
+  'dashboard.hero.titleTail': '.',
   'dashboard.hero.description':
     'Investigate evidence, make tradeoffs, and review consequences in realistic customer incidents until sound engineering judgment becomes repeatable.',
   'dashboard.hero.primaryAction': 'Start today’s mission',

@@ -63,6 +63,8 @@ import {
   provideCapabilityMapData,
 } from './capability-map-data';
 import { FirstLoopPreview } from './FirstLoopPreview';
+import { DashboardHero } from './DashboardHero';
+import { CaseTicker } from './CaseTicker';
 
 export interface DashboardMentorInsight {
   challengeCaseId?: string;
@@ -228,11 +230,13 @@ export function DashboardPage({
       className="product-page dashboard-page dashboard-page--growth-os"
       aria-labelledby="page-title"
     >
-      <PageHeader
-        eyebrow={t('dashboard.eyebrow')}
-        title={t('dashboard.title')}
-        description={t('dashboard.description')}
-      />
+      <div className="dashboard-page__a11y-header">
+        <PageHeader
+          eyebrow={t('dashboard.eyebrow')}
+          title={t('dashboard.title')}
+          description={t('dashboard.description')}
+        />
+      </div>
       <AsyncPage state={state} retry={retry}>
         {({
           cases,
@@ -506,6 +510,13 @@ export function DashboardPage({
               className="dashboard-command-center"
               data-dashboard-mode={isNewUserMode ? 'new-user' : 'active'}
             >
+              <DashboardHero
+                caseCount={visibleCases.length}
+                challenge={primaryChallenge}
+              />
+              <CaseTicker
+                titles={visibleCases.map(({ title }) => title)}
+              />
               {isNewUserMode ? (
                 <div className="growth-onboarding">
                   <DashboardLearningJourney
