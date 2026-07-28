@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "locale": "zh-CN",
   "stages": [
-    { "id": "stage-0", "topicIds": [] },
-    { "id": "stage-1", "topicIds": [] },
-    { "id": "stage-2", "topicIds": [] },
-    { "id": "stage-3", "topicIds": [] },
-    { "id": "stage-4", "topicIds": [] }
+    { "id": "stage-0", "topicIds": ["academy.ai-what-it-is", "academy.ai-ml-dl", "academy.data-model-training-inference", "academy.ai-boundaries-safety"] },
+    { "id": "stage-1", "topicIds": ["academy.deep-learning-neural-networks", "academy.transformer-llm", "academy.tokens-context-generation", "academy.prompt-engineering", "academy.nlp-multimodal"] },
+    { "id": "stage-2", "topicIds": ["academy.ai-api", "academy.structured-output", "academy.embedding-vector-db", "academy.rag", "academy.ai-app-architecture"] },
+    { "id": "stage-3", "topicIds": ["academy.agent-basics", "academy.tool-calling", "academy.agent-memory", "academy.agent-planning", "academy.agent-workflow", "academy.agent-evaluation-safety"] },
+    { "id": "stage-4", "topicIds": ["academy.ai-system-architecture", "academy.model-serving-local", "academy.evaluation-guardrails", "academy.observability-reliability-cost", "academy.fine-tuning-rlhf-deployment"] }
   ]
 }
