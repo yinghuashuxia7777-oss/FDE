@@ -26,6 +26,13 @@ describe('AI Academy CSS contract', () => {
     expect(academyCss).toContain('.bb-btn--academy');
   });
 
+  it('keeps visible copy in semantic page markup instead of CSS', () => {
+    expect(academyCss).not.toContain('.academy-hero::after');
+    expect(academyCss).not.toContain('.academy-file-brief::after');
+    expect(academyCss).not.toContain('ACADEMY / FILE');
+    expect(academyCss).not.toContain('KNOWLEDGE DOSSIER');
+  });
+
   it('keeps topic reading responsive and the directory native', () => {
     expect(academyCss).toContain('@media (max-width: 64rem)');
     expect(academyCss).toMatch(

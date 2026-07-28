@@ -33,22 +33,6 @@
   border-radius: calc(var(--radius-panel) - var(--space-1));
 }
 
-.academy-hero::after {
-  content: 'ACADEMY / FILE';
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  right: clamp(var(--space-4), 4vw, var(--space-7));
-  padding: var(--space-1) var(--space-3);
-  color: var(--on-accent);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-1);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  background: var(--accent);
-  border-radius: 0 0 var(--radius-control) var(--radius-control);
-}
-
 .academy-hero .page-intro,
 .academy-topic-hero {
   max-width: 56rem;
@@ -85,18 +69,6 @@
     linear-gradient(90deg, var(--accent) 0 0) top left / 0.25rem 100% no-repeat,
     linear-gradient(155deg, var(--surface-raised), var(--surface));
   box-shadow: var(--shadow-card);
-}
-
-.academy-file-brief::after {
-  content: 'KNOWLEDGE DOSSIER';
-  position: absolute;
-  right: var(--space-4);
-  bottom: var(--space-3);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-1);
-  letter-spacing: 0.14em;
-  opacity: 0.72;
 }
 
 .academy-featured-topic {
@@ -437,11 +409,6 @@
   .academy-featured-topic,
   .academy-stage {
     padding: var(--space-4);
-  }
-
-  .academy-hero::after,
-  .academy-file-brief::after {
-    display: none;
   }
 
   .academy-stage > .section-heading {

@@ -23,7 +23,7 @@
 
 ## 验证
 
-- `npm run test:run -- src/styles/academy.test.ts src/styles/surface-depth.test.ts src/pages/academy/AcademyPages.test.tsx`：3 files，19 tests passed。
+- `npm run test:run -- src/styles/academy.test.ts src/styles/surface-depth.test.ts src/pages/academy/AcademyPages.test.tsx`：3 files，20 tests passed（含 P1 回归测试）。
 - `npm run typecheck`：通过。
 - `npm run build`：内容质量、索引/schema 漂移、学院内容校验、TypeScript 与 Vite production build 全部通过。
 - Prettier 已应用于本任务涉及文件。
@@ -32,3 +32,11 @@
 
 - Vite build 保留仓库既有的大 chunk 警告（主 bundle 超过 500 kB）；本任务仅新增 CSS/类名与静态目录标记，不引入 JavaScript 依赖或新的 bundle 分割边界。
 - 学院详情目录默认展开，移动端可通过原生 details 折叠；桌面端为稳定三列阅读导航保持显示。
+
+## P1 审查修复
+
+- 删除 `.academy-hero::after` 与 `.academy-file-brief::after` 两条伪元素规则，不再通过 CSS `content` 注入 `ACADEMY / FILE` 或 `KNOWLEDGE DOSSIER` 可见文案。
+- 同步删除移动端中仅用于隐藏上述伪元素的选择器；其余 BLACK BOX / Amber 视觉规则保持不变。
+- 未修改页面文案、路由、数据逻辑或学院 JSX。
+- RED：`npm run test:run -- src/styles/academy.test.ts` 新增回归断言后 1/5 预期失败，直接命中 `.academy-hero::after`。
+- GREEN：删除规则后同一命令 5/5 通过。
