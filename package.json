@@ -21,6 +21,7 @@
     "content:audit": "npm run coverage:audit",
     "content:index": "node --import tsx scripts/build-case-index.ts",
     "content:check": "node --import tsx scripts/build-case-index.ts --check",
+    "academy:validate": "node --import tsx scripts/validate-academy-content.ts",
     "knowledge:v2:validate": "node --import tsx scripts/validate-knowledge-v2.ts",
     "knowledge:v2:schemas": "node --import tsx scripts/build-knowledge-v2-schemas.ts",
     "knowledge:v2:check": "node --import tsx scripts/build-knowledge-v2-schemas.ts --check",
@@ -29,7 +30,7 @@
     "typecheck": "tsc --build --pretty false",
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
-    "build": "npm run content:quality && npm run content:check && npm run knowledge:v2:validate && npm run knowledge:v2:check && tsc --build --pretty false && vite build"
+    "build": "npm run content:quality && npm run content:check && npm run knowledge:v2:validate && npm run knowledge:v2:check && tsc --build --pretty false && npm run academy:validate && vite build"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

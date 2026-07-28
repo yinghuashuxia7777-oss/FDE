@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "locale": "zh-CN",
+  "stages": [
+    { "id": "stage-0", "topicIds": [] },
+    { "id": "stage-1", "topicIds": [] },
+    { "id": "stage-2", "topicIds": [] },
+    { "id": "stage-3", "topicIds": [] },
+    { "id": "stage-4", "topicIds": [] }
+  ]
+}
