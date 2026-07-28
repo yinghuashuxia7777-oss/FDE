@@ -10,7 +10,10 @@ export function AcademyUnavailable() {
   const { t } = useI18n();
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
+    <section
+      className="product-page academy-page academy-page--unavailable"
+      aria-labelledby="page-title"
+    >
       <h1 id="page-title" tabIndex={-1}>
         {t('academy.unavailable')}
       </h1>
@@ -28,7 +31,7 @@ export function AcademyBackLink({
   const { t } = useI18n();
 
   return (
-    <Link className="button button--ghost" to={to}>
+    <Link className="button button--ghost bb-btn bb-btn--academy" to={to}>
       {t(labelKey)}
     </Link>
   );
@@ -38,7 +41,7 @@ export function AcademyTags({ tags }: { tags: readonly string[] }) {
   if (tags.length === 0) return null;
 
   return (
-    <div className="tag-list">
+    <div className="tag-list academy-tag-list">
       {tags.map((tag) => (
         <span key={tag}>{tag}</span>
       ))}
@@ -60,14 +63,17 @@ export function AcademyMissingState({
   const { t } = useI18n();
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
-      <div className="page-intro">
+    <section
+      className="product-page academy-page academy-page--missing"
+      aria-labelledby="page-title"
+    >
+      <div className="page-intro academy-hero">
         <h1 id="page-title" tabIndex={-1}>
           {t(titleKey)}
         </h1>
         <p>{t(descriptionKey)}</p>
       </div>
-      <Link className="button button--primary" to={to}>
+      <Link className="button button--primary bb-btn bb-btn--academy" to={to}>
         {t(actionKey)}
       </Link>
     </section>
@@ -114,7 +120,10 @@ export function AcademyGrowthConnections({ topic }: { topic: AcademyTopic }) {
   const { t } = useI18n();
 
   return (
-    <section className="product-stack" aria-labelledby="academy-growth-title">
+    <section
+      className="product-stack academy-growth"
+      aria-labelledby="academy-growth-title"
+    >
       <div className="section-heading">
         <div>
           <p className="eyebrow">{t('academy.growth.title')}</p>
@@ -156,7 +165,10 @@ export function AcademySources({
   const { t } = useI18n();
 
   return (
-    <section className="panel" aria-labelledby="academy-sources-title">
+    <section
+      className="panel academy-sources"
+      aria-labelledby="academy-sources-title"
+    >
       <p className="eyebrow">{t('academy.sources.title')}</p>
       <h2 id="academy-sources-title">{t('academy.sources.title')}</h2>
       <p>{t('academy.sources.description')}</p>

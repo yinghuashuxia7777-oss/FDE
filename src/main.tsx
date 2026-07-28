@@ -6,6 +6,7 @@ import { createAppRouter } from './app/router';
 import './styles/reset.css';
 import './styles/tokens.css';
 import './styles/global.css';
+import './styles/academy.css';
 
 const router = createAppRouter();
 

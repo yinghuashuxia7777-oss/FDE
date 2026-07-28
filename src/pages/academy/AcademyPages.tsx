@@ -81,12 +81,17 @@ function ChineseAcademyCatalogPage({
   }, [academySource]);
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
-      <PageHeader
-        eyebrow={t('academy.catalog.eyebrow')}
-        title={t('academy.catalog.title')}
-        description={t('academy.catalog.description')}
-      />
+    <section
+      className="product-page academy-page academy-catalog"
+      aria-labelledby="page-title"
+    >
+      <div className="academy-hero academy-hero--catalog">
+        <PageHeader
+          eyebrow={t('academy.catalog.eyebrow')}
+          title={t('academy.catalog.title')}
+          description={t('academy.catalog.description')}
+        />
+      </div>
       <AsyncPage state={state} retry={retry}>
         {({ catalog, topics }) => {
           const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
@@ -96,22 +101,22 @@ function ChineseAcademyCatalogPage({
             .find((topic): topic is AcademyTopic => topic !== undefined);
 
           return (
-            <div className="product-stack">
-              <section className="panel">
+            <div className="product-stack academy-catalog__body">
+              <section className="panel academy-file-brief">
                 <p className="eyebrow">{t('academy.catalog.heroLabel')}</p>
                 <h2>{t('academy.catalog.heroTitle')}</h2>
                 <p>{t('academy.catalog.heroDescription')}</p>
               </section>
 
               {firstTopic === undefined ? null : (
-                <section className="panel">
+                <section className="panel academy-featured-topic">
                   <p className="eyebrow">
                     {t('academy.catalog.recommendedLabel')}
                   </p>
                   <h2>{t('academy.catalog.recommendedTitle')}</h2>
                   <p>{firstTopic.summary}</p>
                   <Link
-                    className="button button--primary"
+                    className="button button--primary bb-btn bb-btn--academy"
                     to={`/academy/${firstTopic.id}`}
                   >
                     {t('academy.catalog.recommendedAction', {
@@ -122,63 +127,71 @@ function ChineseAcademyCatalogPage({
                 </section>
               )}
 
-              <section className="product-stack">
+              <section className="product-stack academy-learning-path">
                 <div className="section-heading">
                   <div>
                     <p className="eyebrow">{t('academy.catalog.pathLabel')}</p>
                     <h2>{t('academy.catalog.pathTitle')}</h2>
                   </div>
                 </div>
-                {catalog.stages.map((stage) => {
-                  const stageTopics = stage.topicIds
-                    .map((id) => topicsById.get(id))
-                    .filter(
-                      (topic): topic is AcademyTopic => topic !== undefined,
-                    );
-                  const keys = academyStageKeys[stage.id];
-                  return (
-                    <section
-                      className="panel product-stack"
-                      data-testid="academy-stage"
-                      key={stage.id}
-                    >
-                      <div className="section-heading">
-                        <div>
-                          <h2>{t(keys.titleKey)}</h2>
-                          <p>{t(keys.objectiveKey)}</p>
+                <div className="academy-stage-grid">
+                  {catalog.stages.map((stage) => {
+                    const stageTopics = stage.topicIds
+                      .map((id) => topicsById.get(id))
+                      .filter(
+                        (topic): topic is AcademyTopic => topic !== undefined,
+                      );
+                    const keys = academyStageKeys[stage.id];
+                    return (
+                      <section
+                        className="panel product-stack academy-stage"
+                        data-testid="academy-stage"
+                        key={stage.id}
+                      >
+                        <div className="section-heading">
+                          <div>
+                            <h2>{t(keys.titleKey)}</h2>
+                            <p>{t(keys.objectiveKey)}</p>
+                          </div>
+                          <strong className="academy-stage__chip">
+                            {t('academy.catalog.stageTopicCount', {
+                              count: stageTopics.length,
+                            })}
+                          </strong>
                         </div>
-                        <strong>
-                          {t('academy.catalog.stageTopicCount', {
-                            count: stageTopics.length,
-                          })}
-                        </strong>
-                      </div>
-                      <div className="case-grid">
-                        {stageTopics.map((topic) => (
-                          <article className="case-card" key={topic.id}>
-                            <div className="case-card__header">
-                              <h3>
-                                <Link to={`/academy/${topic.id}`}>
-                                  {topic.title}
-                                </Link>
-                              </h3>
-                              <strong>
-                                {t('academy.topic.meta', {
-                                  minutes: topic.estimatedMinutes,
-                                })}
-                              </strong>
-                            </div>
-                            <p>{topic.summary}</p>
-                            <AcademyTags tags={topic.tags} />
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
+                        <div className="case-grid academy-topic-grid">
+                          {stageTopics.map((topic) => (
+                            <article
+                              className="case-card academy-topic-card"
+                              key={topic.id}
+                            >
+                              <div className="case-card__header">
+                                <h3>
+                                  <Link to={`/academy/${topic.id}`}>
+                                    {topic.title}
+                                  </Link>
+                                </h3>
+                                <strong>
+                                  {t('academy.topic.meta', {
+                                    minutes: topic.estimatedMinutes,
+                                  })}
+                                </strong>
+                              </div>
+                              <p>{topic.summary}</p>
+                              <AcademyTags tags={topic.tags} />
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
               </section>
 
-              <section className="panel" data-testid="academy-tool-radar">
+              <section
+                className="panel academy-tool-radar"
+                data-testid="academy-tool-radar"
+              >
                 <p className="eyebrow">{t('academy.catalog.toolLabel')}</p>
                 <h2>
                   <Link to="/academy/tools">
@@ -188,7 +201,7 @@ function ChineseAcademyCatalogPage({
                 <p>{t('academy.catalog.toolDescription')}</p>
               </section>
 
-              <section className="panel">
+              <section className="panel academy-learning-loop">
                 <h2>{t('academy.catalog.loopTitle')}</h2>
                 <p>{t('academy.catalog.loopDescription')}</p>
               </section>
@@ -236,11 +249,14 @@ function ChineseAcademyTopicPage({
             to="/academy"
           />
         ) : (
-          <article className="product-page" aria-labelledby="page-title">
+          <article
+            className="product-page academy-page academy-topic-page"
+            aria-labelledby="page-title"
+          >
             <div className="button-row">
               <AcademyBackLink to="/academy" labelKey="academy.topic.back" />
             </div>
-            <header className="page-intro">
+            <header className="page-intro academy-hero academy-topic-hero">
               <p className="eyebrow">
                 {t(academyStageKeys[topic.stageId].titleKey)}
               </p>
@@ -256,13 +272,31 @@ function ChineseAcademyTopicPage({
               <AcademyTags tags={topic.tags} />
             </header>
 
-            <div className="product-stack">
-              <div className="foundation-detail-layout">
-                <div className="product-stack">
+            <div className="product-stack academy-topic-body">
+              <div className="academy-topic-layout">
+                <nav
+                  className="academy-directory"
+                  aria-label={t('academy.catalog.pathTitle')}
+                >
+                  <details open>
+                    <summary>{t('academy.catalog.pathTitle')}</summary>
+                    <ol>
+                      {topic.sections.map((section) => (
+                        <li key={section.kind}>
+                          <a href={`#academy-section-${section.kind}`}>
+                            {section.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                </nav>
+                <div className="product-stack academy-topic-content">
                   {topic.sections.map((section) => (
                     <section
-                      className="panel"
+                      className="panel academy-topic-section"
                       data-testid="academy-topic-section"
+                      id={`academy-section-${section.kind}`}
                       key={section.kind}
                     >
                       <p className="eyebrow">
@@ -273,7 +307,7 @@ function ChineseAcademyTopicPage({
                     </section>
                   ))}
                 </div>
-                <aside className="product-stack">
+                <aside className="product-stack academy-topic-aside">
                   <AcademyGrowthConnections topic={topic} />
                 </aside>
               </div>
@@ -324,19 +358,24 @@ function ChineseAcademyToolsPage({
   );
 
   return (
-    <section className="product-page" aria-labelledby="page-title">
-      <PageHeader
-        eyebrow={t('academy.tools.eyebrow')}
-        title={t('academy.tools.title')}
-        description={t('academy.tools.description')}
-      />
+    <section
+      className="product-page academy-page academy-tools-page"
+      aria-labelledby="page-title"
+    >
+      <div className="academy-hero academy-hero--tools">
+        <PageHeader
+          eyebrow={t('academy.tools.eyebrow')}
+          title={t('academy.tools.title')}
+          description={t('academy.tools.description')}
+        />
+      </div>
       <AsyncPage state={state} retry={retry}>
         {(tools) => (
-          <div className="case-grid">
+          <div className="case-grid academy-tool-grid">
             {tools.map((tool) => (
               <article
                 aria-label={tool.title}
-                className="case-card"
+                className="case-card academy-tool-card"
                 key={tool.id}
               >
                 <div className="case-card__header">
@@ -349,7 +388,7 @@ function ChineseAcademyToolsPage({
                 <AcademyTags tags={tool.tags} />
                 <ToolDecisionParts tool={tool} />
                 <Link
-                  className="button button--secondary"
+                  className="button button--secondary bb-btn bb-btn--academy"
                   to={`/academy/tools/${tool.id}`}
                 >
                   {t('academy.tools.view', { title: tool.title })}
@@ -402,14 +441,17 @@ function ChineseAcademyToolPage({
             to="/academy/tools"
           />
         ) : (
-          <article className="product-page" aria-labelledby="page-title">
+          <article
+            className="product-page academy-page academy-tool-page"
+            aria-labelledby="page-title"
+          >
             <div className="button-row">
               <AcademyBackLink
                 to="/academy/tools"
                 labelKey="academy.tool.back"
               />
             </div>
-            <header className="page-intro">
+            <header className="page-intro academy-hero academy-tool-hero">
               <p className="eyebrow">{t('academy.tools.eyebrow')}</p>
               <h1 id="page-title" tabIndex={-1}>
                 {tool.title}
@@ -421,7 +463,7 @@ function ChineseAcademyToolPage({
               <section className="panel">
                 <ToolDecisionParts tool={tool} />
                 <a
-                  className="button button--secondary"
+                  className="button button--secondary bb-btn bb-btn--academy"
                   href={tool.url}
                   rel="noreferrer"
                   target="_blank"
