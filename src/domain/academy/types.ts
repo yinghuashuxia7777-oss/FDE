@@ -60,9 +60,13 @@ export interface AcademyTool {
   readonly id: string;
   readonly title: string;
   readonly summary: string;
+  readonly bestFor: string;
+  readonly watchOutFor: string;
+  readonly nextAction: string;
   readonly url: string;
   readonly tags: readonly string[];
   readonly relatedTopicIds: readonly string[];
+  readonly sourceRefs: readonly AcademySourceReference[];
 }
 
 export interface AcademyContentCollection {

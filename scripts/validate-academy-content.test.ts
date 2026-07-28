@@ -50,6 +50,25 @@ const validTopic = {
   ],
 };
 
+const validTool = {
+  id: 'tool.fixture',
+  title: 'Fixture Tool',
+  summary: '用于验证 Topic 引用的测试工具。',
+  bestFor: '适合验证 Academy Tool 的内容合约。',
+  watchOutFor: '仅用于测试，不代表真实工具建议。',
+  nextAction: '运行 validator 并检查结构化报告。',
+  url: 'https://example.com/tool',
+  tags: ['测试'],
+  relatedTopicIds: ['academy.prompt-basics'],
+  sourceRefs: [
+    {
+      title: '菜鸟教程：AI 工具',
+      url: 'https://www.runoob.com/ai/ai-tools.html',
+      retrievedAt: '2026-07-28',
+    },
+  ],
+};
+
 function catalog(topicIdsByStage: readonly (readonly string[])[] = []) {
   return {
     schemaVersion: 1,
@@ -230,11 +249,7 @@ describe('validateAcademyContent', () => {
       topics: [validTopic],
       tools: [
         {
-          id: 'tool.fixture',
-          title: 'Fixture Tool',
-          summary: '用于验证 Topic 引用的测试工具。',
-          url: 'https://example.com/tool',
-          tags: ['测试'],
+          ...validTool,
           relatedTopicIds: ['academy.missing-tool-topic'],
         },
       ],
@@ -260,6 +275,57 @@ describe('validateAcademyContent', () => {
           code: 'missing_tool_topic_reference',
         }),
       ]),
+    );
+  });
+
+  it('rejects a Tool missing the original display fields', () => {
+    const root = temporaryRoot();
+    writeAcademyFixture(root, {
+      tools: [
+        {
+          id: validTool.id,
+          title: validTool.title,
+          summary: validTool.summary,
+          url: validTool.url,
+          tags: validTool.tags,
+          relatedTopicIds: [],
+        },
+      ],
+    });
+
+    expect(validateAcademyContent(root).issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          file: 'content/academy/zh-CN/tools/catalog.json',
+          path: ['tools', 0, 'bestFor'],
+          code: 'schema_invalid',
+        }),
+        expect.objectContaining({
+          file: 'content/academy/zh-CN/tools/catalog.json',
+          path: ['tools', 0, 'watchOutFor'],
+          code: 'schema_invalid',
+        }),
+        expect.objectContaining({
+          file: 'content/academy/zh-CN/tools/catalog.json',
+          path: ['tools', 0, 'nextAction'],
+          code: 'schema_invalid',
+        }),
+      ]),
+    );
+  });
+
+  it('rejects a Tool with no source reference at the authored path', () => {
+    const root = temporaryRoot();
+    writeAcademyFixture(root, {
+      tools: [{ ...validTool, relatedTopicIds: [], sourceRefs: [] }],
+    });
+
+    expect(validateAcademyContent(root).issues).toContainEqual(
+      expect.objectContaining({
+        file: 'content/academy/zh-CN/tools/catalog.json',
+        path: ['tools', 0, 'sourceRefs'],
+        code: 'schema_invalid',
+      }),
     );
   });
 

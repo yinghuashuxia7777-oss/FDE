@@ -56,9 +56,19 @@ const validTool = {
   id: 'tool.chatgpt',
   title: 'ChatGPT',
   summary: '用于对话式探索与内容生成的 AI 助手。',
+  bestFor: '适合快速探索问题、比较思路并起草结构化内容。',
+  watchOutFor: '输出可能包含事实错误，关键结论需要核验。',
+  nextAction: '选择一个熟悉的问题，写出带目标和约束的提示词。',
   url: 'https://chatgpt.com/',
   tags: ['对话', '生成式 AI'],
   relatedTopicIds: ['academy.prompt-basics'],
+  sourceRefs: [
+    {
+      title: '菜鸟教程：ChatGPT',
+      url: 'https://www.runoob.com/chatgpt/chatgpt-tutorial.html',
+      retrievedAt: '2026-07-28',
+    },
+  ],
 };
 
 const validCollection = {
@@ -161,7 +171,34 @@ describe('Academy content collection schemas', () => {
     ).toThrow(/ordered stage/i);
   });
 
-  it('accepts an Academy Tool with a valid HTTPS URL', () => {
+  it('accepts an Academy Tool with original display fields and a source', () => {
     expect(AcademyToolSchema.parse(validTool)).toEqual(validTool);
+  });
+
+  it('rejects an Academy Tool missing its original display fields', () => {
+    expect(() =>
+      AcademyToolSchema.parse({
+        id: validTool.id,
+        title: validTool.title,
+        summary: validTool.summary,
+        url: validTool.url,
+        tags: validTool.tags,
+        relatedTopicIds: validTool.relatedTopicIds,
+      }),
+    ).toThrow();
+  });
+
+  it('rejects an Academy Tool without at least one source reference', () => {
+    const result = AcademyToolSchema.safeParse({
+      ...validTool,
+      sourceRefs: [],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(
+        expect.objectContaining({ path: ['sourceRefs'] }),
+      );
+    }
   });
 });

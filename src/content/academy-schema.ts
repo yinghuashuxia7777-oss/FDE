@@ -137,12 +137,16 @@ export const AcademyToolSchema: z.ZodType<AcademyTool> = z
     id: authoredString,
     title: authoredString,
     summary: authoredString,
+    bestFor: authoredString,
+    watchOutFor: authoredString,
+    nextAction: authoredString,
     url: authoredString.refine(
       (value) => URL.canParse(value) && value.startsWith('https://'),
       { message: 'Tool URL must be a valid HTTPS URL.' },
     ),
     tags: authoredStringArray,
     relatedTopicIds: authoredStringArray,
+    sourceRefs: z.array(AcademySourceReferenceSchema).min(1),
   })
   .strict();
 
