@@ -6,10 +6,10 @@ import { z, ZodError } from 'zod';
 import skillCatalogJson from '../content/skill-graph/v2/releases/0.2.0/catalog.json';
 import {
   AcademyCatalogSchema,
-  AcademyContentCollectionSchema,
   AcademyToolSchema,
   AcademyTopicSchema,
 } from '../src/content/academy-schema';
+import { PracticeDefinitionSchema } from '../src/content/practice-schema';
 import type {
   AcademyCatalog,
   AcademyTool,
@@ -50,6 +50,7 @@ interface AcademyJsonSource {
 
 interface ParsedAcademySource<T> {
   readonly file: string;
+  readonly path: readonly (string | number)[];
   readonly value: T;
 }
 
@@ -123,6 +124,7 @@ function parseWithSchema<T>(
   source: AcademyJsonSource,
   schema: z.ZodType<T>,
   issues: AcademyContentIssue[],
+  path: readonly (string | number)[] = [],
 ): ParsedAcademySource<T> | null {
   const parsedJson = parseJson(source, issues);
   if (parsedJson === undefined) return null;
@@ -132,18 +134,26 @@ function parseWithSchema<T>(
     addZodIssues(source.file, parsed.error, issues);
     return null;
   }
-  return { file: source.file, value: parsed.data };
+  return { file: source.file, path, value: parsed.data };
 }
 
-function readMvpPracticeIds(root: string): Set<string> {
+function readCanonicalMvpPracticeIds(root: string): Set<string> {
   const directory = resolve(root, MVP_PRACTICE_DIRECTORY);
   return new Set(
-    discoverJsonFiles(directory).flatMap((file) => {
+    (existsSync(directory)
+      ? readdirSync(directory, { withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+          .map((entry) => resolve(directory, entry.name))
+          .sort((left, right) => left.localeCompare(right))
+      : []
+    ).flatMap((file) => {
       try {
-        const value = JSON.parse(readFileSync(file, 'utf8')) as {
-          id?: unknown;
-        };
-        return typeof value.id === 'string' ? [value.id] : [];
+        const parsed = PracticeDefinitionSchema.safeParse(
+          JSON.parse(readFileSync(file, 'utf8')) as unknown,
+        );
+        return parsed.success && parsed.data.skillCatalogVersion === '0.2.0'
+          ? [parsed.data.id]
+          : [];
       } catch {
         return [];
       }
@@ -197,7 +207,7 @@ function addMissingReferenceIssues(
       if (check.validIds.has(id)) return;
       issues.push({
         file: topicSource.file,
-        path: [check.path, index],
+        path: [...topicSource.path, check.path, index],
         code: check.code,
         message: `Topic ${topicSource.value.id} references unknown ${check.label} ID ${id}.`,
       });
@@ -205,55 +215,98 @@ function addMissingReferenceIssues(
   });
 }
 
-function addCollectionIssues(
+function addDuplicateSourceIssues<T extends { readonly id: string }>(
+  sources: readonly ParsedAcademySource<T>[],
+  kind: 'Topic' | 'Tool',
+  issues: AcademyContentIssue[],
+): void {
+  const firstSources = new Map<string, ParsedAcademySource<T>>();
+  sources.forEach((source) => {
+    const first = firstSources.get(source.value.id);
+    if (first === undefined) {
+      firstSources.set(source.value.id, source);
+      return;
+    }
+    issues.push({
+      file: source.file,
+      path: [...source.path, 'id'],
+      code: kind === 'Topic' ? 'duplicate_topic_id' : 'duplicate_tool_id',
+      message: `${kind} ID ${source.value.id} duplicates ${first.file}.`,
+    });
+  });
+}
+
+function addInternalConsistencyIssues(
   catalogSource: ParsedAcademySource<AcademyCatalog>,
   topicSources: readonly ParsedAcademySource<AcademyTopic>[],
   toolSources: readonly ParsedAcademySource<AcademyTool>[],
   issues: AcademyContentIssue[],
 ): void {
-  const result = AcademyContentCollectionSchema.safeParse({
-    catalog: catalogSource.value,
-    topics: topicSources.map(({ value }) => value),
-    tools: toolSources.map(({ value }) => value),
-  });
-  if (result.success) return;
+  const topicById = new Map(
+    topicSources.map((source) => [source.value.id, source]),
+  );
+  const catalogPlacements = new Map<string, number>();
 
-  result.error.issues.forEach((issue) => {
-    const collection = issue.path[0];
-    const duplicateId =
-      collection === 'topics'
-        ? topicSources.find(
-            (source, index) =>
-              topicSources.findIndex(
-                ({ value }) => value.id === source.value.id,
-              ) !== index,
-          )
-        : collection === 'tools'
-          ? toolSources.find(
-              (source, index) =>
-                toolSources.findIndex(
-                  ({ value }) => value.id === source.value.id,
-                ) !== index,
-            )
-          : undefined;
+  catalogSource.value.stages.forEach((stage, stageIndex) => {
+    stage.topicIds.forEach((topicId, topicIndex) => {
+      const path = ['stages', stageIndex, 'topicIds', topicIndex] as const;
+      const topicSource = topicById.get(topicId);
+      if (topicSource === undefined) {
+        issues.push({
+          file: catalogSource.file,
+          path,
+          code: 'missing_catalog_topic',
+          message: `Catalog references unknown Topic ID ${topicId}.`,
+        });
+      } else if (topicSource.value.stageId !== stage.id) {
+        issues.push({
+          file: catalogSource.file,
+          path,
+          code: 'topic_stage_mismatch',
+          message: `Catalog places Topic ${topicId} in ${stage.id}, but the Topic declares ${topicSource.value.stageId}.`,
+        });
+      }
+
+      const placementCount = catalogPlacements.get(topicId) ?? 0;
+      if (placementCount > 0) {
+        issues.push({
+          file: catalogSource.file,
+          path,
+          code: 'duplicate_catalog_topic',
+          message: `Catalog places Topic ID ${topicId} more than once.`,
+        });
+      }
+      catalogPlacements.set(topicId, placementCount + 1);
+    });
+  });
+
+  topicSources.forEach((topicSource) => {
+    if (catalogPlacements.has(topicSource.value.id)) return;
     issues.push({
-      file: duplicateId?.file ?? catalogSource.file,
-      path: issue.path.map((part) =>
-        typeof part === 'number' ? part : String(part),
-      ),
-      code:
-        collection === 'topics'
-          ? 'duplicate_topic_id'
-          : collection === 'tools'
-            ? 'duplicate_tool_id'
-            : 'collection_invalid',
-      message: issue.message,
+      file: topicSource.file,
+      path: [...topicSource.path, 'stageId'],
+      code: 'topic_not_in_catalog',
+      message: `Topic ${topicSource.value.id} is not listed in the Academy catalog.`,
+    });
+  });
+
+  const topicIds = new Set(topicSources.map(({ value }) => value.id));
+  toolSources.forEach((toolSource) => {
+    toolSource.value.relatedTopicIds.forEach((topicId, index) => {
+      if (topicIds.has(topicId)) return;
+      issues.push({
+        file: toolSource.file,
+        path: [...toolSource.path, 'relatedTopicIds', index],
+        code: 'missing_tool_topic_reference',
+        message: `Tool ${toolSource.value.id} references unknown Topic ID ${topicId}.`,
+      });
     });
   });
 }
 
 export function validateAcademyContent(
   root: string = PROJECT_ROOT,
+  referenceRoot: string = PROJECT_ROOT,
 ): AcademyValidationReport {
   const issues: AcademyContentIssue[] = [];
   const sources = readAcademySources(root);
@@ -299,8 +352,9 @@ export function validateAcademyContent(
     );
 
   const toolSources: ParsedAcademySource<AcademyTool>[] = [
-    ...(toolCatalogSource?.value.tools.map((tool) => ({
+    ...(toolCatalogSource?.value.tools.map((tool, index) => ({
       file: toolCatalogSource.file,
+      path: ['tools', index],
       value: tool,
     })) ?? []),
     ...sources
@@ -315,13 +369,20 @@ export function validateAcademyContent(
       ),
   ];
 
+  addDuplicateSourceIssues(topicSources, 'Topic', issues);
+  addDuplicateSourceIssues(toolSources, 'Tool', issues);
   if (catalogSource !== null) {
-    addCollectionIssues(catalogSource, topicSources, toolSources, issues);
+    addInternalConsistencyIssues(
+      catalogSource,
+      topicSources,
+      toolSources,
+      issues,
+    );
   }
 
   const references = {
     foundationIds: new Set(foundationIndex.map(({ id }) => id)),
-    practiceIds: readMvpPracticeIds(root),
+    practiceIds: readCanonicalMvpPracticeIds(referenceRoot),
     caseIds: new Set(caseIndex.map(({ id }) => id)),
     skillIds: new Set(skillCatalogJson.leaves.map(({ id }) => id)),
   };
@@ -337,9 +398,18 @@ export function validateAcademyContent(
   };
 }
 
+export function runValidateAcademyContentCli(
+  root: string = PROJECT_ROOT,
+  referenceRoot: string = PROJECT_ROOT,
+  write: (content: string, ok: boolean) => void = (content, ok) => {
+    (ok ? process.stdout : process.stderr).write(content);
+  },
+): number {
+  const report = validateAcademyContent(root, referenceRoot);
+  write(`${JSON.stringify(report, null, 2)}\n`, report.ok);
+  return report.ok ? 0 : 1;
+}
+
 if (isDirectRun(import.meta.url)) {
-  const report = validateAcademyContent();
-  const output = `${JSON.stringify(report, null, 2)}\n`;
-  (report.ok ? process.stdout : process.stderr).write(output);
-  process.exitCode = report.ok ? 0 : 1;
+  process.exitCode = runValidateAcademyContentCli();
 }

@@ -95,8 +95,19 @@ export const AcademyTopicSchema: z.ZodType<AcademyTopic> = z
 const AcademyStageSchema = z
   .object({
     id: z.enum(ACADEMY_STAGE_IDS),
-    topicIds: authoredStringArray.refine(hasUniqueValues, {
-      message: 'Stage topic IDs must be unique.',
+    topicIds: authoredStringArray.superRefine((topicIds, context) => {
+      const firstIndexes = new Map<string, number>();
+      topicIds.forEach((topicId, index) => {
+        if (firstIndexes.has(topicId)) {
+          context.addIssue({
+            code: 'custom',
+            path: [index],
+            message: `Stage contains duplicate Topic ID ${topicId}.`,
+          });
+          return;
+        }
+        firstIndexes.set(topicId, index);
+      });
     }),
   })
   .strict();
