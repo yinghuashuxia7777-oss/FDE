@@ -27,6 +27,12 @@ import {
   FoundationLibraryPage,
 } from '../pages/foundation';
 import { TrainingRoutePage } from '../pages/training';
+import {
+  AcademyCatalogPage,
+  AcademyToolPage,
+  AcademyToolsPage,
+  AcademyTopicPage,
+} from '../pages/academy';
 
 function DebriefRoute() {
   const { attemptId = '' } = useParams<{ attemptId: string }>();
@@ -50,6 +56,16 @@ function PracticeDetailRoute() {
 function ProjectDetailRoute() {
   const { projectId = '' } = useParams<{ projectId: string }>();
   return <ProjectDetailPage projectId={projectId} />;
+}
+
+function AcademyTopicRoute() {
+  const { topicId = '' } = useParams<{ topicId: string }>();
+  return <AcademyTopicPage topicId={topicId} />;
+}
+
+function AcademyToolRoute() {
+  const { toolId = '' } = useParams<{ toolId: string }>();
+  return <AcademyToolPage toolId={toolId} />;
 }
 
 export function createAppRouter() {
@@ -85,6 +101,22 @@ export function createAppRouter() {
             {
               path: 'foundation/:foundationId',
               element: <FoundationDetailRoute />,
+            },
+            {
+              path: 'academy',
+              element: <AcademyCatalogPage />,
+            },
+            {
+              path: 'academy/tools',
+              element: <AcademyToolsPage />,
+            },
+            {
+              path: 'academy/tools/:toolId',
+              element: <AcademyToolRoute />,
+            },
+            {
+              path: 'academy/:topicId',
+              element: <AcademyTopicRoute />,
             },
             {
               path: 'skills',

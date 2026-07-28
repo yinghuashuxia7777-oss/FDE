@@ -671,6 +671,78 @@ export const productPagesZhCN: Record<string, string> = {
   'debrief.assessment.knowledgePoints': '知识点',
   'debrief.assessment.recommendedCases': '推荐案件',
   'debrief.backToPlan': '返回今日计划',
+  'academy.unavailable': 'AI Academy is coming soon in English.',
+  'academy.catalog.eyebrow': 'AI ENGINEER KNOWLEDGE SYSTEM',
+  'academy.catalog.title': 'AI 学院',
+  'academy.catalog.description':
+    '按工程成长阶段建立 AI 心智模型，再把知识连接到可验证的实践与证据。',
+  'academy.catalog.heroLabel': 'BLACK BOX · KNOWLEDGE TO EVIDENCE',
+  'academy.catalog.heroTitle': '先理解系统，再证明工程判断。',
+  'academy.catalog.heroDescription':
+    '25 个主题组成五段式 AI 工程路径，每一段都指向下一个可执行动作。',
+  'academy.catalog.recommendedLabel': '当前推荐起点',
+  'academy.catalog.recommendedTitle': '从能力边界建立第一个心智模型',
+  'academy.catalog.recommendedAction': '从 {title}开始',
+  'academy.catalog.pathLabel': 'FIVE-STAGE LEARNING PATH',
+  'academy.catalog.pathTitle': '五阶 AI 工程成长路径',
+  'academy.catalog.stageTopicCount': '{count} 个主题',
+  'academy.catalog.toolLabel': 'TRENDING · 持续更新',
+  'academy.catalog.toolTitle': 'AI 工具雷达',
+  'academy.catalog.toolDescription':
+    '理解热门 AI 工具的适用边界、风险与下一步试用动作。',
+  'academy.catalog.loopTitle': 'Learn → Practice → Case → Evidence',
+  'academy.catalog.loopDescription':
+    '学院负责建立心智模型；Practice 验证动作，Case 验证判断，Evidence 进入能力档案。',
+  'academy.stage.stage-0.title': 'Stage 0 · AI 基础认知',
+  'academy.stage.stage-0.objective': '识别 AI 能力、学习方式与安全边界。',
+  'academy.stage.stage-1.title': 'Stage 1 · 模型与生成机制',
+  'academy.stage.stage-1.objective':
+    '理解深度学习、LLM、Token 与提示词的作用。',
+  'academy.stage.stage-2.title': 'Stage 2 · AI 应用工程',
+  'academy.stage.stage-2.objective':
+    '把模型、API、结构化输出、Embedding 与 RAG 组成应用。',
+  'academy.stage.stage-3.title': 'Stage 3 · Agent 工程',
+  'academy.stage.stage-3.objective':
+    '设计可控、可验证的 Agent 计划、工具与工作流。',
+  'academy.stage.stage-4.title': 'Stage 4 · 生产级 AI 系统',
+  'academy.stage.stage-4.objective':
+    '用架构、发布、评测与可观测性运营 AI 系统。',
+  'academy.topic.back': '返回 AI 学院',
+  'academy.topic.meta': '{minutes} 分钟',
+  'academy.section.overview': '一眼看懂',
+  'academy.section.mechanism': '核心机制',
+  'academy.section.scenario': '工程场景',
+  'academy.section.pitfalls': '容易踩坑',
+  'academy.section.hands-on': '动手验证',
+  'academy.growth.title': '成长连接',
+  'academy.growth.description':
+    '以下链接只来自本主题声明的稳定 ID，不会修改 Mastery。',
+  'academy.growth.foundation': 'Foundation',
+  'academy.growth.practice': 'Practice',
+  'academy.growth.case': 'Case',
+  'academy.growth.skill': 'Skill Evidence',
+  'academy.growth.empty': '暂无关联内容',
+  'academy.sources.title': '内容来源',
+  'academy.sources.description':
+    '保留技术事实与来源链接，正文已按 AI 工程成长目标重新编排。',
+  'academy.sources.meta': '获取于 {date} · 已重新编排',
+  'academy.missingTopic.title': '未找到学院主题',
+  'academy.missingTopic.description': '该主题不在当前 AI 学院目录中。',
+  'academy.missingTopic.action': '返回 AI 学院',
+  'academy.tools.eyebrow': 'TRENDING · AI TOOL RADAR',
+  'academy.tools.title': 'AI 工具雷达',
+  'academy.tools.description':
+    '用工程边界而不是热度排名选择工具，并为每次试用保留验证动作。',
+  'academy.tools.bestFor': '最适合',
+  'academy.tools.watchOutFor': '需要注意',
+  'academy.tools.nextAction': '下一步行动',
+  'academy.tools.view': '查看 {title}',
+  'academy.tool.back': '返回 AI 工具雷达',
+  'academy.tool.openWebsite': '打开 {title} 官网',
+  'academy.tool.relatedTopics': '关联学院主题',
+  'academy.missingTool.title': '未找到 AI 工具',
+  'academy.missingTool.description': '该工具不在当前 AI 工具雷达中。',
+  'academy.missingTool.action': '返回 AI 工具雷达',
 };
 
 export const productPagesEnUS: Record<string, string> = {
@@ -1392,4 +1464,81 @@ export const productPagesEnUS: Record<string, string> = {
   'debrief.assessment.knowledgePoints': 'Knowledge points',
   'debrief.assessment.recommendedCases': 'Recommended cases',
   'debrief.backToPlan': "Back to today's plan",
+  'academy.unavailable': 'AI Academy is coming soon in English.',
+  'academy.catalog.eyebrow': 'AI ENGINEER KNOWLEDGE SYSTEM',
+  'academy.catalog.title': 'AI Academy',
+  'academy.catalog.description':
+    'Build an AI engineering mental model by growth stage, then connect knowledge to verifiable practice and evidence.',
+  'academy.catalog.heroLabel': 'BLACK BOX · KNOWLEDGE TO EVIDENCE',
+  'academy.catalog.heroTitle':
+    'Understand the system, then prove the judgment.',
+  'academy.catalog.heroDescription':
+    'Twenty-five topics form a five-stage AI engineering path, each pointing to a concrete next action.',
+  'academy.catalog.recommendedLabel': 'Recommended starting point',
+  'academy.catalog.recommendedTitle':
+    'Start with a mental model of capability boundaries',
+  'academy.catalog.recommendedAction': 'Start with {title}',
+  'academy.catalog.pathLabel': 'FIVE-STAGE LEARNING PATH',
+  'academy.catalog.pathTitle': 'Five-stage AI engineering growth path',
+  'academy.catalog.stageTopicCount': '{count} topics',
+  'academy.catalog.toolLabel': 'TRENDING · CONTINUOUSLY UPDATED',
+  'academy.catalog.toolTitle': 'AI Tool Radar',
+  'academy.catalog.toolDescription':
+    'Understand the fit, risks, and next trial action for popular AI tools.',
+  'academy.catalog.loopTitle': 'Learn → Practice → Case → Evidence',
+  'academy.catalog.loopDescription':
+    'Academy builds the mental model; Practice verifies action, Case verifies judgment, and Evidence enters the capability profile.',
+  'academy.stage.stage-0.title': 'Stage 0 · AI foundations',
+  'academy.stage.stage-0.objective':
+    'Recognize AI capabilities, learning methods, and safety boundaries.',
+  'academy.stage.stage-1.title': 'Stage 1 · Models and generation',
+  'academy.stage.stage-1.objective':
+    'Understand deep learning, LLMs, Tokens, and prompts.',
+  'academy.stage.stage-2.title': 'Stage 2 · AI application engineering',
+  'academy.stage.stage-2.objective':
+    'Combine models, APIs, structured output, Embeddings, and RAG into applications.',
+  'academy.stage.stage-3.title': 'Stage 3 · Agent engineering',
+  'academy.stage.stage-3.objective':
+    'Design controllable, verifiable Agent plans, tools, and workflows.',
+  'academy.stage.stage-4.title': 'Stage 4 · Production AI systems',
+  'academy.stage.stage-4.objective':
+    'Operate AI systems through architecture, release, evaluation, and observability.',
+  'academy.topic.back': 'Back to AI Academy',
+  'academy.topic.meta': '{minutes} minutes',
+  'academy.section.overview': 'Overview',
+  'academy.section.mechanism': 'Core Mechanism',
+  'academy.section.scenario': 'Engineering Scenario',
+  'academy.section.pitfalls': 'Common Pitfalls',
+  'academy.section.hands-on': 'Hands-on Check',
+  'academy.growth.title': 'Growth Connection',
+  'academy.growth.description':
+    'These links come only from stable IDs declared by this topic and do not modify Mastery.',
+  'academy.growth.foundation': 'Foundation',
+  'academy.growth.practice': 'Practice',
+  'academy.growth.case': 'Case',
+  'academy.growth.skill': 'Skill Evidence',
+  'academy.growth.empty': 'No related content yet',
+  'academy.sources.title': 'Source Reference',
+  'academy.sources.description':
+    'Technical facts and source links are retained; the copy has been reorganized for AI engineering growth.',
+  'academy.sources.meta': 'Retrieved {date} · Reorganized',
+  'academy.missingTopic.title': 'Academy topic not found',
+  'academy.missingTopic.description':
+    'This topic is not in the current AI Academy catalog.',
+  'academy.missingTopic.action': 'Back to AI Academy',
+  'academy.tools.eyebrow': 'TRENDING · AI TOOL RADAR',
+  'academy.tools.title': 'AI Tool Radar',
+  'academy.tools.description':
+    'Choose tools by engineering boundaries, not popularity rankings, and keep a verification action for each trial.',
+  'academy.tools.bestFor': 'Best for',
+  'academy.tools.watchOutFor': 'Watch out for',
+  'academy.tools.nextAction': 'Next action',
+  'academy.tools.view': 'View {title}',
+  'academy.tool.back': 'Back to AI Tool Radar',
+  'academy.tool.openWebsite': 'Open the {title} website',
+  'academy.tool.relatedTopics': 'Related Academy topics',
+  'academy.missingTool.title': 'AI tool not found',
+  'academy.missingTool.description':
+    'This tool is not in the current AI Tool Radar.',
+  'academy.missingTool.action': 'Back to AI Tool Radar',
 };
