@@ -88,3 +88,23 @@ test('English mode does not expose Chinese authored content', async ({
     await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
   }
 });
+
+test('Chinese users can enter the academy and English users see no Chinese academy content', async ({
+  page,
+}) => {
+  await page.goto('/#/');
+  await page.getByRole('link', { name: '进入 AI 学院' }).click();
+  await expect(page.getByRole('heading', { name: 'AI 学院' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'AI 工具雷达' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'AI 工具雷达' }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.goto('/#/academy');
+  await expect(
+    page.getByText('AI Academy is coming soon in English.'),
+  ).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
+});

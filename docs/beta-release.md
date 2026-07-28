@@ -11,6 +11,14 @@ Cases, see evidence projected into the Capability Map and Profile, record three
 Project milestones, and view an isolated public Demo Profile. Practice, Project,
 and feedback records persist locally in independent versioned sidecars.
 
+- **AI 学院（中文首发）** provides a five-stage learning path, topic
+  lessons, growth-loop connections, and an AI Tool Radar for Simplified Chinese
+  learners.
+
+Academy content is bundled locally with this release and independently adapted
+from the cited public source pages. Topic pages retain those citations so users
+can inspect the sources without the product depending on live third-party copy.
+
 ## Known Limitations
 
 - There is no account, backend, cloud synchronization, or cross-device history.
@@ -20,6 +28,8 @@ and feedback records persist locally in independent versioned sidecars.
 - Demo Profile is static showcase data and is not a public publishing system.
 - Mastery remains driven by the existing completed Attempt algorithm; Practice
   evidence is a read-only MVP projection.
+- AI Academy learning content is currently Simplified Chinese only. English
+  users see an English availability notice instead of Chinese Academy content.
 
 ## User Testing Goals
 
