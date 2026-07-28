@@ -5,6 +5,7 @@ import {
   DotsThree,
   FolderOpen,
   Gear,
+  GraduationCap,
   House,
   Path,
   UserCircle,
@@ -15,16 +16,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 import { useI18n } from '../../i18n';
-
-const drawerDestinations = [
-  { to: '/journey', labelKey: 'nav.journey', Icon: Path },
-  { to: '/foundation', labelKey: 'nav.foundation', Icon: BookOpenText },
-  { to: '/practices', labelKey: 'nav.practices', Icon: Crosshair },
-  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
-  { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
-  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
-  { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
-] as const;
 
 const drawerId = 'more-destinations-drawer';
 
@@ -65,13 +56,31 @@ function makeBackgroundInert() {
 }
 
 export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const restoreTriggerRef = useRef(false);
   const location = useLocation();
+  const drawerDestinations = [
+    { to: '/journey', labelKey: 'nav.journey', Icon: Path },
+    { to: '/foundation', labelKey: 'nav.foundation', Icon: BookOpenText },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/academy',
+            labelKey: 'nav.academy',
+            Icon: GraduationCap,
+          },
+        ]
+      : []),
+    { to: '/practices', labelKey: 'nav.practices', Icon: Crosshair },
+    { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
+    { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
+    { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
+    { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
+  ] as const;
   const secondaryRoute = drawerDestinations.some(({ to }) =>
     location.pathname.startsWith(to),
   );

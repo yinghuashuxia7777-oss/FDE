@@ -1,13 +1,19 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { createMemoryRouter, Link, RouterProvider } from 'react-router-dom';
+import {
+  createMemoryRouter,
+  Link,
+  MemoryRouter,
+  RouterProvider,
+} from 'react-router-dom';
 
 import type { ProductRepositories } from '../application/product';
 import { ApplicationShell } from '../components/layout/ApplicationShell';
 import { ThemeProvider } from '../components/layout/ThemeProvider';
 import { useLearningJourney } from '../components/onboarding';
-import { I18N_STORAGE_KEY, type Language } from '../i18n';
+import { I18N_STORAGE_KEY, I18nProvider, type Language } from '../i18n';
+import { DashboardHero } from '../pages/dashboard/DashboardHero';
 import { App } from './App';
 import { RouteFrame } from './route-pages';
 import { createAppRouter } from './router';
@@ -216,6 +222,132 @@ describe('application shell', () => {
     );
   });
 
+  it('places the Chinese Academy entry before the existing Hero actions', () => {
+    render(
+      <I18nProvider initialLanguage="zh-CN">
+        <MemoryRouter>
+          <DashboardHero
+            caseCount={1}
+            challenge={{
+              completed: false,
+              difficulty: '进阶',
+              estimatedTime: '20 分钟',
+              id: 'case-1',
+              reason: '验证真实工程判断',
+              skills: '可靠性',
+              title: 'Webhook 故障',
+              to: '/training/case-1',
+            }}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    const academy = screen.getByRole('link', { name: '进入 AI 学院' });
+    const actions = academy.parentElement;
+    if (actions === null) throw new Error('Hero actions container is missing');
+    const challenge = within(actions).getByRole('link', {
+      name: /进入工程挑战/u,
+    });
+    const capability = within(actions).getByRole('link', {
+      name: '查看完整能力图',
+    });
+
+    expect(academy).toHaveAttribute('href', '/academy');
+    expect(challenge).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/training\//u),
+    );
+    expect(challenge).toHaveClass('bb-btn', 'bb-btn--primary');
+    expect(within(actions).getAllByRole('link')).toEqual([
+      academy,
+      challenge,
+      capability,
+    ]);
+  });
+
+  it('places the Chinese Academy destination after Evidence in desktop and workspace navigation', async () => {
+    const user = userEvent.setup();
+    installResponsiveMatchMedia(true);
+    setRoute('/');
+    renderApp('zh-CN');
+
+    const primaryNavigation = screen.getByRole('navigation', {
+      name: '主导航',
+    });
+    const primaryLinks = within(primaryNavigation).getAllByRole('link');
+    const evidence = within(primaryNavigation).getByRole('link', {
+      name: '证据',
+    });
+    const academy = within(primaryNavigation).getByRole('link', {
+      name: 'AI 学院',
+    });
+    expect(academy).toHaveAttribute('href', '#/academy');
+    expect(primaryLinks.indexOf(academy)).toBe(
+      primaryLinks.indexOf(evidence) + 1,
+    );
+
+    await user.click(screen.getByRole('button', { name: '打开工作区菜单' }));
+    const workspaceNavigation = screen.getByRole('navigation', {
+      name: '工作区导航',
+    });
+    expect(
+      within(workspaceNavigation).getByRole('link', { name: 'AI 学院' }),
+    ).toHaveAttribute('href', '#/academy');
+  });
+
+  it('omits every Academy entry from the English Hero and desktop navigation', async () => {
+    const user = userEvent.setup();
+
+    const hero = render(
+      <I18nProvider initialLanguage="en-US">
+        <MemoryRouter>
+          <DashboardHero
+            caseCount={1}
+            challenge={{
+              completed: false,
+              difficulty: 'Advanced',
+              estimatedTime: '20 min',
+              id: 'case-1',
+              reason: 'Verify an engineering decision',
+              skills: 'Reliability',
+              title: 'Webhook failure',
+              to: '/training/case-1',
+            }}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    expect(
+      document.querySelector('.bb-hero__actions .bb-btn--primary'),
+    ).toHaveTextContent('Enter engineering challenge');
+    expect(
+      screen.queryByRole('link', { name: 'Enter AI Academy' }),
+    ).not.toBeInTheDocument();
+    hero.unmount();
+
+    installResponsiveMatchMedia(true);
+    setRoute('/');
+    renderApp('en-US');
+
+    const primaryNavigation = screen.getByRole('navigation', {
+      name: 'Primary navigation',
+    });
+    expect(
+      within(primaryNavigation).queryByRole('link', { name: 'AI Academy' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open workspace menu' }),
+    );
+    const workspaceNavigation = screen.getByRole('navigation', {
+      name: 'Workspace navigation',
+    });
+    expect(
+      within(workspaceNavigation).queryByRole('link', { name: 'AI Academy' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('exposes only mobile navigation below the desktop boundary', () => {
     setRoute('/cases');
     renderApp();
@@ -260,9 +392,7 @@ describe('application shell', () => {
         name: 'Next recommendation',
       }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue(
-      'system',
-    );
+    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('dark');
 
     await user.click(
       screen.getByRole('button', { name: 'Open workspace menu' }),

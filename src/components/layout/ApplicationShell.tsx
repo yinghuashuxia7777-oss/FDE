@@ -4,6 +4,7 @@ import {
   ClipboardText,
   FolderOpen,
   Gear,
+  GraduationCap,
   House,
   MagnifyingGlass,
   Path,
@@ -35,38 +36,8 @@ export function SkipLink() {
   );
 }
 
-const growthDestinations = [
-  { to: '/', labelKey: 'nav.dashboard', Icon: House, end: true },
-  { to: '/journey', labelKey: 'nav.journey', Icon: Path, end: false },
-  {
-    to: '/skills',
-    labelKey: 'nav.skillGraph',
-    Icon: ChartPolar,
-    end: false,
-  },
-  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen, end: false },
-  {
-    to: '/profile',
-    labelKey: 'nav.evidence',
-    Icon: ClipboardText,
-    end: false,
-  },
-] as const;
-
-const workspaceDestinations = [
-  { to: '/journey', labelKey: 'nav.journey', Icon: Path },
-  { to: '/foundation', labelKey: 'nav.knowledge', Icon: BookOpenText },
-  { to: '/practices', labelKey: 'nav.practices', Icon: ClipboardText },
-  { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
-  { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen },
-  { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
-  { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
-  { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
-  { to: '/feedback', labelKey: 'nav.feedback', Icon: ChatCircleText },
-] as const;
-
 export function ApplicationShell() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const desktop = useMediaQuery('(min-width: 80rem)');
@@ -74,6 +45,58 @@ export function ApplicationShell() {
   const handleDrawerOpenChange = useCallback((open: boolean) => {
     mobileDrawerOpenRef.current = open;
   }, []);
+  const growthDestinations = [
+    { to: '/', labelKey: 'nav.dashboard', Icon: House, end: true },
+    { to: '/journey', labelKey: 'nav.journey', Icon: Path, end: false },
+    {
+      to: '/skills',
+      labelKey: 'nav.skillGraph',
+      Icon: ChartPolar,
+      end: false,
+    },
+    {
+      to: '/projects',
+      labelKey: 'nav.projects',
+      Icon: FolderOpen,
+      end: false,
+    },
+    {
+      to: '/profile',
+      labelKey: 'nav.evidence',
+      Icon: ClipboardText,
+      end: false,
+    },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/academy',
+            labelKey: 'nav.academy',
+            Icon: GraduationCap,
+            end: false,
+          },
+        ]
+      : []),
+  ] as const;
+  const workspaceDestinations = [
+    { to: '/journey', labelKey: 'nav.journey', Icon: Path },
+    { to: '/foundation', labelKey: 'nav.knowledge', Icon: BookOpenText },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/academy',
+            labelKey: 'nav.academy',
+            Icon: GraduationCap,
+          },
+        ]
+      : []),
+    { to: '/practices', labelKey: 'nav.practices', Icon: ClipboardText },
+    { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
+    { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen },
+    { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
+    { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
+    { to: '/settings', labelKey: 'nav.settings', Icon: Gear },
+    { to: '/feedback', labelKey: 'nav.feedback', Icon: ChatCircleText },
+  ] as const;
 
   useEffect(() => {
     if (!desktop || !mobileDrawerOpenRef.current) return;

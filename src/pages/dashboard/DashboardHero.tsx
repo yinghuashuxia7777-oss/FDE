@@ -16,7 +16,7 @@ interface DashboardHeroProps {
  * 按钮复用现有 dashboard.challenge.action / dashboard.capability.openGraph。
  */
 export function DashboardHero({ caseCount, challenge }: DashboardHeroProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const bootLines = [
     '> fde-arena … ONLINE',
     `> loading incident archive … ${caseCount} CASES`,
@@ -59,8 +59,15 @@ export function DashboardHero({ caseCount, challenge }: DashboardHeroProps) {
           <em>{t('dashboard.hero.titleAccent')}</em>
           {t('dashboard.hero.titleTail')}
         </h2>
-        <p className="bb-hero__description">{t('dashboard.hero.description')}</p>
+        <p className="bb-hero__description">
+          {t('dashboard.hero.description')}
+        </p>
         <div className="bb-hero__actions">
+          {language === 'zh-CN' ? (
+            <Link className="bb-btn bb-btn--academy" to="/academy">
+              进入 {t('nav.academy')}
+            </Link>
+          ) : null}
           <Link className="bb-btn bb-btn--primary" to={primaryTo}>
             {t('dashboard.challenge.action')} →
           </Link>
