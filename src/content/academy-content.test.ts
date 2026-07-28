@@ -8,6 +8,53 @@ import type { AcademyCatalog, AcademyTool, AcademyTopic } from '../domain/academ
 
 const academyDirectory = resolve(process.cwd(), 'content/academy/zh-CN');
 
+const approvedTopicSourceUrls: Readonly<Record<string, readonly string[]>> = {
+  'academy.deep-learning-neural-networks': [
+    'https://www.runoob.com/ai/ai-deep-learning.html',
+  ],
+  'academy.transformer-llm': [
+    'https://www.runoob.com/ai/ai-transformer.html',
+  ],
+  'academy.tokens-context-generation': [
+    'https://www.runoob.com/ai-agent/token-intro.html',
+    'https://www.runoob.com/ai-agent/agent-context-engineering.html',
+  ],
+  'academy.nlp-multimodal': [
+    'https://www.runoob.com/ai/ai-multimodal.html',
+  ],
+  'academy.model-serving-local': [
+    'https://www.runoob.com/ollama/ollama-tutorial.html',
+  ],
+  'academy.fine-tuning-rlhf-deployment': [
+    'https://www.runoob.com/ai/ai-rlhf.html',
+  ],
+  'academy.agent-evaluation-safety': [
+    'https://www.runoob.com/ai/ai-evaluation.html',
+  ],
+  'academy.evaluation-guardrails': [
+    'https://www.runoob.com/ai/ai-evaluation.html',
+  ],
+  'academy.ai-system-architecture': [
+    'https://www.runoob.com/ai/ai-system-architecture.html',
+  ],
+  'academy.agent-workflow': [
+    'https://www.runoob.com/ai/ai-workflow-auto.html',
+  ],
+};
+
+const approvedToolSourceUrls: Readonly<Record<string, string>> = {
+  'tool.codex': 'https://www.runoob.com/codex/codex-intro.html',
+  'tool.claude-code':
+    'https://www.runoob.com/claude-code/claude-code-tutorial.html',
+  'tool.opencode': 'https://www.runoob.com/opencode/opencode-tutorial.html',
+  'tool.vibe-coding':
+    'https://www.runoob.com/vibe-coding/vibe-coding-tutorial.html',
+  'tool.agent-skills': 'https://www.runoob.com/skills/skills-tutorial.html',
+  'tool.ollama': 'https://www.runoob.com/ollama/ollama-tutorial.html',
+  'tool.hermes-agent':
+    'https://www.runoob.com/hermes-agent/hermes-agent-tutorial.html',
+};
+
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
@@ -68,6 +115,17 @@ describe('Chinese Academy content catalog', () => {
     });
   });
 
+  it('keeps reviewed Topics on their precise technical source pages', () => {
+    const topicsById = new Map(readTopics().map((topic) => [topic.id, topic]));
+
+    Object.entries(approvedTopicSourceUrls).forEach(([id, allowedUrls]) => {
+      const sourceUrls = topicsById.get(id)?.sourceRefs.map(({ url }) => url);
+
+      expect(sourceUrls).toBeDefined();
+      expect(sourceUrls).toEqual(allowedUrls);
+    });
+  });
+
   it('gives every tool unique source material and complete radar guidance', () => {
     const tools = readTools();
 
@@ -82,6 +140,11 @@ describe('Chinese Academy content catalog', () => {
     expect(toolSourceUrls).not.toContain(
       'https://www.runoob.com/ai/ai-tools.html',
     );
+    expect(
+      Object.fromEntries(
+        tools.map(({ id, sourceRefs }) => [id, sourceRefs[0]?.url]),
+      ),
+    ).toEqual(approvedToolSourceUrls);
   });
 
   it('passes the Academy relationship and source validation', () => {
