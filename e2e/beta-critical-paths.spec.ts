@@ -41,6 +41,9 @@ test('the public demo is fixed presentation data and leaves local evidence untou
   await expect(
     page.getByRole('heading', { name: 'Capability Evidence' }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Sample delivery artifacts' }),
+  ).toBeVisible();
 
   const storedEvidence = await page.evaluate(() =>
     localStorage.getItem('fde-arena:beta:practice-completions:v1'),
@@ -105,6 +108,33 @@ test('Chinese users can enter the academy and English users see no Chinese acade
   await page.goto('/#/academy');
   await expect(
     page.getByText('AI Academy is coming soon in English.'),
+  ).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
+});
+
+test('Chinese Studio routes are usable and English mode isolates authored delivery content', async ({
+  page,
+}) => {
+  await page.goto('/#/delivery');
+  await expect(page.getByRole('heading', { name: '交付工作台' })).toBeVisible();
+  await expect(page.getByTestId('delivery-template')).toHaveCount(3);
+
+  await page.goto('/#/delivery/project.enterprise-rag-assistant');
+  await expect(
+    page.getByRole('heading', { name: 'Enterprise RAG Assistant Delivery' }),
+  ).toBeVisible();
+  await expect(page.getByTestId('delivery-stage')).toHaveCount(5);
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.goto('/#/delivery');
+  await expect(
+    page.getByText('FDE Delivery Studio is coming soon in English.'),
+  ).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
+
+  await page.goto('/#/delivery/project.enterprise-rag-assistant');
+  await expect(
+    page.getByText('FDE Delivery Studio is coming soon in English.'),
   ).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/[㐀-鿿]/u);
 });

@@ -15,8 +15,8 @@ function renderNavigation(language: Language) {
   );
 }
 
-describe('MobileNavigation Academy entry', () => {
-  it('shows Academy in the Chinese More drawer', async () => {
+describe('MobileNavigation Chinese-only entries', () => {
+  it('shows Academy and Delivery Studio in the Chinese More drawer', async () => {
     const user = userEvent.setup();
     renderNavigation('zh-CN');
 
@@ -26,9 +26,15 @@ describe('MobileNavigation Academy entry', () => {
     expect(
       within(drawer).getByRole('link', { name: 'AI 学院' }),
     ).toHaveAttribute('href', '/academy');
+    expect(
+      within(drawer).getByRole('link', { name: '交付工作台' }),
+    ).toHaveAttribute('href', '/delivery');
+    expect(
+      within(drawer).queryByRole('link', { name: 'FDE Delivery Studio' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('omits Academy from the English More drawer', async () => {
+  it('omits Academy and Delivery Studio from the English More drawer', async () => {
     const user = userEvent.setup();
     renderNavigation('en-US');
 
@@ -38,5 +44,9 @@ describe('MobileNavigation Academy entry', () => {
     expect(
       within(drawer).queryByRole('link', { name: 'AI Academy' }),
     ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('link', { name: 'Delivery Studio' }),
+    ).not.toBeInTheDocument();
+    expect(drawer.querySelector('a[href="/delivery"]')).toBeNull();
   });
 });

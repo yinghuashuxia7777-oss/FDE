@@ -7,6 +7,7 @@ import {
   Gear,
   GraduationCap,
   House,
+  Package,
   Path,
   UserCircle,
   WarningCircle,
@@ -77,6 +78,15 @@ export function MobileNavigation({ onOpenChange }: MobileNavigationProps) {
       : []),
     { to: '/practices', labelKey: 'nav.practices', Icon: Crosshair },
     { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/delivery',
+            labelKey: 'delivery.studio.title',
+            Icon: Package,
+          },
+        ]
+      : []),
     { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
     { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },
     { to: '/settings', labelKey: 'nav.settings', Icon: Gear },

@@ -7,6 +7,7 @@ import {
   GraduationCap,
   House,
   MagnifyingGlass,
+  Package,
   Path,
   UserCircle,
   WarningCircle,
@@ -60,6 +61,16 @@ export function ApplicationShell() {
       Icon: FolderOpen,
       end: false,
     },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/delivery',
+            labelKey: 'delivery.studio.title',
+            Icon: Package,
+            end: false,
+          },
+        ]
+      : []),
     {
       to: '/profile',
       labelKey: 'nav.evidence',
@@ -91,6 +102,15 @@ export function ApplicationShell() {
       : []),
     { to: '/practices', labelKey: 'nav.practices', Icon: ClipboardText },
     { to: '/projects', labelKey: 'nav.projects', Icon: FolderOpen },
+    ...(language === 'zh-CN'
+      ? [
+          {
+            to: '/delivery',
+            labelKey: 'delivery.studio.title',
+            Icon: Package,
+          },
+        ]
+      : []),
     { to: '/cases', labelKey: 'nav.cases', Icon: FolderOpen },
     { to: '/mistakes', labelKey: 'nav.mistakes', Icon: WarningCircle },
     { to: '/profile', labelKey: 'nav.profile', Icon: UserCircle },

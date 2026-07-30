@@ -23,6 +23,18 @@ const verifiedEvidence = [
   'production-readiness-challenge',
 ] as const;
 
+const sampleDeliveryArtifacts = [
+  'Discovery brief',
+  'Value and acceptance contract',
+  'Permission-aware solution design',
+  'Pilot runbook',
+  'Evaluation and reuse note',
+] as const;
+const sampleDeliveryLabel = 'Sample delivery artifacts';
+const sampleDeliveryEyebrow = 'Static demo package';
+const sampleDeliveryBoundary =
+  'Illustrative presentation data only. These artifacts are not verified evidence.';
+
 export function PublicDemoProfilePage() {
   const { t } = useI18n();
   return (
@@ -173,6 +185,24 @@ export function PublicDemoProfilePage() {
             <p>{t('demoProfile.projectProof')}</p>
           </div>
         </article>
+      </section>
+      <section
+        className="growth-card demo-profile-delivery-sample"
+        aria-labelledby="demo-delivery-sample-title"
+      >
+        <div className="growth-card__heading">
+          <div>
+            <p className="eyebrow">{sampleDeliveryEyebrow}</p>
+            <h2 id="demo-delivery-sample-title">{sampleDeliveryLabel}</h2>
+            <p>{sampleDeliveryBoundary}</p>
+          </div>
+          <FolderOpen aria-hidden="true" size={22} />
+        </div>
+        <ol>
+          {sampleDeliveryArtifacts.map((artifact) => (
+            <li key={artifact}>{artifact}</li>
+          ))}
+        </ol>
       </section>
       <section className="growth-card capability-profile__identity">
         <div className="growth-card__heading">

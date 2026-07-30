@@ -81,6 +81,15 @@ describe('Beta productization pages', () => {
     expect(screen.getByText('Capability Evidence')).toBeVisible();
     expect(screen.getByText('85')).toBeVisible();
     expect(
+      screen.getByRole('region', { name: 'Sample delivery artifacts' }),
+    ).toBeVisible();
+    expect(screen.getByText('Sample delivery artifacts')).toBeVisible();
+    expect(screen.getByText('Discovery brief')).toBeVisible();
+    expect(screen.getByRole('meter')).toHaveAttribute('aria-valuenow', '72');
+    expect(
+      screen.getAllByText(/^(85|75|80|60)$/u).map((node) => node.textContent),
+    ).toEqual(['85', '75', '80', '60']);
+    expect(
       localStorage.getItem('fde-arena:beta:practice-completions:v1'),
     ).toBeNull();
     expect(

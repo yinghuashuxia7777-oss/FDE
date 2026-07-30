@@ -14,10 +14,22 @@ and feedback records persist locally in independent versioned sidecars.
 - **AI 学院（中文首发）** provides a five-stage learning path, topic
   lessons, growth-loop connections, and an AI Tool Radar for Simplified Chinese
   learners.
+- **FDE Delivery Studio（交付工作台）** provides Simplified Chinese
+  learners with five-stage, reviewable delivery templates that connect existing
+  Practices, Academy topics, and Projects.
 
 Academy content is bundled locally with this release and independently adapted
 from the cited public source pages. Topic pages retain those citations so users
 can inspect the sources without the product depending on live third-party copy.
+
+Delivery Studio templates and learner-entered artifacts are also local-only.
+They use a separate versioned sidecar and do not change Attempt, Mastery, or
+verified Capability Evidence. Stage checkmarks are learner-authored progress,
+not verification. The templates are original adaptations for this product and
+retain an explicit attribution to the methodology source at
+<https://www.fdebook.com/>. The public Demo Profile labels its static package
+**Sample delivery artifacts**; those samples are presentation data, not verified
+evidence, and do not affect the existing Demo scores.
 
 ## Known Limitations
 
@@ -30,6 +42,9 @@ can inspect the sources without the product depending on live third-party copy.
   evidence is a read-only MVP projection.
 - AI Academy learning content is currently Simplified Chinese only. English
   users see an English availability notice instead of Chinese Academy content.
+- FDE Delivery Studio authored templates are currently Simplified Chinese only.
+  English users receive an English availability notice, and no Chinese template
+  content is exposed in English mode.
 
 ## User Testing Goals
 

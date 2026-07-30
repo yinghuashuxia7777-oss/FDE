@@ -7,6 +7,7 @@ import './styles/reset.css';
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/academy.css';
+import './styles/delivery-studio.css';
 
 const router = createAppRouter();
 

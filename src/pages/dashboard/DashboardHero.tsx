@@ -74,6 +74,11 @@ export function DashboardHero({ caseCount, challenge }: DashboardHeroProps) {
           <Link className="bb-btn bb-btn--ghost" to="/skills">
             {t('dashboard.capability.openGraph')}
           </Link>
+          {language === 'zh-CN' ? (
+            <Link className="bb-btn bb-btn--delivery" to="/delivery">
+              {t('delivery.studio.title')}
+            </Link>
+          ) : null}
         </div>
       </div>
 

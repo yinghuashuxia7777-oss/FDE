@@ -222,7 +222,7 @@ describe('application shell', () => {
     );
   });
 
-  it('places the Chinese Academy entry before the existing Hero actions', () => {
+  it('adds a restrained Chinese Delivery Studio action without replacing the existing Hero actions', () => {
     render(
       <I18nProvider initialLanguage="zh-CN">
         <MemoryRouter>
@@ -252,6 +252,9 @@ describe('application shell', () => {
     const capability = within(actions).getByRole('link', {
       name: '查看完整能力图',
     });
+    const delivery = within(actions).getByRole('link', {
+      name: '交付工作台',
+    });
 
     expect(academy).toHaveAttribute('href', '/academy');
     expect(challenge).toHaveAttribute(
@@ -259,14 +262,18 @@ describe('application shell', () => {
       expect.stringMatching(/^\/training\//u),
     );
     expect(challenge).toHaveClass('bb-btn', 'bb-btn--primary');
+    expect(capability).toHaveAttribute('href', '/skills');
+    expect(delivery).toHaveAttribute('href', '/delivery');
+    expect(delivery).toHaveClass('bb-btn--delivery');
     expect(within(actions).getAllByRole('link')).toEqual([
       academy,
       challenge,
       capability,
+      delivery,
     ]);
   });
 
-  it('places the Chinese Academy destination after Evidence in desktop and workspace navigation', async () => {
+  it('places the Chinese Delivery Studio after Projects in desktop and exposes it in workspace navigation', async () => {
     const user = userEvent.setup();
     installResponsiveMatchMedia(true);
     setRoute('/');
@@ -286,6 +293,21 @@ describe('application shell', () => {
     expect(primaryLinks.indexOf(academy)).toBe(
       primaryLinks.indexOf(evidence) + 1,
     );
+    const projects = within(primaryNavigation).getByRole('link', {
+      name: '项目',
+    });
+    const delivery = within(primaryNavigation).getByRole('link', {
+      name: '交付工作台',
+    });
+    expect(delivery).toHaveAttribute('href', '#/delivery');
+    expect(primaryLinks.indexOf(delivery)).toBe(
+      primaryLinks.indexOf(projects) + 1,
+    );
+    expect(
+      within(primaryNavigation).queryByRole('link', {
+        name: 'FDE Delivery Studio',
+      }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '打开工作区菜单' }));
     const workspaceNavigation = screen.getByRole('navigation', {
@@ -294,9 +316,12 @@ describe('application shell', () => {
     expect(
       within(workspaceNavigation).getByRole('link', { name: 'AI 学院' }),
     ).toHaveAttribute('href', '#/academy');
+    expect(
+      within(workspaceNavigation).getByRole('link', { name: '交付工作台' }),
+    ).toHaveAttribute('href', '#/delivery');
   });
 
-  it('omits every Academy entry from the English Hero and desktop navigation', async () => {
+  it('omits Academy and Delivery Studio entries from the English Hero and navigation', async () => {
     const user = userEvent.setup();
 
     const hero = render(
@@ -324,6 +349,12 @@ describe('application shell', () => {
     expect(
       screen.queryByRole('link', { name: 'Enter AI Academy' }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Delivery Studio' }),
+    ).not.toBeInTheDocument();
+    expect(
+      hero.container.querySelector('.bb-hero__actions a[href="/delivery"]'),
+    ).toBeNull();
     hero.unmount();
 
     installResponsiveMatchMedia(true);
@@ -336,6 +367,12 @@ describe('application shell', () => {
     expect(
       within(primaryNavigation).queryByRole('link', { name: 'AI Academy' }),
     ).not.toBeInTheDocument();
+    expect(
+      within(primaryNavigation).queryByRole('link', {
+        name: 'Delivery Studio',
+      }),
+    ).not.toBeInTheDocument();
+    expect(primaryNavigation.querySelector('a[href="#/delivery"]')).toBeNull();
 
     await user.click(
       screen.getByRole('button', { name: 'Open workspace menu' }),
@@ -346,6 +383,14 @@ describe('application shell', () => {
     expect(
       within(workspaceNavigation).queryByRole('link', { name: 'AI Academy' }),
     ).not.toBeInTheDocument();
+    expect(
+      within(workspaceNavigation).queryByRole('link', {
+        name: 'Delivery Studio',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      workspaceNavigation.querySelector('a[href="#/delivery"]'),
+    ).toBeNull();
   });
 
   it('exposes only mobile navigation below the desktop boundary', () => {
