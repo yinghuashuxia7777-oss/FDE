@@ -33,6 +33,7 @@ import {
   AcademyToolsPage,
   AcademyTopicPage,
 } from '../pages/academy';
+import { DeliveryStudioPage, DeliveryWorkspacePage } from '../pages/delivery';
 
 function DebriefRoute() {
   const { attemptId = '' } = useParams<{ attemptId: string }>();
@@ -66,6 +67,11 @@ function AcademyTopicRoute() {
 function AcademyToolRoute() {
   const { toolId = '' } = useParams<{ toolId: string }>();
   return <AcademyToolPage toolId={toolId} />;
+}
+
+function DeliveryWorkspaceRoute() {
+  const { templateId = '' } = useParams<{ templateId: string }>();
+  return <DeliveryWorkspacePage key={templateId} templateId={templateId} />;
 }
 
 export function createAppRouter() {
@@ -117,6 +123,14 @@ export function createAppRouter() {
             {
               path: 'academy/:topicId',
               element: <AcademyTopicRoute />,
+            },
+            {
+              path: 'delivery',
+              element: <DeliveryStudioPage />,
+            },
+            {
+              path: 'delivery/:templateId',
+              element: <DeliveryWorkspaceRoute />,
             },
             {
               path: 'skills',

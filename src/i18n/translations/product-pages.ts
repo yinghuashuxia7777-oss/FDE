@@ -743,6 +743,38 @@ export const productPagesZhCN: Record<string, string> = {
   'academy.missingTool.title': '未找到 AI 工具',
   'academy.missingTool.description': '该工具不在当前 AI 工具雷达中。',
   'academy.missingTool.action': '返回 AI 工具雷达',
+  'delivery.unavailable': 'FDE Delivery Studio is coming soon in English.',
+  'delivery.studio.eyebrow': 'FDE DELIVERY STUDIO',
+  'delivery.studio.title': '交付工作台',
+  'delivery.studio.description':
+    '从三个项目模板出发，用五个可评审阶段形成完整的 FDE 交付包。',
+  'delivery.studio.open': '打开 {title}',
+  'delivery.localNotice': '内容仅保存在当前浏览器。',
+  'delivery.completionBoundary':
+    '阶段完成仅表示交付包整理进度，不会创建训练证据或修改 Mastery。',
+  'delivery.progress': '{completed} / {total} 阶段已完成',
+  'delivery.workspace.eyebrow': 'FDE DELIVERY WORKSPACE',
+  'delivery.workspace.back': '返回交付工作台',
+  'delivery.stageRail.label': '交付阶段',
+  'delivery.stageRail.item': '{number}. {title}',
+  'delivery.stage.label': '阶段 {number}',
+  'delivery.stage.completed': '已完成',
+  'delivery.stage.incomplete': '未完成',
+  'delivery.stage.prompt': '交付提示',
+  'delivery.stage.proof': '这能证明什么',
+  'delivery.stage.markComplete': '标记 {title} 为已完成',
+  'delivery.stage.markIncomplete': '将 {title} 恢复为未完成',
+  'delivery.artifact.placeholder':
+    '在此撰写交付物，内容会自动保存到当前浏览器。',
+  'delivery.related.label': '关联学习与项目资产',
+  'delivery.related.title': '关联资产',
+  'delivery.reset.action': '重置交付包',
+  'delivery.reset.confirm': '确定清空该模板的全部交付内容和阶段状态吗？',
+  'delivery.attribution.prefix': '方法灵感可选参考：',
+  'delivery.attribution.link': 'The Forward Deployed Engineer Book',
+  'delivery.missing.title': '未找到交付模板',
+  'delivery.missing.description': '该模板不在当前 FDE 交付目录中。',
+  'delivery.missing.action': '返回交付工作台',
 };
 
 export const productPagesEnUS: Record<string, string> = {
@@ -1541,4 +1573,38 @@ export const productPagesEnUS: Record<string, string> = {
   'academy.missingTool.description':
     'This tool is not in the current AI Tool Radar.',
   'academy.missingTool.action': 'Back to AI Tool Radar',
+  'delivery.unavailable': 'FDE Delivery Studio is coming soon in English.',
+  'delivery.studio.eyebrow': 'FDE DELIVERY STUDIO',
+  'delivery.studio.title': 'Delivery Studio',
+  'delivery.studio.description':
+    'Build a complete FDE delivery package through five reviewable stages.',
+  'delivery.studio.open': 'Open {title}',
+  'delivery.localNotice': 'Content is saved only in this browser.',
+  'delivery.completionBoundary':
+    'Stage completion is presentation-only and does not create evidence or modify Mastery.',
+  'delivery.progress': '{completed} / {total} stages complete',
+  'delivery.workspace.eyebrow': 'FDE DELIVERY WORKSPACE',
+  'delivery.workspace.back': 'Back to Delivery Studio',
+  'delivery.stageRail.label': 'Delivery stages',
+  'delivery.stageRail.item': '{number}. {title}',
+  'delivery.stage.label': 'Stage {number}',
+  'delivery.stage.completed': 'Complete',
+  'delivery.stage.incomplete': 'Incomplete',
+  'delivery.stage.prompt': 'Delivery prompt',
+  'delivery.stage.proof': 'What this proves',
+  'delivery.stage.markComplete': 'Mark {title} complete',
+  'delivery.stage.markIncomplete': 'Mark {title} incomplete',
+  'delivery.artifact.placeholder':
+    'Draft the artifact here. It is saved automatically in this browser.',
+  'delivery.related.label': 'Related learning and project assets',
+  'delivery.related.title': 'Related assets',
+  'delivery.reset.action': 'Reset delivery package',
+  'delivery.reset.confirm':
+    'Clear all delivery content and stage status for this template?',
+  'delivery.attribution.prefix': 'Optional methodology reference:',
+  'delivery.attribution.link': 'The Forward Deployed Engineer Book',
+  'delivery.missing.title': 'Delivery template not found',
+  'delivery.missing.description':
+    'This template is not in the current FDE delivery catalog.',
+  'delivery.missing.action': 'Back to Delivery Studio',
 };
