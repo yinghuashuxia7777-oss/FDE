@@ -1,0 +1,389 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "project.enterprise-rag-assistant",
+      "title": "Enterprise RAG Assistant Delivery",
+      "summary": "将企业知识问答需求收敛为可验证、可上线、可复盘的 RAG 交付包。",
+      "attributionUrl": "https://www.fdebook.com/",
+      "stages": [
+        {
+          "id": "discover",
+          "title": "Discover",
+          "artifactLabel": "Discovery Brief",
+          "prompt": "记录目标用户、关键知识任务、当前失败模式与数据权限边界；将已知事实、待验证假设和暂不纳入的范围分开。",
+          "whatThisProves": "证明你能把模糊的知识问答诉求转化为有边界的发现记录。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Customer Discovery Practice",
+              "href": "/practices/practice.fde.customer-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "AI Application Architecture",
+              "href": "/academy/academy.ai-app-architecture"
+            },
+            {
+              "kind": "project",
+              "label": "Enterprise RAG Assistant Project",
+              "href": "/projects/project.enterprise-rag-assistant"
+            }
+          ]
+        },
+        {
+          "id": "define-value",
+          "title": "Define Value",
+          "artifactLabel": "Value & Acceptance Contract",
+          "prompt": "定义一个可观测的用户结果、基线、成功门槛与不可牺牲的权限条件，并写明评审者如何判定未达标。",
+          "whatThisProves": "证明你能在开发前对价值和验收边界达成可复核的约定。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Requirement Discovery Practice",
+              "href": "/practices/practice.fde.requirement-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "Evaluation & Guardrails",
+              "href": "/academy/academy.evaluation-guardrails"
+            },
+            {
+              "kind": "project",
+              "label": "Enterprise RAG Assistant Project",
+              "href": "/projects/project.enterprise-rag-assistant"
+            }
+          ]
+        },
+        {
+          "id": "design",
+          "title": "Design",
+          "artifactLabel": "Permission-aware RAG Design",
+          "prompt": "绘制从用户身份、授权过滤、检索到引用生成的数据流，说明关键权衡、失败降级和可观测点。",
+          "whatThisProves": "证明你能设计一个把权限、质量与可运营性放在同一边界内的 RAG 系统。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "RAG Retrieval Practice",
+              "href": "/practices/practice.rag.retrieval"
+            },
+            {
+              "kind": "academy",
+              "label": "RAG Academy",
+              "href": "/academy/academy.rag"
+            },
+            {
+              "kind": "project",
+              "label": "Enterprise RAG Assistant Project",
+              "href": "/projects/project.enterprise-rag-assistant"
+            }
+          ]
+        },
+        {
+          "id": "activate",
+          "title": "Activate",
+          "artifactLabel": "Pilot Runbook",
+          "prompt": "设计一次小范围试点：写明参与者、数据集、发布步骤、回滚条件、支持责任与每日检查的质量信号。",
+          "whatThisProves": "证明你能让方案在可控风险下进入真实使用。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Deployment Practice",
+              "href": "/practices/practice.prod.deployment"
+            },
+            {
+              "kind": "academy",
+              "label": "Model Serving & Local Deployment",
+              "href": "/academy/academy.model-serving-local"
+            },
+            {
+              "kind": "project",
+              "label": "Enterprise RAG Assistant Project",
+              "href": "/projects/project.enterprise-rag-assistant"
+            }
+          ]
+        },
+        {
+          "id": "review-reuse",
+          "title": "Review & Reuse",
+          "artifactLabel": "Evaluation & Reuse Note",
+          "prompt": "对照验收契约总结试点证据，区分系统问题与流程问题，记录下一轮决策，并提炼可复用的检索、权限和评估清单。",
+          "whatThisProves": "证明你能用证据关闭交付循环，并将经验转化为下次可用的资产。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "RAG Evaluation Practice",
+              "href": "/practices/practice.rag.evaluation"
+            },
+            {
+              "kind": "academy",
+              "label": "Evaluation & Guardrails",
+              "href": "/academy/academy.evaluation-guardrails"
+            },
+            {
+              "kind": "project",
+              "label": "Enterprise RAG Assistant Project",
+              "href": "/projects/project.enterprise-rag-assistant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project.agent-workflow-system",
+      "title": "Agent Workflow System Delivery",
+      "summary": "将工具调用型 Agent 从任务发现推进到有审批、可观测、可复用的工作流交付。",
+      "attributionUrl": "https://www.fdebook.com/",
+      "stages": [
+        {
+          "id": "discover",
+          "title": "Discover",
+          "artifactLabel": "Workflow Discovery Map",
+          "prompt": "描述用户今天如何完成目标任务，标出等待、交接、人工判断、敏感操作和常见异常，不预设 Agent 是唯一解法。",
+          "whatThisProves": "证明你能从真实工作流而不是功能清单出发发现机会。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Customer Discovery Practice",
+              "href": "/practices/practice.fde.customer-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "Agent Basics",
+              "href": "/academy/academy.agent-basics"
+            },
+            {
+              "kind": "project",
+              "label": "Agent Workflow System Project",
+              "href": "/projects/project.agent-workflow-system"
+            }
+          ]
+        },
+        {
+          "id": "define-value",
+          "title": "Define Value",
+          "artifactLabel": "Outcome & Control Contract",
+          "prompt": "定义希望改善的任务结果、人工介入点、不可自动化的决策、成功门槛和停止条件。",
+          "whatThisProves": "证明你能同时约定业务价值与 Agent 控制边界。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Requirement Discovery Practice",
+              "href": "/practices/practice.fde.requirement-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "Agent Planning",
+              "href": "/academy/academy.agent-planning"
+            },
+            {
+              "kind": "project",
+              "label": "Agent Workflow System Project",
+              "href": "/projects/project.agent-workflow-system"
+            }
+          ]
+        },
+        {
+          "id": "design",
+          "title": "Design",
+          "artifactLabel": "Governed Workflow Design",
+          "prompt": "定义 Agent 状态、工具合约、超时与重试策略、审批门、记忆生命周期和安全失败时的终止路径。",
+          "whatThisProves": "证明你能把 Agent 行为表达为可检查、可恢复的系统设计。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Agent Workflow Design Practice",
+              "href": "/practices/practice.agent.workflow-design"
+            },
+            {
+              "kind": "academy",
+              "label": "Agent Workflow",
+              "href": "/academy/academy.agent-workflow"
+            },
+            {
+              "kind": "project",
+              "label": "Agent Workflow System Project",
+              "href": "/projects/project.agent-workflow-system"
+            }
+          ]
+        },
+        {
+          "id": "activate",
+          "title": "Activate",
+          "artifactLabel": "Supervised Activation Plan",
+          "prompt": "规划从影子模式到受监督执行的分阶段上线，为每阶段写明权限、观测信号、值守责任和回退门槛。",
+          "whatThisProves": "证明你能通过逐步放权把 Agent 安全地带入生产流程。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Tool Contracts Practice",
+              "href": "/practices/practice.agent.tool-contracts"
+            },
+            {
+              "kind": "academy",
+              "label": "Tool Calling",
+              "href": "/academy/academy.tool-calling"
+            },
+            {
+              "kind": "project",
+              "label": "Agent Workflow System Project",
+              "href": "/projects/project.agent-workflow-system"
+            }
+          ]
+        },
+        {
+          "id": "review-reuse",
+          "title": "Review & Reuse",
+          "artifactLabel": "Agent Operations Review",
+          "prompt": "汇总成功、人工接管、工具失败和不安全倾向的证据，说明哪些合约可复用、哪些只适用于当前客户。",
+          "whatThisProves": "证明你能从运行证据中改进控制并提炼可复用的 Agent 模式。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Agent Evaluation Practice",
+              "href": "/practices/practice.agent.evaluation"
+            },
+            {
+              "kind": "academy",
+              "label": "Agent Evaluation & Safety",
+              "href": "/academy/academy.agent-evaluation-safety"
+            },
+            {
+              "kind": "project",
+              "label": "Agent Workflow System Project",
+              "href": "/projects/project.agent-workflow-system"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project.ai-customer-solution",
+      "title": "AI Customer Solution Delivery",
+      "summary": "将客户问题转化为有价值契约、技术方案、激活路径和复盘证据的完整交付包。",
+      "attributionUrl": "https://www.fdebook.com/",
+      "stages": [
+        {
+          "id": "discover",
+          "title": "Discover",
+          "artifactLabel": "Problem Brief",
+          "prompt": "用客户原话描述要完成的任务、受影响的人、当前工作方式与已观测的阻力，再列出需要验证的三个高风险假设。",
+          "whatThisProves": "证明你能在跳到方案前准确框定客户问题与未知数。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Customer Discovery Practice",
+              "href": "/practices/practice.fde.customer-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "What AI Is",
+              "href": "/academy/academy.ai-what-it-is"
+            },
+            {
+              "kind": "project",
+              "label": "AI Customer Solution Project",
+              "href": "/projects/project.ai-customer-solution"
+            }
+          ]
+        },
+        {
+          "id": "define-value",
+          "title": "Define Value",
+          "artifactLabel": "Value Hypothesis",
+          "prompt": "将问题绑定到一个可测量的客户结果，写明基线、受益人、取证方式、成功门槛与不会被该指标捕捉的副作用。",
+          "whatThisProves": "证明你能把 AI 构想转成可证伪的价值假设。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Requirement Discovery Practice",
+              "href": "/practices/practice.fde.requirement-discovery"
+            },
+            {
+              "kind": "academy",
+              "label": "AI Boundaries & Safety",
+              "href": "/academy/academy.ai-boundaries-safety"
+            },
+            {
+              "kind": "project",
+              "label": "AI Customer Solution Project",
+              "href": "/projects/project.ai-customer-solution"
+            }
+          ]
+        },
+        {
+          "id": "design",
+          "title": "Design",
+          "artifactLabel": "Solution Blueprint",
+          "prompt": "说明用户流程、系统边界、数据来源、模型责任、人工控制、评估方式与两个被明确放弃的备选方案。",
+          "whatThisProves": "证明你能作出可评审的端到端方案及取舍。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Architecture Proposal Practice",
+              "href": "/practices/practice.fde.architecture-proposal"
+            },
+            {
+              "kind": "academy",
+              "label": "AI System Architecture",
+              "href": "/academy/academy.ai-system-architecture"
+            },
+            {
+              "kind": "project",
+              "label": "AI Customer Solution Project",
+              "href": "/projects/project.ai-customer-solution"
+            }
+          ]
+        },
+        {
+          "id": "activate",
+          "title": "Activate",
+          "artifactLabel": "Activation Plan",
+          "prompt": "定义谁在什么场景先使用方案、如何获得反馈、谁负责支持，并为采用不足、质量下降和风险事件设定响应动作。",
+          "whatThisProves": "证明你能把技术交付连接到使用者采用与运营责任。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "Customer Solution Design Practice",
+              "href": "/practices/practice.fde.customer-solution-design"
+            },
+            {
+              "kind": "academy",
+              "label": "AI Application Architecture",
+              "href": "/academy/academy.ai-app-architecture"
+            },
+            {
+              "kind": "project",
+              "label": "AI Customer Solution Project",
+              "href": "/projects/project.ai-customer-solution"
+            }
+          ]
+        },
+        {
+          "id": "review-reuse",
+          "title": "Review & Reuse",
+          "artifactLabel": "Delivery Review",
+          "prompt": "对照问题、价值契约和激活数据记录结论，区分已被证实、被否定和仍不确定的部分，并提炼下次可复用的问题、门槛与模板。",
+          "whatThisProves": "证明你能诚实复盘价值证据，并将交付经验编码为可复用资产。",
+          "relatedLinks": [
+            {
+              "kind": "practice",
+              "label": "LLM Evaluation Practice",
+              "href": "/practices/practice.ai.llm-evaluation"
+            },
+            {
+              "kind": "academy",
+              "label": "Evaluation & Guardrails",
+              "href": "/academy/academy.evaluation-guardrails"
+            },
+            {
+              "kind": "project",
+              "label": "AI Customer Solution Project",
+              "href": "/projects/project.ai-customer-solution"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
